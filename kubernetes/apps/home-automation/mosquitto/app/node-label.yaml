@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: k8s3
+  labels:
+    node: k8s3

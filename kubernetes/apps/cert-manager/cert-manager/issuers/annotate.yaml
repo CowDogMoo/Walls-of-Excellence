@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: techvomit-xyz-production-tls
+  namespace: cert-manager
+  annotations:
+    kubed.appscode.com/sync: ""

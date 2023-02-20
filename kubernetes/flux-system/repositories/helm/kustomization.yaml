@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # - actions-runner-controller.yaml
+  - external-dns.yaml
+  - external-secrets.yaml
+  - ingress-traefik.yaml
+  - jetstack.yaml
+  - appscode.yaml
+  - k8s-at-home.yaml
+  - nfs-subdir-external-provisioner.yaml
+  # - ./metrics-server.yaml
+  # - ./prometheus-community.yaml

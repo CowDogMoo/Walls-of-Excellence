@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole
+  namespace: guacamole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guacamole
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: guacamole
+    spec:
+      containers:
+        - image: maxwaldorf/guacamole:1.4
+          # Uncomment to enable TOTP 2FA
+          # env:
+          # - name: EXTENSIONS
+          #   value: auth-totp
+          name: guacamole
+          ports:
+            - name: guacd
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+          volumeMounts:
+            - mountPath: /config
+              name: guacamole-pvc
+      restartPolicy: Always
+      hostNetwork: true
+      volumes:
+        - name: guacamole-pvc
+          persistentVolumeClaim:
+            claimName: guacamole-pvc

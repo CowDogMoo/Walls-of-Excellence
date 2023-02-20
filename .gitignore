@@ -1,0 +1,9 @@
+# Generated artifacts
+logs
+
+# Secrets
+*secret*
+*cloudflare*
+*auth*
+*login*
+*backup*
