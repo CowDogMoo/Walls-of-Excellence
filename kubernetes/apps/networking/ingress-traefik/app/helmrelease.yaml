@@ -1,0 +1,162 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ingress-traefik
+  namespace: networking
+spec:
+  chart:
+    spec:
+      chart: traefik
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-traefik
+        namespace: flux-system
+  interval: 15m
+  maxHistory: 3
+  install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
+    cleanupOnFail: true
+    crds: CreateReplace
+  test:
+    enable: true
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
+  uninstall:
+    keepHistory: false
+  values:
+    additionalArguments:
+
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+
+    # Install and publish the dashboard
+    ingressRoute:
+      dashboard:
+        enabled: true
+        matchRule: Host(`traefik.techvomit.xyz`)
+        entryPoints: ["websecure"]
+        middlewares:
+          - name: traefik-dashboard-auth
+
+    # Create the custom middlewares used by the IngressRoute dashboard (can also be created in another way).
+    extraObjects:
+      - apiVersion: traefik.containo.us/v1alpha1
+        kind: Middleware
+        metadata:
+          name: traefik-dashboard-auth
+        spec:
+          basicAuth:
+            secret: traefik-dashboard-auth-secret
+
+    logs:
+      general:
+        format: json
+        level: DEBUG
+      access:
+        enabled: true
+        format: json
+
+    rbac:
+      enabled: true
+
+    service:
+      annotations:
+        # External DNS Annotation
+        external-dns.alpha.kubernetes.io/hostname: traefik.techvomit.xyz
+      spec:
+        # Arbitrarily selected IP address in the metallb IP ranges
+        # defined in `k3s-ansible/inventory/cowdogmoo/group_vars/all.yaml`.
+        loadBalancerIP: 192.168.20.205
+        externalTrafficPolicy: Local
+
+    extraEnvs:
+      - name: TZ
+        value: "America/Denver"
+
+    providers:
+      kubernetesCRD:
+        enabled: true
+        allowCrossNamespace: true
+        allowExternalNameServices: true
+
+      kubernetesIngress:
+        enabled: true
+        allowExternalNameServices: true
+        publishedService:
+          enabled: true
+
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: techvomit-xyz-production-tls
+
+    tlsOptions:
+      default:
+        minVersion: VersionTLS12
+        maxVersion: VersionTLS13
+
+    deployment:
+      replicas: 1
+
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+
+    # Set resource limits (required for autoscaling)
+    resources:
+      requests:
+        memory: 100Mi
+        cpu: 500m
+      limits:
+        memory: 500Mi
+
+    pilot:
+      enabled: false
+
+    restartPolicy: Always
+
+    dnsConfig:
+      options:
+        - name: ndots
+          value: "1"
+
+    experimental:
+      plugins:
+        enabled: true
+
+    persistence:
+      config:
+        enabled: true
+        type: nfs
+        server: 192.168.20.210
+        path: /volume1/k8s/traefik
+
+    metrics:
+      port: 8082
+      expose: true
+      exposedPort: 8082
+
+    ports:
+      traefik:
+        expose: true
+      web:
+        redirectTo: websecure
+      websecure:
+        tls:
+          enabled: true
+          options: "default"

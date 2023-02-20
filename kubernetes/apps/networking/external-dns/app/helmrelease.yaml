@@ -1,0 +1,65 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: external-dns
+  namespace: networking
+spec:
+  chart:
+    spec:
+      chart: external-dns
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  interval: 5m
+  maxHistory: 3
+  releaseName: external-dns
+  install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
+    cleanupOnFail: true
+    crds: CreateReplace
+  test:
+    enable: true
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
+  uninstall:
+    keepHistory: false
+  values:
+    interval: 2m
+    provider: cloudflare
+    env:
+      - name: CF_API_EMAIL
+        valueFrom:
+          secretKeyRef:
+            key: email
+            name: cloudflare-api-credentials
+      - name: CF_API_KEY
+        valueFrom:
+          secretKeyRef:
+            key: apiKey
+            name: cloudflare-api-credentials
+      - name: ZONE
+        value: techvomit.xyz
+    policy: sync
+    sources:
+      - ingress
+      - service
+    txtPrefix: k8s.
+    txtOwnerId: default
+    domainFilters: ["techvomit.xyz"]
+    # serviceMonitor:
+    #   enabled: true
