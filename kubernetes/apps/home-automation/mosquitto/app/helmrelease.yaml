@@ -1,0 +1,117 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mosquitto
+  namespace: home-automation
+spec:
+  chart:
+    spec:
+      chart: mosquitto
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: k8s-at-home
+        namespace: flux-system
+  interval: 15m
+  install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
+    cleanupOnFail: true
+    crds: CreateReplace
+  test:
+    enable: true
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
+  uninstall:
+    keepHistory: false
+  maxHistory: 3
+  values:
+    # Lock to the k8s3 node since MQTT can't be load balanced.
+    nodeSelector:
+      node: k8s3
+
+    env:
+      # -- Set the container timezone
+      TZ: "America/Denver"
+
+    # -- Configures service settings for the chart. Normally this does not need to be modified.
+    # @default -- See values.yaml
+    service:
+      main:
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+        annotations:
+          # External DNS Annotation
+          external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
+        ports:
+          http:
+            enabled: false
+          mqtt:
+            enabled: true
+            primary: true
+            port: 1883
+
+    securityContext:
+      runAsUser: 1883
+      runAsGroup: 1883
+
+    configMaps:
+      config:
+        enabled: true
+        data:
+          mosquitto.conf: |
+            listener 1883
+            allow_anonymous true
+            persistence false
+            connection_messages false
+
+    # -- Enable and configure ingress settings for the chart under this key.
+    # @default -- See values.yaml
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: ingress-traefik
+        hosts:
+          - host: &host mosquitto.techvomit.xyz
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+
+    logs:
+      general:
+        format: json
+        level: DEBUG
+
+    # -- When hostNetwork is true set dnsPolicy to ClusterFirstWithHostNet
+    dnsPolicy: ClusterFirstWithHostNet
+
+    # -- Enable devices to be discoverable
+    # DO NOT COMMENT THIS OUT EVER AGAIN:
+    hostNetwork: true
+    # SERIOUSLY, DO NOT DO IT YOU BASTARD!
+    # Resource: https://www.reddit.com/r/kubernetes/comments/ixucya/homekit_integration_for_home_assistant_on_a/
+
+    # -- Configure a persistent volume to place mosquitto data in.
+    # When enabled, this enables `persistence` and `persistence_location` in the mosquitto config.
+    persistence:
+      config:
+        enabled: true
+        type: nfs
+        server: 192.168.20.210
+        path: /volume1/k8s/mosquitto
+        mountPath: /config/mosquitto
