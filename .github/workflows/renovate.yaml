@@ -1,38 +1,28 @@
 ---
 name: Run renovate to update helm charts
 on:
-  # Run every six hours (see https://crontab.guru)
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 * * * *"
+  push:
+    branches: ["main"]
+    paths:
+      - .github/renovate-bot.json5
+      - .github/renovate.json5
+      - .github/renovate/**.json5
+
+env:
+  RENOVATE_CONFIG_FILE: .github/renovate-bot.json5
 
 jobs:
-  helm-releases:
-    name: Update helm charts
+  renovate:
+    name: Renovate
     runs-on: ubuntu-latest
     steps:
       - name: Set up git repository
         uses: actions/checkout@v3.3.0
 
-      - name: Install yq
-        run: |
-          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
-
-      - name: Renovate Helm Releases
-        uses: k8s-at-home/renovate-helm-releases@v1
+      - name: Renovate
+        uses: renovatebot/github-action@v34.147.0
         with:
-          cluster-path: "./"
-
-      - name: Create pull request for HelmRelease annotations
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.BOT_TOKEN }}
-          branch: helm-release-annotations
-          title: "[renovate] create helmrelease annotations [ci-skip]"
-          signoff: true
-          committer: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
-          author: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
-          commit-message: Create renovatebot helmrelease annotations
-          body: |
-            Signed-off-by: Jayson Grace <l50@users.noreply.github.com>
-          labels: renovate/helm-release-annotations
+          configurationFile: "${{ env.RENOVATE_CONFIG_FILE }}"
+          token: "${{ secrets.BOT_TOKEN }}"

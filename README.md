@@ -57,3 +57,12 @@ Infrastructure as Code (IaC) and GitOps practices where possible
   --personal \
   --token-auth
   ```
+
+---
+
+## Resources
+
+This project was heavily influenced by the following:
+
+- <https://github.com/onedr0p/home-ops/>
+- <https://github.com/billimek/k8s-gitops>
