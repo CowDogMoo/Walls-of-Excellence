@@ -8,7 +8,7 @@
       "automerge": true,
       "ignoreTests": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": ["minor", "patch", "digest"]
     }
   ]
 }

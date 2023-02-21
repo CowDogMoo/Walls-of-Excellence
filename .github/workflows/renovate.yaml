@@ -1,6 +1,16 @@
 ---
 name: Run renovate to update helm charts
 on:
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: "Dry-Run"
+        default: "false"
+        required: false
+      logLevel:
+        description: "Log-Level"
+        default: "debug"
+        required: false
   schedule:
     - cron: "0 * * * *"
   push:
@@ -11,6 +21,8 @@ on:
       - .github/renovate/**.json5
 
 env:
+  LOG_LEVEL: debug
+  RENOVATE_DRY_RUN: false
   RENOVATE_CONFIG_FILE: .github/renovate-bot.json5
 
 jobs:
@@ -19,7 +31,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up git repository
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          token: "${{ secrets.BOT_TOKEN }}"
+
+      - name: Override default config from dispatch variables
+        run: |
+          echo "RENOVATE_DRY_RUN=${{ github.event.inputs.dryRun || env.RENOVATE_DRY_RUN }}" >> "${GITHUB_ENV}"
+          echo "LOG_LEVEL=${{ github.event.inputs.logLevel || env.LOG_LEVEL }}" >> "${GITHUB_ENV}"
 
       - name: Renovate
         uses: renovatebot/github-action@v34.147.0

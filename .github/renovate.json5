@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base",
     "docker:enableMajor",
@@ -14,11 +15,13 @@
     "github>CowDogMoo/Walls-of-Excellence//.github/renovate/semanticCommits.json5",
     "helpers:pinGitHubActionDigests"
   ],
-  "dependencyDashboard": true,
+  "platform": "github",
+  "onboarding": false,
+  "requireConfig": "optional",
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "suppressNotifications": ["prIgnoreNotification"],
   "rebaseWhen": "conflicted",
-  "schedule": ["every saturday"],
+  "commitBodyTable": true,
   "pre-commit": {
     "enabled": true
   },
@@ -29,13 +32,11 @@
     "fileMatch": ["kubernetes/.+\\.ya?ml$"]
   },
   "kubernetes": {
-    "fileMatch": [
-      "kubernetes/.+\\.ya?ml$"
-    ]
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"]
   },
   "regexManagers": [
     {
-      "description": "Process various other dependencies",
+      "description": "Process custom dependencies",
       "fileMatch": [
         "kubernetes/.+\\.ya?ml$"
       ],
@@ -44,6 +45,20 @@
       ],
       "datasourceTemplate": "{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}",
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Loose versioning for non-semver packages",
+      "matchDatasources": ["docker"],
+      "versioning": "loose",
+      "matchPackagePatterns": ["changedetection", "plex", "qbittorrent"]
+    },
+    {
+      "description": "Use custom versioning for Minio",
+      "matchDatasources": ["docker"],
+      "versioning": "regex:^RELEASE\\.(?<major>\\d+)-(?<minor>\\d+)-(?<patch>\\d+)T.*Z$",
+      "matchPackagePatterns": ["minio"]
     }
   ]
 }
