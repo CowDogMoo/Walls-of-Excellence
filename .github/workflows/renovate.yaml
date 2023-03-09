@@ -12,7 +12,8 @@ on:
         default: "debug"
         required: false
   schedule:
-    - cron: "0 */6 * * *"
+    # Run once per week - at 00:00 on Sunday
+    - cron: "0 0 * * 0"
   push:
     branches: ["main"]
     paths:
