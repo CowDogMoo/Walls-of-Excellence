@@ -5,7 +5,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/fatih/color"
 	goutils "github.com/l50/goutils"
@@ -18,6 +17,8 @@ var (
 		"provider",
 		"awsutils",
 	}
+	debug = true
+	owner = "l50"
 )
 
 func init() {
@@ -76,38 +77,70 @@ func RunPreCommit() error {
 	return nil
 }
 
-// Apply runs terragrunt apply
+// Apply runs terragrunt init, plan, and apply
 func Apply() error {
 	var err error
-	debug := true
-	owner := "l50"
 
 	if err := os.Chdir("infrastructure"); err != nil {
 		return err
 	}
 
-	for _, tfModule := range modules {
+	actions := []string{"init", "plan", "apply"}
+
+	for _, action := range actions {
 		fmt.Println(color.GreenString(
-			"Now applying %s, please wait.\n", tfModule))
+			"Now running %s on %s, please wait.\n", action, owner))
 		if debug {
 			err = sh.RunV(
-				"terragrunt", "apply",
+				"terragrunt", "run-all", action,
 				"--terragrunt-non-interactive", "-auto-approve",
 				"-lock=false", "--terragrunt-working-dir",
-				filepath.Join(owner, tfModule),
+				owner,
 				"--terragrunt-log-level", "debug",
 				"--terragrunt-debug")
 		} else {
 			err = sh.RunV(
-				"terragrunt", "apply",
+				"terragrunt", "run-all", action,
 				"--terragrunt-non-interactive", "-auto-approve",
 				"-lock=false", "--terragrunt-working-dir",
-				filepath.Join(owner, tfModule))
+				owner)
 		}
 		if err != nil {
 			return fmt.Errorf(color.RedString(
 				"failed to apply TF modules: %v", err))
 		}
+	}
+
+	return nil
+}
+
+func Destroy() error {
+	var err error
+
+	if err := os.Chdir("infrastructure"); err != nil {
+		return err
+	}
+
+	fmt.Println(color.RedString(
+		"Now destroying %s, please wait.\n", owner))
+	if debug {
+		err = sh.RunV(
+			"terragrunt", "run-all", "destroy",
+			"--terragrunt-non-interactive", "-auto-approve",
+			"-lock=false", "--terragrunt-working-dir",
+			owner,
+			"--terragrunt-log-level", "debug",
+			"--terragrunt-debug")
+	} else {
+		err = sh.RunV(
+			"terragrunt", "run-all", "destroy",
+			"--terragrunt-non-interactive", "-auto-approve",
+			"-lock=false", "--terragrunt-working-dir",
+			owner)
+	}
+	if err != nil {
+		return fmt.Errorf(color.RedString(
+			"failed to destroy TF modules: %v", err))
 	}
 
 	return nil

@@ -6,3 +6,7 @@ logs
 *cloudflare*
 *auth*
 *login*
+
+# Terragrunt
+.terragrunt-cache
+*terragrunt-debug.tfvars.json

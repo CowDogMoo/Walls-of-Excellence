@@ -8,10 +8,9 @@ locals {
   env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract the variables we need for easy access
-  env             = local.env_vars.locals.env
-  aws_region      = env.aws_region
-  aws_account_id  = env.aws_account_id
-  owner           = env.owner
+  aws_region      = local.env_vars.locals.aws_region
+  aws_account_id  = local.env_vars.locals.aws_account_id
+  owner           = local.env_vars.locals.owner
 }
 
 # Generate an AWS provider block
@@ -32,10 +31,10 @@ remote_state {
   backend = "s3"
   config = {
     encrypt        = true
-    bucket         = join("-", ["woe", local.repo_owner])
+    bucket         = join("-", ["woe", local.owner])
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = local.aws_region
-    dynamodb_table = join("-", [local.deployment_name, "tfstate"])
+    dynamodb_table = join("-", ["woe", local.owner, "tfstate"])
   }
   generate = {
     path      = "backend.tf"

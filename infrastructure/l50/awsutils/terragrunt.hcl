@@ -8,8 +8,8 @@ locals {
   owner           = local.env_vars.locals.owner
 
   # Local values
-  name            = "awsutils"
-  repo            = "${owner}/${name}"
+  repo_name            = "awsutils"
+  name = "woe"
 }
 
 terraform {
@@ -20,7 +20,6 @@ dependency "provider" {
   config_path = "../provider"
 }
 
-
 include {
   path = find_in_parent_folders()
 }
@@ -30,9 +29,9 @@ include {
 # github.com/philips-labs/terraform-aws-github-oidc
 ##################################################################
 inputs = {
-  openid_connect_provider_arn = dependency.provider.outputs.oidc_provider.openid_connect_provider.arn
-  repo                        = local.repo
-  role_name                   = "${local.repo}-s3"
+  openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
+  repo                        = "${local.owner}/${local.repo_name}"
+  role_name                   = "${local.name}-${local.owner}-s3"
   # override default conditions
   default_conditions          = ["allow_main"]
 
@@ -40,6 +39,6 @@ inputs = {
   conditions                  = [{
     test = "StringLike"
     variable = "token.actions.githubusercontent.com:sub"
-    values = ["repo:${local.repo}:pull_request"]
+    values = ["repo:${local.owner}/${local.repo_name}:pull_request"]
   }]
 }
