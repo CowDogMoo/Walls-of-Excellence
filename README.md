@@ -57,6 +57,12 @@ Infrastructure as Code (IaC) and GitOps practices where possible
   --token-auth
   ```
 
+- Build cloud resources:
+
+  ```bash
+  mage apply
+  ```
+
 ---
 
 ## Resources

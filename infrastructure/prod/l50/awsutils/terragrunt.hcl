@@ -1,15 +1,17 @@
 locals {
   # Automatically load environment-level variables
   env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  # Automatically load repo-level variables
+  repo_vars = read_terragrunt_config(find_in_parent_folders("repo.hcl"))
 
   # Extract the variables we need for easy access
-  aws_account_id  = local.env_vars.locals.aws_account_id
-  aws_region      = local.env_vars.locals.aws_region
-  owner           = local.env_vars.locals.owner
+  aws_account_id   = "898493401173"
+  aws_region       = "us-west-1"
+  owner           = local.repo_vars.locals.owner
 
   # Local values
   repo_name            = "awsutils"
-  name = "woe"
+  name                 = local.env_vars.locals.name
 }
 
 terraform {
@@ -31,9 +33,10 @@ include {
 inputs = {
   openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
   repo                        = "${local.owner}/${local.repo_name}"
-  role_name                   = "${local.name}-${local.owner}-s3"
+  role_name                   = "${local.name}-${local.owner}-oidc-s3"
   # override default conditions
   default_conditions          = ["allow_main"]
+  role_policy_arns            = ["arn:aws:iam::aws:policy/AdministratorAccess"]
 
   # add extra conditions, will be merged with the default_conditions
   conditions                  = [{

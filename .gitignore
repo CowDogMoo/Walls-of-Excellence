@@ -8,5 +8,8 @@ logs
 *login*
 
 # Terragrunt
+.terraform
 .terragrunt-cache
 *terragrunt-debug.tfvars.json
+backend.tf
+provider.tf

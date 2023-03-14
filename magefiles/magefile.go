@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	goutils "github.com/l50/goutils"
@@ -17,8 +18,8 @@ var (
 		"provider",
 		"awsutils",
 	}
-	debug = true
-	owner = "l50"
+	debug = false
+	tfDir = filepath.Join("infrastructure", "prod")
 )
 
 func init() {
@@ -81,34 +82,29 @@ func RunPreCommit() error {
 func Apply() error {
 	var err error
 
-	if err := os.Chdir("infrastructure"); err != nil {
-		return err
+	fmt.Println(color.GreenString(
+		"Now running apply on %s, please wait.\n", tfDir))
+
+	if debug {
+		err = sh.RunV(
+			"terragrunt", "run-all", "apply",
+			"--terragrunt-non-interactive",
+			"-auto-approve",
+			"-lock=false", "--terragrunt-working-dir",
+			tfDir,
+			"--terragrunt-log-level", "debug",
+			"--terragrunt-debug")
+	} else {
+		err = sh.RunV(
+			"terragrunt", "run-all", "apply",
+			"--terragrunt-non-interactive",
+			"-auto-approve",
+			"-lock=false", "--terragrunt-working-dir",
+			tfDir)
 	}
-
-	actions := []string{"init", "plan", "apply"}
-
-	for _, action := range actions {
-		fmt.Println(color.GreenString(
-			"Now running %s on %s, please wait.\n", action, owner))
-		if debug {
-			err = sh.RunV(
-				"terragrunt", "run-all", action,
-				"--terragrunt-non-interactive", "-auto-approve",
-				"-lock=false", "--terragrunt-working-dir",
-				owner,
-				"--terragrunt-log-level", "debug",
-				"--terragrunt-debug")
-		} else {
-			err = sh.RunV(
-				"terragrunt", "run-all", action,
-				"--terragrunt-non-interactive", "-auto-approve",
-				"-lock=false", "--terragrunt-working-dir",
-				owner)
-		}
-		if err != nil {
-			return fmt.Errorf(color.RedString(
-				"failed to apply TF modules: %v", err))
-		}
+	if err != nil {
+		return fmt.Errorf(color.RedString(
+			"failed to apply TF modules: %v", err))
 	}
 
 	return nil
@@ -117,18 +113,14 @@ func Apply() error {
 func Destroy() error {
 	var err error
 
-	if err := os.Chdir("infrastructure"); err != nil {
-		return err
-	}
-
 	fmt.Println(color.RedString(
-		"Now destroying %s, please wait.\n", owner))
+		"Now destroying %s, please wait.\n", tfDir))
 	if debug {
 		err = sh.RunV(
 			"terragrunt", "run-all", "destroy",
 			"--terragrunt-non-interactive", "-auto-approve",
 			"-lock=false", "--terragrunt-working-dir",
-			owner,
+			tfDir,
 			"--terragrunt-log-level", "debug",
 			"--terragrunt-debug")
 	} else {
@@ -136,7 +128,7 @@ func Destroy() error {
 			"terragrunt", "run-all", "destroy",
 			"--terragrunt-non-interactive", "-auto-approve",
 			"-lock=false", "--terragrunt-working-dir",
-			owner)
+			tfDir)
 	}
 	if err != nil {
 		return fmt.Errorf(color.RedString(
