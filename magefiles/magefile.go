@@ -5,10 +5,19 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	goutils "github.com/l50/goutils"
 	"github.com/magefile/mage/mg"
+	"github.com/magefile/mage/sh"
+)
+
+var (
+	modules = []string{
+		"provider",
+		"awsutils",
+	}
 )
 
 func init() {
@@ -62,6 +71,43 @@ func RunPreCommit() error {
 	fmt.Println(color.YellowString("Running all pre-commit hooks locally."))
 	if err := goutils.RunPCHooks(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Apply runs terragrunt apply
+func Apply() error {
+	var err error
+	debug := true
+	owner := "l50"
+
+	if err := os.Chdir("infrastructure"); err != nil {
+		return err
+	}
+
+	for _, tfModule := range modules {
+		fmt.Println(color.GreenString(
+			"Now applying %s, please wait.\n", tfModule))
+		if debug {
+			err = sh.RunV(
+				"terragrunt", "apply",
+				"--terragrunt-non-interactive", "-auto-approve",
+				"-lock=false", "--terragrunt-working-dir",
+				filepath.Join(owner, tfModule),
+				"--terragrunt-log-level", "debug",
+				"--terragrunt-debug")
+		} else {
+			err = sh.RunV(
+				"terragrunt", "apply",
+				"--terragrunt-non-interactive", "-auto-approve",
+				"-lock=false", "--terragrunt-working-dir",
+				filepath.Join(owner, tfModule))
+		}
+		if err != nil {
+			return fmt.Errorf(color.RedString(
+				"failed to apply TF modules: %v", err))
+		}
 	}
 
 	return nil

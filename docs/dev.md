@@ -47,6 +47,12 @@ and follow along.
   go install github.com/magefile/mage@latest
   ```
 
+- [Install Terragrunt](https://terragrunt.gruntwork.io/):
+
+  ```bash
+  brew install terragrunt
+  ```
+
 ---
 
 ## Configure environment
