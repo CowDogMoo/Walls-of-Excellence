@@ -68,3 +68,19 @@ and follow along.
    ```bash
    mage runPreCommit
    ```
+
+---
+
+## Use self-hosted GH action runner
+
+Change this value:
+
+```yaml
+runs-on: ubuntu-latest
+```
+
+to this:
+
+```yaml
+runs-on: self-hosted
+```

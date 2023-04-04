@@ -1,0 +1,54 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: actions-runner-controller
+  namespace: actions-runner-system
+spec:
+  chart:
+    spec:
+      chart: actions-runner-controller
+      sourceRef:
+        kind: HelmRepository
+        name: actions-runner-controller
+        namespace: flux-system
+  interval: 15m
+  maxHistory: 3
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
+  uninstall:
+    keepHistory: false
+  values:
+    image:
+      repository: ghcr.io/actions-runner-controller/actions-runner-controller
+    authSecret:
+      create: false
+      name: &secret actions-runner-controller-secret
+    github_token:
+      secretKeyRef:
+        name: *secret
+        key: github_token
+      ingress:
+        enabled: true
+        ingressClassName: ingress-traefik
+        hosts:
+          - host: &host arc-webhook.techvomit.xyz
+            paths:
+              - path: /
+                pathType: Prefix
+        annotations:
+          # External DNS Annotation
+          external-dns.alpha.kubernetes.io/hostname: *host
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
