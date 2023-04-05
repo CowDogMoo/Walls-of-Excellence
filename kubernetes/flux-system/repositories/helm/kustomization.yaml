@@ -4,7 +4,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - actions-runner-controller.yaml
-  - dex.yaml
+  # - dex.yaml
   - external-dns.yaml
   # - external-secrets.yaml
   - ingress-traefik.yaml
@@ -12,6 +12,7 @@ resources:
   - appscode.yaml
   - k8s-at-home.yaml
   - nfs-subdir-external-provisioner.yaml
-  - oauth2-proxy.yaml
+  # - oauth2-proxy.yaml
   # - ./metrics-server.yaml
   # - ./prometheus-community.yaml
+  - weave-gitops.yaml

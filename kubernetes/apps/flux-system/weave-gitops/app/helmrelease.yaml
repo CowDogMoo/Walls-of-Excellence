@@ -29,12 +29,13 @@ spec:
     adminUser:
       create: true
       username: admin
+
     ingress:
       main:
         enabled: true
         ingressClassName: ingress-traefik
         hosts:
-          - host: &host auth.techvomit.xyz
+          - host: &host weave.techvomit.xyz
             paths:
               - path: /
                 pathType: Prefix
