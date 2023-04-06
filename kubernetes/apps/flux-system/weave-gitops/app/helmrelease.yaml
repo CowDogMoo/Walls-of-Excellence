@@ -31,21 +31,25 @@ spec:
       username: admin
 
     ingress:
-      main:
-        enabled: true
-        ingressClassName: ingress-traefik
-        hosts:
-          - host: &host weave.techvomit.xyz
-            paths:
-              - path: /
-                pathType: Prefix
-        annotations:
-          # External DNS Annotation
-          external-dns.alpha.kubernetes.io/hostname: *host
-        tls:
-          - hosts:
-              - *host
-            secretName: techvomit-xyz-production-tls
+      enabled: true
+      annotations:
+        # External DNS Annotation
+        external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
+      ingressClassName: ingress-traefik
+      hosts:
+        - host: &host weave.techvomit.xyz
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: weave-gitops
+                  port:
+                    number: 9001
+      tls:
+        - hosts:
+            - *host
+          secretName: techvomit-xyz-production-tls
 
     networkPolicy:
       create: false
@@ -56,6 +60,11 @@ spec:
     rbac:
       create: true
       impersonationResourceNames: ["admin"]
+
+    serverTLS.enabled: true
+    serverTLS.secretName: techvomit-xyz-production-tls
+
+    hostNetwork: true
 
   valuesFrom:
     - kind: Secret
