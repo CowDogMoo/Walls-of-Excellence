@@ -63,6 +63,12 @@ Infrastructure as Code (IaC) and GitOps practices where possible
   mage apply
   ```
 
+- Reconcile flux resources:
+
+  ```bash
+  flux reconcile kustomization flux-system
+  ```
+
 ---
 
 ## Resources
