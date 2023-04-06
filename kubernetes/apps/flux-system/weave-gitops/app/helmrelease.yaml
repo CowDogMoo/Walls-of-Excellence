@@ -39,6 +39,9 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+        annotations:
+          # External DNS Annotation
+          external-dns.alpha.kubernetes.io/hostname: *host
         tls:
           - hosts:
               - *host
