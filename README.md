@@ -35,6 +35,16 @@ Infrastructure as Code (IaC) and GitOps practices where possible
 
 ## Installation
 
+- Flux
+
+  If you're on a mac, run this:
+
+  ```bash
+  brew install fluxcd/tap/flux
+  ```
+
+  Otherwise, follow [these instructions](https://fluxcd.io/flux/installation/).
+
 - Clone the repo:
 
   ```bash
