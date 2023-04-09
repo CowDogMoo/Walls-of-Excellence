@@ -5,7 +5,6 @@ metadata:
   name: weave-gitops
   namespace: flux-system
 spec:
-  interval: 15m
   chart:
     spec:
       chart: weave-gitops
@@ -14,42 +13,59 @@ spec:
         kind: HelmRepository
         name: weave-gitops
         namespace: flux-system
+  interval: 30m
   maxHistory: 3
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
-    cleanupOnFail: true
     remediation:
+      remediateLastFailure: true
       retries: 3
+      strategy: rollback
+    cleanupOnFail: true
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
   uninstall:
     keepHistory: false
   values:
+    interval: 2m
     adminUser:
       create: true
-      username: admin
+      username: &admin_user admin
+
+    service:
+      main:
+        type: ClusterIP
+        ports:
+          http:
+            enabled: true
+            port: 9001
+            targetPort: 9001
 
     ingress:
-      enabled: true
-      annotations:
-        # External DNS Annotation
-        external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
-      ingressClassName: ingress-traefik
-      hosts:
-        - host: &host weave.techvomit.xyz
-          paths:
-            - path: /
-              pathType: Prefix
-              backend:
-                service:
-                  name: weave-gitops
-                  port:
-                    number: 9001
-      tls:
-        - hosts:
-            - *host
-          secretName: techvomit-xyz-production-tls
+      main:
+        enabled: true
+        ingressClassName: ingress-traefik
+        annotations:
+          # External DNS Annotation
+          external-dns.alpha.kubernetes.io/hostname: &host weave.techvomit.xyz
+        hosts:
+          - host: *host
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+
+    logs:
+      general:
+        format: json
+        level: DEBUG
 
     networkPolicy:
       create: false
@@ -59,12 +75,8 @@ spec:
 
     rbac:
       create: true
-      impersonationResourceNames: ["admin"]
-
-    serverTLS.enabled: true
-    serverTLS.secretName: techvomit-xyz-production-tls
-
-    hostNetwork: true
+      impersonationResourceNames:
+        - *admin_user
 
   valuesFrom:
     - kind: Secret
