@@ -137,3 +137,21 @@ func Destroy() error {
 
 	return nil
 }
+
+func UninstallFlux() error {
+	var err error
+
+	fmt.Println(color.GreenString(
+		"Uninstalling flux, please wait.\n", tfDir))
+
+	if err := sh.RunV("flux", "uninstall"); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return fmt.Errorf(color.RedString(
+			"failed to apply TF modules: %v", err))
+	}
+
+	return nil
+}
