@@ -6,20 +6,20 @@ metadata:
     metadata.weave.works/description:
       This is the Weave GitOps Dashboard.  It provides
       a simple way to get insights into your GitOps workloads.
-  name: ww-gitops
+  name: weave-gitops
   namespace: flux-system
 spec:
   chart:
     spec:
       chart: weave-gitops
+      reconcileStrategy: ChartVersion
       sourceRef:
         kind: HelmRepository
-        name: ww-gitops
+        name: weave-gitops
         namespace: flux-system
-  interval: 30m
+  interval: 15m
   maxHistory: 3
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
@@ -29,36 +29,39 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
     interval: 2m
     adminUser:
       create: true
       username: admin
 
-    ingress:
-      enabled: true
-      className: ingress-traefik
-      annotations:
-        external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
-      hosts:
-        - host: &host weave.techvomit.xyz
-          paths:
-            - path: /
-              pathType: Prefix
-      tls:
-        - hosts:
-            - *host
-          secretName: techvomit-xyz-production-tls
+    # service:
+    #   create: true
+    #   type: ClusterIP
+    #   port: 9001
 
-    logs:
-      general:
-        format: json
-        level: DEBUG
+    # ingress:
+    #   enabled: true
+    #   className: ingress-traefik
+    #   annotations:
+    #     external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
+    #   hosts:
+    #     - host: weave.techvomit.xyz
+    #       paths:
+    #         - path: /
+    #           pathType: Prefix
+    #   tls:
+    #     - hosts:
+    #         - weave.techvomit.xyz
+    #       secretName: techvomit-xyz-production-tls
+
+    logLevel: error
 
     networkPolicy:
       create: false
 
     metrics:
-      enabled: true
+      enabled: false
 
     rbac:
       create: true
