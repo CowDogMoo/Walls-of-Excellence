@@ -4,6 +4,10 @@
   color: "72ccf3"
   description: >-
     Changes made in the github directory
+- name: area/pre-commit
+  color: "144B0D"
+  description: >-
+    Changes made in the pre-commit directory
 - name: area/kubernetes
   color: "72ccf3"
   description: >-
