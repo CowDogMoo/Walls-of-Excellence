@@ -36,6 +36,9 @@ spec:
     replicas: 2
     env:
       GF_ANALYTICS_CHECK_FOR_UPDATES: false
+      GF_AUTH_PROXY_ENABLED: true
+      GF_AUTH_PROXY_HEADER_NAME: X-WEBAUTH-USER
+      GF_AUTH_PROXY_HEADER_PROPERTY: admin
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
       GF_GRAFANA_NET_URL: https://grafana.net
@@ -52,6 +55,9 @@ spec:
         disable_login_form: false
       auth.anonymous:
         enabled: false
+      security:
+        cookie_secure: true
+        cookie_samesite: none
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
@@ -131,6 +137,7 @@ spec:
       annotations:
         # External DNS Annotation
         external-dns.alpha.kubernetes.io/hostname: grafana.techvomit.xyz
+        traefik.ingress.kubernetes.io/router.middlewares: monitoring-grafana-auth@kubernetescrd
       hosts:
         - &host grafana.techvomit.xyz
       tls:
