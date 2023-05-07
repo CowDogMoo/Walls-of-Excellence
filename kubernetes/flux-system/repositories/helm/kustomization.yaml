@@ -9,11 +9,11 @@ resources:
   # - dex.yaml
   - external-dns.yaml
   # - external-secrets.yaml
+  - grafana.yaml
   - ingress-traefik.yaml
   - jetstack.yaml
   - k8s-at-home.yaml
+  - prometheus-community.yaml
   - nfs-subdir-external-provisioner.yaml
   # - oauth2-proxy.yaml
-  # - ./metrics-server.yaml
-  # - ./prometheus-community.yaml
   - weave-gitops.yaml
