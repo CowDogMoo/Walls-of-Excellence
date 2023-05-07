@@ -3,15 +3,28 @@
 - name: area/github
   color: "72ccf3"
   description: >-
-    Changes made in the github directory
+    Changes made to github actions
+
 - name: area/pre-commit
-  color: "144B0D"
+  color: "BC9BE3"
   description: >-
-    Changes made in the pre-commit directory
+    Changes made to pre-commit hooks
+
 - name: area/kubernetes
   color: "72ccf3"
   description: >-
-    Changes made in the kubernetes directory
+    Changes made to kubernetes resources
+
+- name: area/go
+  color: "7BD7E0"
+  description: >-
+    Changes made to go resources
+
+- name: area/docs
+  color: "FBCA04"
+  description: >-
+    Changes made in the docs directory
+
 # Renovate
 - name: renovate/container
   color: "ffc300"

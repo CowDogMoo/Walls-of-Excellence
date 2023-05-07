@@ -1,8 +1,16 @@
 ---
 area/github:
   - ".github/**/*"
+
 area/pre-commit:
   - ".pre-commit-config.yaml"
   - ".hooks/**/*"
+
 area/kubernetes:
   - "kubernetes/**/*"
+
+area/go:
+  - "magefiles/*"
+
+area/docs:
+  - "docs/*"
