@@ -35,18 +35,14 @@ spec:
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: natel-discrete-panel,pr0ps-trackmap-panel,panodata-map-panel
       GF_SECURITY_COOKIE_SAMESITE: lax
       GF_SERVER_ROOT_URL: https://grafana.techvomit.xyz
-    envFromSecrets:
-      - name: grafana-secret
     grafana.ini:
       analytics:
         check_for_updates: false
         check_for_plugin_updates: false
       auth.basic:
-        enabled: false
+        disable_login_form: false
       auth.anonymous:
         enabled: false
-        # org_id: 1
-        # org_role: Viewer
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
@@ -59,6 +55,19 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/default
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        deleteDatasources:
+          - name: Alertmanager
+            orgId: 1
+        datasources:
+          - name: Alertmanager
+            type: alertmanager
+            access: proxy
+            url: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+            jsonData:
+              implementation: prometheus
     dashboards:
       default:
         cert-manager:
