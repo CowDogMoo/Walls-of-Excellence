@@ -8,3 +8,4 @@ resources:
   # Flux-Kustomizations
   - ./external-dns/ks.yaml
   - ./ingress-traefik/ks.yaml
+  - ./portainer/ks.yaml
