@@ -5,7 +5,6 @@ metadata:
   name: portainer
   namespace: networking
 spec:
-  interval: 5m
   chart:
     spec:
       chart: portainer
@@ -14,27 +13,51 @@ spec:
         kind: HelmRepository
         name: portainer-charts
         namespace: flux-system
-      interval: 5m
+  interval: 15m
+  maxHistory: 3
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
+    cleanupOnFail: true
+  test:
+    enable: true
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
+  uninstall:
+    keepHistory: false
   values:
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: ingress-traefik
+        hosts:
+          - host: &host portainer.techvomit.xyz
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+
+    dnsPolicy: ClusterFirstWithHostNet
+    hostNetwork: true
+
+    logs:
+      general:
+        format: json
+        level: DEBUG
+
     persistence:
       config:
         enabled: true
         type: nfs
         server: 192.168.20.210
         path: /volume1/k8s/portainer
-
-    ingress:
-      enabled: true
-      ingressClassName: ingress-traefik
-      annotations:
-        # External DNS Annotation
-        external-dns.alpha.kubernetes.io/hostname: portainer.techvomit.xyz
-      hosts:
-        - host: &host portainer.techvomit.xyz
-          paths:
-            - path: /
-              pathType: Prefix
-      tls:
-        - hosts:
-            - *host
-          secretName: techvomit-xyz-production-tls
