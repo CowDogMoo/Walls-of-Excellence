@@ -2,9 +2,9 @@
 apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
 metadata:
-  name: portainer-charts
+  name: rancher-latest
   namespace: flux-system
 spec:
   interval: 30m
-  url: https://portainer.github.io/k8s/
-  timeout: 3m
+  url: https://releases.rancher.com/server-charts/latest
+  timeout: 2m

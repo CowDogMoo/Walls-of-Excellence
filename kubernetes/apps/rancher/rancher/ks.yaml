@@ -2,10 +2,10 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-portainer
+  name: cluster-apps-rancher
   namespace: flux-system
 spec:
-  path: ./kubernetes/apps/networking/portainer/app
+  path: ./kubernetes/apps/rancher/rancher/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -13,8 +13,8 @@ spec:
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2beta1
       kind: HelmRelease
-      name: portainer
-      namespace: networking
+      name: rancher
+      namespace: rancher
   interval: 30m
   retryInterval: 1m
   timeout: 3m
