@@ -16,6 +16,9 @@ spec:
   interval: 15m
   maxHistory: 3
   install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
@@ -24,6 +27,7 @@ spec:
       retries: 3
       strategy: rollback
     cleanupOnFail: true
+    crds: CreateReplace
   test:
     enable: true
   rollback:

@@ -5,7 +5,6 @@ metadata:
   name: kube-prometheus-stack
   namespace: monitoring
 spec:
-  interval: 15m
   chart:
     spec:
       chart: kube-prometheus-stack
@@ -14,17 +13,27 @@ spec:
         kind: HelmRepository
         name: prometheus-community
         namespace: flux-system
-  maxHistory: 2
+  interval: 15m
+  maxHistory: 3
   install:
-    createNamespace: true
+    timeout: 10m
+    replace: true
     crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
     cleanupOnFail: true
     crds: CreateReplace
-    remediation:
-      retries: 3
+  test:
+    enable: true
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
   uninstall:
     keepHistory: false
   values:
