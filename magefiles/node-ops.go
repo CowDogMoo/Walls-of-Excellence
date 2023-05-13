@@ -59,7 +59,10 @@ func RunCmdAll(cmd string) error {
 	return nil
 }
 
-// Reboot reboots an input node
+// Reboot reboots an input node.
+// If all is input, then all k8s nodes will be rebooted.
+// Example:
+// `mage reboot all`
 func Reboot(node string) error {
 	if node == "all" {
 		RunCmdAll("sudo reboot")
