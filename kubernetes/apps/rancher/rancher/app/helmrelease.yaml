@@ -7,11 +7,10 @@ metadata:
 spec:
   chart:
     spec:
-      chart: rancher-latest
-      reconcileStrategy: ChartVersion
+      chart: ./charts/rancher-2.7.3
       sourceRef:
-        kind: HelmRepository
-        name: rancher-latest
+        kind: GitRepository
+        name: Walls-of-Excellence
         namespace: flux-system
   interval: 15m
   maxHistory: 3
