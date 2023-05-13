@@ -7,23 +7,27 @@ repos:
       - id: check-merge-conflict
       - id: check-symlinks
       - id: end-of-file-fixer
+        exclude: kubernetes/apps/rancher/rancher/app/charts
       - id: trailing-whitespace
       - id: check-added-large-files
       - id: detect-private-key
       - id: check-shebang-scripts-are-executable
+        exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.31.0
     hooks:
       - id: yamllint
         entry: yamllint --strict -c .hooks/linters/yamllint.yaml
-        exclude: kubernetes/apps/monitoring/kube-prometheus-stack/app/helmrelease.yaml
+        exclude: >-
+          ^kubernetes/apps/(monitoring/kube-prometheus-stack/app/helmrelease.yaml|rancher/rancher/app/charts)
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.0-alpha.9-for-vscode
     hooks:
       - id: prettier
         files: \.(json|md|yaml|yml)$
+        exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0
@@ -32,9 +36,12 @@ repos:
         name: Ensure shell scripts end with .sh
         types: [shell]
       - id: shellcheck
+        exclude: kubernetes/apps/rancher/rancher/app/charts
       - id: shfmt
+        exclude: kubernetes/apps/rancher/rancher/app/charts
       # Configuration in .mdlrc and .hooks/linters/mdstyle.rb
       - id: markdownlint
+        exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.4

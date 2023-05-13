@@ -7,10 +7,10 @@ metadata:
 spec:
   chart:
     spec:
-      chart: ./charts/rancher-2.7.3
+      chart: kubernetes/apps/rancher/app/charts/rancher
       sourceRef:
-        kind: GitRepository
-        name: Walls-of-Excellence
+        kind: HelmRepository
+        name: flux-system
         namespace: flux-system
   interval: 15m
   maxHistory: 3
