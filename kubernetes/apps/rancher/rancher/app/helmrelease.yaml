@@ -8,8 +8,6 @@ spec:
   chart:
     spec:
       chart: rancher
-      # reconcileStrategy: ChartVersion
-      version: 2.7.3
       sourceRef:
         kind: HelmRepository
         name: rancher-latest
@@ -17,20 +15,16 @@ spec:
   interval: 15m
   maxHistory: 3
   install:
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
     remediation:
       remediateLastFailure: true
       retries: 3
       strategy: rollback
-    cleanupOnFail: true
-  test:
-    enable: true
-  rollback:
-    recreate: true
-    force: true
-    cleanupOnFail: true
   uninstall:
     keepHistory: false
   values:
@@ -50,7 +44,6 @@ spec:
       maxSize: 100
       image:
         repository: "rancher/mirrored-bci-micro"
-        tag: 15.4.14.3
         pullPolicy: "IfNotPresent"
     addLocal: "true"
     debug: false
@@ -61,12 +54,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: traefik
+        ingressClassName: ingress-traefik
         hosts:
           - host: &host rancher.techvomit.xyz
             paths:
               - path: /
                 pathType: Prefix
+        annotations:
+          # External DNS Annotation
+          external-dns.alpha.kubernetes.io/hostname: *host
         tls:
           - hosts:
               - *host
