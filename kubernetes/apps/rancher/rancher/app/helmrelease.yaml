@@ -29,13 +29,18 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    env:
+      # -- Set the container timezone
+      TZ: "America/Denver"
+
     additionalArguments:
       - --log.level=DEBUG
-    env:
-      TZ: "America/Denver"
+
     additionalTrustedCAs: false
+
     antiAffinity: preferred
     topologyKey: kubernetes.io/hostname
+
     auditLog:
       destination: sidecar
       hostPath: /var/log/rancher/audit/
@@ -49,9 +54,12 @@ spec:
     addLocal: "true"
     debug: false
     restrictedAdmin: false
+
     hostname: rancher.techvomit.xyz
+
     deployment:
       replicas: 1
+
     ingress:
       main:
         enabled: true
@@ -68,12 +76,10 @@ spec:
           - hosts:
               - *host
             secretName: techvomit-xyz-production-tls
-    replicas: 1
+
     priorityClassName: rancher-critical
     tls: external
     useBundledSystemChart: false
-    certmanager:
-      version: ""
     customLogos:
       enabled: false
       volumeSubpaths:
