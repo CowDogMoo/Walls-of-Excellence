@@ -15,6 +15,6 @@ spec:
       kind: HelmRelease
       name: rancher
       namespace: rancher
-  interval: 30m
+  interval: 5m
   retryInterval: 1m
   timeout: 3m
