@@ -91,7 +91,7 @@ spec:
       enabled: true
       image:
         repository: rancher/shell
-        tag: v0.1.18
+        tag: v0.1.19
       namespaceList:
         - cattle-fleet-system
         - cattle-system
