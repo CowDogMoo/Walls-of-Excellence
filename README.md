@@ -54,7 +54,7 @@ Infrastructure as Code (IaC) and GitOps practices where possible
 - Bootstrap flux:
 
   ```bash
-  export GITHUB_TOKEN=$FLUX_PAT_GOES_HERE
+  export GITHUB_TOKEN=$FLUX_PAT
   export PATH_TO_FLUX_DEPLOYMENT=./kubernetes/flux-system/config
   export REPO_OWNER=CowDogMoo
   export REPO_NAME=Walls-of-Excellence
