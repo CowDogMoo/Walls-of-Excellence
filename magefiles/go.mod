@@ -3,7 +3,7 @@ module magefile
 go 1.20
 
 require (
-	github.com/bitfield/script v0.21.4
+	github.com/bitfield/script v0.22.0
 	github.com/fatih/color v1.15.0
 	github.com/l50/goutils v1.2.5
 	github.com/magefile/mage v1.14.0
