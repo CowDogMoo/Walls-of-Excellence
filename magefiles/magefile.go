@@ -75,19 +75,11 @@ func RunPreCommit() error {
 	return nil
 }
 
-func UninstallFlux() error {
-	var err error
-
-	fmt.Println(color.GreenString(
-		"Uninstalling flux, please wait.\n", tfDir))
-
-	if err := sh.RunV("flux", "uninstall"); err != nil {
+// RunPreCommit runs the ansible-playbook to provision the k8s nodes.
+func RunAnsible() error {
+	if err := sh.RunV("ansible-playbook", "k3s-ansible/site.yml", "-i", "k3s-ansible/inventory/cowdogmoo/hosts.ini"); err != nil {
+		fmt.Println(color.RedString("failed to run ansible playbook: %v", err))
 		return err
-	}
-
-	if err != nil {
-		return fmt.Errorf(color.RedString(
-			"failed to apply TF modules: %v", err))
 	}
 
 	return nil
