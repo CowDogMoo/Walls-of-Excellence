@@ -78,7 +78,7 @@ spec:
       spec:
         # Arbitrarily selected IP address in the metallb IP ranges
         # defined in `k3s-ansible/inventory/cowdogmoo/group_vars/all.yaml`.
-        loadBalancerIP: 192.168.20.205
+        loadBalancerIP: 192.168.20.10
         externalTrafficPolicy: Local
 
     extraEnvs:
