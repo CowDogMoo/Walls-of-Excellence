@@ -12,7 +12,7 @@ spec:
   chart:
     spec:
       chart: weave-gitops
-      reconcileStrategy: ChartVersion
+      # reconcileStrategy: ChartVersion
       sourceRef:
         kind: HelmRepository
         name: weave-gitops
@@ -38,37 +38,22 @@ spec:
   values:
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
-    # interval: 2m
 
     adminUser:
       create: true
       username: admin
 
-    # service:
-    #   main:
-    #     ports:
-    #       http:
-    #         port: 9001
-
     ingress:
-      main:
       enabled: true
       className: ingress-traefik
       hosts:
         - host: &host weave.techvomit.xyz
-          paths:
-            - path: /
-              pathType: Prefix
+      path: /
+      pathType: Prefix
       tls:
         - hosts:
             - *host
           secretName: techvomit-xyz-production-tls
-
-    # # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
-    # dnsPolicy: ClusterFirstWithHostNet
-    # hostNetwork: true
-
-    logLevel: error
 
     networkPolicy:
       create: false

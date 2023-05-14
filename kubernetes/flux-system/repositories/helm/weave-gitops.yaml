@@ -6,4 +6,5 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m0s
-  url: https://helm.gitops.weave.works
+  type: oci
+  url: oci://ghcr.io/weaveworks/charts
