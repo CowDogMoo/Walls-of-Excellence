@@ -29,8 +29,6 @@ spec:
       retries: 3
       strategy: rollback
     cleanupOnFail: true
-  test:
-    enable: true
   rollback:
     recreate: true
     force: true
@@ -55,7 +53,7 @@ spec:
     ingress:
       main:
       enabled: true
-      ingressClassName: ingress-traefik
+      className: ingress-traefik
       hosts:
         - host: &host weave.techvomit.xyz
           paths:
