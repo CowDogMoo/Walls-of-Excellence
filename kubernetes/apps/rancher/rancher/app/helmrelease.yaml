@@ -10,7 +10,7 @@ spec:
       chart: kubernetes/apps/rancher/app/charts/rancher
       sourceRef:
         kind: HelmRepository
-        name: flux-system
+        name: walls-of-excellence
         namespace: flux-system
   interval: 15m
   maxHistory: 3
