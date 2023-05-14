@@ -10,7 +10,6 @@ require (
 )
 
 require (
-	bitbucket.org/creachadair/shell v0.0.7 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
@@ -49,6 +48,7 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	mvdan.cc/sh/v3 v3.6.0 // indirect
 )
 
 replace github.com/mdanidl/guac-api => github.com/Startfield/guac-api v0.0.0-20221114191909-81e1adaf406a
