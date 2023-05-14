@@ -84,3 +84,17 @@ to this:
 ```yaml
 runs-on: self-hosted
 ```
+
+---
+
+## Destroy and Rebuild the Cluster
+
+If the cluster becomes FUBAR, nuke it and rebuild:
+
+```bash
+# Destroy the cluster
+mage runreset all
+
+# Rebuild the cluster
+mage runansible all
+```
