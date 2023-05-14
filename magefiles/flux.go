@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/magefile/mage/sh"
@@ -32,24 +35,32 @@ import (
 //
 // log.Println("Resources synced successfully.")
 func SyncResource(resourceType, successMessage string) error {
-	cmd := exec.Command("bash", "-c", fmt.Sprintf(`kubectl get %s --all-namespaces --no-headers | awk '{print $1, $2}' | xargs -I{} bash -c 'kubectl -n {} annotate %s/{} reconcile.fluxcd.io/requestedAt=$(date +%%s) --overwrite'`, resourceType, resourceType))
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-
-	fmt.Println("STDOUT:", stdout.String())
-	fmt.Println("STDERR:", stderr.String())
-
+	getCmd := exec.Command("kubectl", "get", resourceType, "--all-namespaces", "--no-headers")
+	getOut, err := getCmd.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to run 'kubectl get': %w", err)
 	}
 
-	if stderr.String() == "" {
-		fmt.Println(successMessage)
+	// Parse output of "kubectl get command"
+	scanner := bufio.NewScanner(bytes.NewReader(getOut))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue // Skip invalid lines
+		}
+		namespace := fields[0]
+		name := fields[1]
+
+		// Run "kubectl annotate"
+		annotateCmd := exec.Command("kubectl", "-n", namespace, "annotate", fmt.Sprintf("%s/%s", resourceType, name), fmt.Sprintf("reconcile.fluxcd.io/requestedAt=%d", time.Now().Unix()), "--overwrite")
+		annotateOut, err := annotateCmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to run 'kubectl annotate' for %s/%s: %w\n%s", namespace, name, err, string(annotateOut))
+		}
 	}
+
+	fmt.Println(successMessage)
 
 	return nil
 }
