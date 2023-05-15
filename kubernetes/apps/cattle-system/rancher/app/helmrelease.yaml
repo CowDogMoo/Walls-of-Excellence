@@ -16,6 +16,13 @@ spec:
         namespace: flux-system
   interval: 15m
   values:
+    global:
+      cattle:
+        psp:
+          enabled: false # Disable PSP for k8s 1.25+
+    extraAnnotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+      traefik.ingress.kubernetes.io/router.middlewares: "networking-rfc1918@kubernetescrd"
     addLocal: "true"
     additionalTrustedCAs: false
     antiAffinity: preferred
