@@ -5,7 +5,7 @@ kind: Kustomization
 namespace: flux-system
 resources:
   - ./helmrelease.yaml
-labels:
-  - pairs:
-      app.kubernetes.io/name: weave-gitops
-      app.kubernetes.io/instance: weave-gitops
+# labels:
+#   - pairs:
+#       app.kubernetes.io/name: weave-gitops
+#       app.kubernetes.io/instance: weave-gitops

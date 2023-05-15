@@ -18,26 +18,26 @@ spec:
         name: weave-gitops
         namespace: flux-system
   interval: 15m
-  maxHistory: 3
-  install:
-    timeout: 10m
-    remediation:
-      retries: 3
-  upgrade:
-    remediation:
-      remediateLastFailure: true
-      retries: 3
-      strategy: rollback
-    cleanupOnFail: true
-  rollback:
-    recreate: true
-    force: true
-    cleanupOnFail: true
-  uninstall:
-    keepHistory: false
+  # maxHistory: 3
+  # install:
+  #   timeout: 10m
+  #   remediation:
+  #     retries: 3
+  # upgrade:
+  #   remediation:
+  #     remediateLastFailure: true
+  #     retries: 3
+  #     strategy: rollback
+  #   cleanupOnFail: true
+  # rollback:
+  #   recreate: true
+  #   force: true
+  #   cleanupOnFail: true
+  # uninstall:
+  #   keepHistory: false
   values:
-    env:
-      WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
+    # env:
+    #   WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
 
     adminUser:
       create: true
@@ -55,16 +55,16 @@ spec:
             - *host
           secretName: techvomit-xyz-production-tls
 
-    networkPolicy:
-      create: false
+    # networkPolicy:
+    #   create: false
 
-    metrics:
-      enabled: false
+    # metrics:
+    #   enabled: false
 
-    rbac:
-      create: true
-      impersonationResourceNames:
-        - admin
+    # rbac:
+    #   create: true
+    #   impersonationResourceNames:
+    #     - admin
 
   valuesFrom:
     - kind: Secret

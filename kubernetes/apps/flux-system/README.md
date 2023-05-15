@@ -32,3 +32,8 @@ From the root of the repo:
 mage applykubernetesresources
 ```
 
+---
+
+## Resources
+
+- <https://github.com/weaveworks/weave-gitops/issues/2792#issuecomment-1260535122
