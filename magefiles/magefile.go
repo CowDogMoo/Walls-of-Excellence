@@ -1,14 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
+	"context"
+	"fmt"
+	"sync"
+
+	"github.com/bitfield/script"
 	"github.com/fatih/color"
 	goutils "github.com/l50/goutils"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func init() {
@@ -152,6 +161,97 @@ func applyKubectl(file string) error {
 
 	if err := sh.RunV(cmd, args...); err != nil {
 		return fmt.Errorf("error applying kubectl: %w", err)
+	}
+
+	return nil
+}
+
+// DestroyStuckNS fixes a namespace that is stuck terminating.
+func DestroyStuckNS() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	kubeconfig := filepath.Join(home, ".kube", "config")
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	namespacesClient := clientset.CoreV1().Namespaces()
+
+	// list namespaces that are terminating
+	nsList, err := namespacesClient.List(context.Background(), metav1.ListOptions{
+		FieldSelector: "status.phase=Terminating",
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, ns := range nsList.Items {
+		wg.Add(1)
+		go func(ns corev1.Namespace) {
+			defer wg.Done()
+
+			// remove finalizers
+			ns.ObjectMeta.Finalizers = []string{}
+			_, err := namespacesClient.Update(context.Background(), &ns, metav1.UpdateOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(ns)
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+// DestroyRancher is used to tear down a rancher deployment.
+func DestroyRancher() error {
+	rancherNS := "cattle-system"
+	hackDir := "hack"
+	goutils.Cd(hackDir)
+	cmds := []string{
+		// Delete webhook that breaks deployments when rancher fails to fully uninstall.
+		"kubectl delete -n cattle-system MutatingWebhookConfiguration rancher.cattle.io",
+		fmt.Sprintf("helm uninstall rancher -n %s", rancherNS),
+		// Install dependency required for rancher_cleanup.py
+		"python3 -m pip install kubernetes",
+		"python3 rancher_cleanup.py",
+		// delete apiservice that can get stuck due to no backend
+		// https://github.com/helm/helm/issues/6361#issuecomment-538220109
+		"kubectl delete apiservices v1beta1.metrics.k8s.io",
+		"kubectl delete ns cattle-fleet-system",
+		"kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io --ignore-not-found=true rancher.cattle.io",
+		"kubectl delete ns cattle-fleet-system",
+		"kubectl delete ns cattle-fleet-local-system",
+		"kubectl delete ns cattle-fleet-clusters-system",
+		"kubectl delete ns cattle-fleet-system",
+		"kubectl delete ns cattle-global-nt",
+		"kubectl delete ns cattle-impersonation-system",
+		"kubectl delete ns cattle-global-data",
+		"kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io rancher.cattle.io",
+		fmt.Sprintf("kubectl delete ns %s", rancherNS),
+	}
+
+	for _, cmd := range cmds {
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+	}
+
+	if err := DestroyStuckNS(); err != nil {
+		return err
 	}
 
 	return nil
