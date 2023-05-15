@@ -33,51 +33,22 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    env:
+      # -- Set the container timezone
+      TZ: "America/Denver"
+
     global:
       cattle:
         psp:
           enabled: false # Disable PSP for k8s 1.25+
+      
+    certmanager:
+      version: ""
+
     extraAnnotations:
       traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
       traefik.ingress.kubernetes.io/router.middlewares: "networking-rfc1918@kubernetescrd"
-    addLocal: "true"
-    additionalTrustedCAs: false
-    antiAffinity: preferred
-    auditLog:
-      destination: sidecar
-      hostPath: /var/log/rancher/audit/
-      image:
-        pullPolicy: IfNotPresent
-        repository: rancher/mirrored-bci-micro
-        tag: 15.4.14.3
-      level: 0
-      maxAge: 1
-      maxBackup: 1
-      maxSize: 100
-    certmanager:
-      version: ""
-    customLogos:
-      accessMode: ReadWriteOnce
-      enabled: false
-      size: 1Gi
-      volumeKind: persistentVolumeClaim
-      volumeSubpaths:
-        emberUi: ember
-        vueUi: vue
-    debug: false
-    hostname: rancher.techvomit.xyz
 
-    ingress:
-      annotations:
-        noProxy: 127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.svc,.cluster,.techvomit.xyz
-      main:
-        enabled: true
-        ingressClassName: ingress-traefik
-        hosts:
-          - host: &host rancher.techvomit.xyz
-            paths:
-              - path: /
-                pathType: Prefix
 
     postDelete:
       enabled: true
@@ -90,10 +61,73 @@ spec:
         - cattle-system
         - rancher-operator-system
       timeout: 120
-    priorityClassName: rancher-critical
+    
     rancherImage: rancher/rancher
     replicas: 1
-    restrictedAdmin: false
-    tls: external
+    
+    additionalTrustedCAs: false
+    
+    antiAffinity: preferred
     topologyKey: kubernetes.io/hostname
+
+    # Audit Logs https://rancher.com/docs/rancher/v2.x/en/installation/api-auditing/
+    # The audit log is piped to the console of the rancher-audit-log container in the rancher pod.
+    # https://rancher.com/docs/rancher/v2.x/en/installation/api-auditing/
+    # destination stream to sidecar container console or hostPath volume
+    # level: Verbosity of logs, 0 to 3. 0 is off 3 is a lot.
+    auditLog:
+      destination: sidecar
+      hostPath: /var/log/rancher/audit/
+      level: 0
+      maxAge: 1
+      maxBackup: 1
+      maxSize: 100
+      image:
+        pullPolicy: "IfNotPresent"
+        repository: "rancher/mirrored-bci-micro"
+        tag: 15.4.14.3
+ 
+    # As of Rancher v2.5.0 this flag is deprecated and must be set to 'true' in order for Rancher to start
+    addLocal: "true"
+    
+    # Add debug flag to Rancher server
+    debug: false
+    
+    # When starting Rancher for the first time, bootstrap the admin as restricted-admin
+    restrictedAdmin: false
+    
+    hostname: rancher.techvomit.xyz
+    
+    ingress:
+      annotations:
+        noProxy: 127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.svc,.cluster,.techvomit.xyz
+      main:
+        enabled: true
+        ingressClassName: ingress-traefik
+        hosts:
+          - host: &host rancher.techvomit.xyz
+            paths:
+              - path: /
+                pathType: Prefix
+    
+    # Set priorityClassName to avoid eviction
+    priorityClassName: rancher-critical
+    
+    # tls
+    #   Where to offload the TLS/SSL encryption
+    # - ingress (default)
+    # - external
+    tls: external
+    
+    # Set to use the packaged system charts
     useBundledSystemChart: false
+    
+    # Rancher custom logos persistence
+    customLogos:
+      accessMode: ReadWriteOnce
+      enabled: false
+      size: 1Gi
+      volumeKind: persistentVolumeClaim
+      volumeSubpaths:
+        emberUi: ember
+        vueUi: vue
