@@ -239,6 +239,7 @@ func DestroyRancher() error {
 		"kubectl delete ns cattle-impersonation-system",
 		"kubectl delete ns cattle-global-data",
 		"kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io rancher.cattle.io",
+		"kubectl delete clusters.provisioning.cattle.io -n fleet-local local",
 		fmt.Sprintf("kubectl delete ns %s", rancherNS),
 	}
 
