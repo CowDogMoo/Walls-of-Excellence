@@ -41,14 +41,13 @@ spec:
       cattle:
         psp:
           enabled: false # Disable PSP for k8s 1.25+
-      
+
     certmanager:
       version: ""
 
     extraAnnotations:
       traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
       traefik.ingress.kubernetes.io/router.middlewares: "networking-rfc1918@kubernetescrd"
-
 
     postDelete:
       enabled: true
@@ -61,12 +60,12 @@ spec:
         - cattle-system
         - rancher-operator-system
       timeout: 120
-    
+
     rancherImage: rancher/rancher
     replicas: 1
-    
+
     additionalTrustedCAs: false
-    
+
     antiAffinity: preferred
     topologyKey: kubernetes.io/hostname
 
@@ -86,18 +85,18 @@ spec:
         pullPolicy: "IfNotPresent"
         repository: "rancher/mirrored-bci-micro"
         tag: 15.4.14.3
- 
+
     # As of Rancher v2.5.0 this flag is deprecated and must be set to 'true' in order for Rancher to start
     addLocal: "true"
-    
+
     # Add debug flag to Rancher server
     debug: false
-    
+
     # When starting Rancher for the first time, bootstrap the admin as restricted-admin
     restrictedAdmin: false
-    
+
     hostname: rancher.techvomit.xyz
-    
+
     ingress:
       annotations:
         noProxy: 127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.svc,.cluster,.techvomit.xyz
@@ -109,19 +108,19 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-    
+
     # Set priorityClassName to avoid eviction
     priorityClassName: rancher-critical
-    
+
     # tls
     #   Where to offload the TLS/SSL encryption
     # - ingress (default)
     # - external
     tls: external
-    
+
     # Set to use the packaged system charts
     useBundledSystemChart: false
-    
+
     # Rancher custom logos persistence
     customLogos:
       accessMode: ReadWriteOnce
