@@ -144,10 +144,10 @@ spec:
         server: 192.168.20.210
         path: /volume1/k8s/traefik
 
-    # metrics:
-    #   port: 8082
-    #   expose: true
-    #   exposedPort: 8082
+    metrics:
+      port: 8082
+      expose: true
+      exposedPort: 8082
 
     ports:
       traefik:
