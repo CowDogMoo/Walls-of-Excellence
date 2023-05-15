@@ -1,30 +1,44 @@
 ---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: rancher
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/cowdogmoo/walls-of-excellence
+  ref:
+    branch: main 
+
+---
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: rancher
-  namespace: rancher
+  namespace: cattle-system
 spec:
   chart:
     spec:
       chart: kubernetes/apps/rancher/app/charts/rancher
       sourceRef:
-        kind: HelmRepository
-        name: walls-of-excellence
+        kind: GitRepository
+        name: rancher  # this should match the name of the GitRepository
         namespace: flux-system
   interval: 15m
   maxHistory: 3
   install:
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
     remediation:
       remediateLastFailure: true
       retries: 3
       strategy: rollback
+  rollback:
+    recreate: true
+    force: true
+    cleanupOnFail: true
   uninstall:
     keepHistory: false
   values:
@@ -40,6 +54,11 @@ spec:
     antiAffinity: preferred
     topologyKey: kubernetes.io/hostname
 
+    # Audit Logs https://rancher.com/docs/rancher/v2.x/en/installation/api-auditing/
+    # The audit log is piped to the console of the rancher-audit-log container in the rancher pod.
+    # https://rancher.com/docs/rancher/v2.x/en/installation/api-auditing/
+    # destination stream to sidecar container console or hostPath volume
+    # level: Verbosity of logs, 0 to 3. 0 is off 3 is a lot.
     auditLog:
       destination: sidecar
       hostPath: /var/log/rancher/audit/
@@ -50,8 +69,14 @@ spec:
       image:
         repository: "rancher/mirrored-bci-micro"
         pullPolicy: "IfNotPresent"
+
+    # As of Rancher v2.5.0 this flag is deprecated and must be set to 'true' in order for Rancher to start
     addLocal: "true"
+
+    # Add debug flag to Rancher server
     debug: false
+    
+    # When starting Rancher for the first time, bootstrap the admin as restricted-admin
     restrictedAdmin: false
 
     hostname: rancher.techvomit.xyz
@@ -76,9 +101,19 @@ spec:
               - *host
             secretName: techvomit-xyz-production-tls
 
+    # Set priorityClassName to avoid eviction
     priorityClassName: rancher-critical
+
+    # tls
+    #   Where to offload the TLS/SSL encryption
+    # - ingress (default)
+    # - external
     tls: external
+
+    # Set to use the packaged system charts
     useBundledSystemChart: false
+
+    # Rancher custom logos persistence
     customLogos:
       enabled: false
       volumeSubpaths:
@@ -87,6 +122,8 @@ spec:
       volumeKind: persistentVolumeClaim
       accessMode: ReadWriteOnce
       size: 1Gi
+
+    # Rancher post-delete hook
     postDelete:
       enabled: true
       image:
@@ -96,5 +133,7 @@ spec:
         - cattle-fleet-system
         - cattle-system
         - rancher-operator-system
+      # Number of seconds to wait for an app to be uninstalled
       timeout: 120
+      # by default, the job will fail if it fail to uninstall any of the apps
       ignoreTimeoutError: false
