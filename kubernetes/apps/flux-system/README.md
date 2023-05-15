@@ -23,3 +23,12 @@ View dashboard:
 ```bash
 kubectl port-forward -n flux-system deployments/weave-gitops 9001:9001
 ```
+
+## Reconcile flux resources
+
+From the root of the repo:
+
+```bash
+mage applykubernetesresources
+```
+
