@@ -8,7 +8,7 @@ require (
 	github.com/l50/goutils v1.2.5
 	github.com/magefile/mage v1.15.0
 	k8s.io/apimachinery v0.27.1
-	k8s.io/client-go v0.27.1
+	k8s.io/client-go v11.0.0+incompatible
 )
 
 require (
