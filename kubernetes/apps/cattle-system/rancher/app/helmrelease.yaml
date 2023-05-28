@@ -9,7 +9,7 @@ spec:
     spec:
       chart: rancher
       # reconcileStrategy: ChartVersion
-      version: 2.7.5-rc1
+      version: 2.7.5-rc2
       sourceRef:
         kind: HelmRepository
         name: rancher
