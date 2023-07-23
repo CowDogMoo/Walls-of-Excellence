@@ -7,9 +7,9 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/l50/goutils v1.3.0
 	github.com/magefile/mage v1.15.0
-	k8s.io/api v0.27.3
-	k8s.io/apimachinery v0.27.3
-	k8s.io/client-go v0.27.3
+	k8s.io/api v0.27.4
+	k8s.io/apimachinery v0.27.4
+	k8s.io/client-go v0.27.4
 )
 
 require (
