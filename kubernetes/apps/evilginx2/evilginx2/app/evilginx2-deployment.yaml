@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evilginx2
+  namespace: evilginx2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evilginx2
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: evilginx2
+    spec:
+      containers:
+        - name: evilginx2
+          image: warhorse/evilginx2:latest
+          ports:
+            - containerPort: 53
+              protocol: UDP
+            - containerPort: 80
+              protocol: TCP
+            - containerPort: 443
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: evilginx-env
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: phishlets-volume
+              mountPath: /phishlets
+            - name: example-phishlet-volume
+              mountPath: /phishlets/example.yaml
+              subPath: example.yaml
+      volumes:
+        - name: config-volume
+          persistentVolumeClaim:
+            claimName: config-pvc
+        - name: phishlets-volume
+          persistentVolumeClaim:
+            claimName: phishlets-pvc
+        - name: example-phishlet-volume
+          configMap:
+            name: example-phishlet

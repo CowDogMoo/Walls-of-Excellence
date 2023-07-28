@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-apps-evilginx2
+  namespace: flux-system
+spec:
+  path: ./kubernetes/apps/evilginx2/evilginx2/app
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  prune: true # account for items that are removed from the path
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evilginx-env
+  namespace: evilginx2
+data:
+  TZ: America/Denver
+  EXTERNAL_HOSTNAME: evilginx2.techvomit.xyz
