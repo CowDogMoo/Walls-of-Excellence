@@ -12,7 +12,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: example-phishlet
+  name: phislets-env
   namespace: evilginx2
 data:
   example.yaml: |

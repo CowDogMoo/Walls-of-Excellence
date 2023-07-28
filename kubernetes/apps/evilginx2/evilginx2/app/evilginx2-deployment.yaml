@@ -30,20 +30,13 @@ spec:
             - configMapRef:
                 name: evilginx-env
           volumeMounts:
-            - name: config-volume
-              mountPath: /config
-            - name: phishlets-volume
-              mountPath: /phishlets
-            - name: example-phishlet-volume
+            - name: phishlets-pvc
               mountPath: /phishlets/example.yaml
               subPath: example.yaml
       volumes:
-        - name: config-volume
-          persistentVolumeClaim:
-            claimName: config-pvc
-        - name: phishlets-volume
+        - name: phishlets-pvc
           persistentVolumeClaim:
             claimName: phishlets-pvc
-        - name: example-phishlet-volume
+        - name: phishlets-cm
           configMap:
-            name: example-phishlet
+            name: phishlets-cm
