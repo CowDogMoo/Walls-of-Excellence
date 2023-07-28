@@ -76,13 +76,16 @@ func RunPreCommit() error {
 	return nil
 }
 
-// Sync applies the Kubernetes configuration defined in .yaml files and kustomization directories
-// within the current directory and its subdirectories.
+// Reconcile applies the Kubernetes configuration defined in .yaml files
+// and kustomization directories within the current directory and
+// its subdirectories.
 //
 // It does the following:
-// 1. For every directory, it checks for a kustomization.yaml file. If it exists, it runs 'kubectl apply -k .'
+// 1. For every directory, it checks for a kustomization.yaml file. If it
+// exists, it runs 'kubectl apply -k .'
 // 2. For every file named ks.yaml, it runs 'kubectl apply -f ks.yaml'
-// 3. For every directory named 'app', it checks for a kustomization.yaml file. If it exists, it runs 'kubectl apply -k .'
+// 3. For every directory named 'app', it checks for a kustomization.yaml file.
+// If it exists, it runs 'kubectl apply -k .'
 //
 // Returns:
 //
@@ -90,10 +93,10 @@ func RunPreCommit() error {
 //
 // Example:
 //
-//	if err := Sync(); err != nil {
+//	if err := Reconcile(); err != nil {
 //	  log.Fatalf("Failed to apply Kubernetes resources: %v", err)
 //	}
-func Sync() error {
+func Reconcile() error {
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
