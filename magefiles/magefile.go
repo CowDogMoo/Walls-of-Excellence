@@ -76,7 +76,7 @@ func RunPreCommit() error {
 	return nil
 }
 
-// ApplyKubernetesResources applies the Kubernetes configuration defined in .yaml files and kustomization directories
+// Sync applies the Kubernetes configuration defined in .yaml files and kustomization directories
 // within the current directory and its subdirectories.
 //
 // It does the following:
@@ -90,10 +90,10 @@ func RunPreCommit() error {
 //
 // Example:
 //
-//	if err := ApplyKubernetesResources(); err != nil {
+//	if err := Sync(); err != nil {
 //	  log.Fatalf("Failed to apply Kubernetes resources: %v", err)
 //	}
-func ApplyKubernetesResources() error {
+func Sync() error {
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
