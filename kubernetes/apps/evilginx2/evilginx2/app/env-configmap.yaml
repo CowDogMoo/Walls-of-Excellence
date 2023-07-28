@@ -7,3 +7,13 @@ metadata:
 data:
   TZ: America/Denver
   EXTERNAL_HOSTNAME: evilginx2.techvomit.xyz
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-phishlet
+  namespace: evilginx2
+data:
+  example.yaml: |
+  # Here you put the content of your example.yaml
