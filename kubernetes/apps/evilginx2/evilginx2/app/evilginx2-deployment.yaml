@@ -49,3 +49,5 @@ spec:
         - name: phishlets-cm
           configMap:
             name: phishlets-cm
+      imagePullSecrets:
+        - name: ghcr-login-secret
