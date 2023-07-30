@@ -32,10 +32,10 @@ spec:
             - configMapRef:
                 name: evilginx-env
           volumeMounts:
-            - name: phishlets-pvc
-              mountPath: /phishlets
-            - name: config-pvc
-              mountPath: /config
+            - mountPath: /phishlets
+              name: phishlets-pvc
+            - mountPath: /config
+              name: config-pvc
           tty: true
           stdin: true
       restartPolicy: Always
