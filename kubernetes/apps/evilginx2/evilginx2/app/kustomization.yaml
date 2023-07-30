@@ -5,7 +5,7 @@ kind: Kustomization
 namespace: evilginx2
 resources:
   - pvc.yaml
-  - env-configmap.yaml
+  - configmap.yaml
   - evilginx2-deployment.yaml
   - evilginx2-service.yaml
   - evilginx2-ingress.yaml
