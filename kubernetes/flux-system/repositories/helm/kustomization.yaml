@@ -16,6 +16,6 @@ resources:
   - prometheus-community.yaml
   - nfs-subdir-external-provisioner.yaml
   # - oauth2-proxy.yaml
-  - rancher.yaml
+  # - rancher.yaml
   - weave-gitops.yaml
   - walls-of-excellence.yaml

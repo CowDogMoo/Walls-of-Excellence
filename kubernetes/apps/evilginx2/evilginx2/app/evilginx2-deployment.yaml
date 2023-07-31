@@ -20,7 +20,14 @@ spec:
         - name: evilginx2
           image: ghcr.io/l50/docker-evilginx2:latest
           command:
-            ["/bin/evilginx", "-p", "/phishlets", "-c", "/config", "-developer"]
+            [
+              "/bin/evilginx",
+              "-p",
+              "/phishlets",
+              "-c",
+              "/config/",
+              "-developer",
+            ]
           ports:
             - containerPort: 53
               protocol: UDP
@@ -33,21 +40,14 @@ spec:
                 name: evilginx-env
           volumeMounts:
             - mountPath: /phishlets
-              name: phishlets-pvc
-            - mountPath: /config
-              name: config-pvc
+              name: phishlets-ig-template-volume
+              subPath: instagram.yaml
           tty: true
           stdin: true
       restartPolicy: Always
       volumes:
-        - name: phishlets-pvc
-          persistentVolumeClaim:
-            claimName: phishlets-pvc
-        - name: config-pvc
-          persistentVolumeClaim:
-            claimName: config-pvc
-        - name: phishlets-cm
+        - name: phishlets-ig-template-volume
           configMap:
-            name: phishlets-cm
+            name: phishlets-ig-template
       imagePullSecrets:
         - name: ghcr-login-secret

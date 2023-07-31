@@ -7,8 +7,7 @@ resources:
   - evilginx2-deployment.yaml
   - evilginx2-service.yaml
   - evilginx2-ingress.yaml
-  - pvc.yaml
-  - evilginx2-cm.yaml
+  - evilginx2-pvc.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: evilginx2

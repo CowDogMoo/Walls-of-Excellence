@@ -12,7 +12,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: phishlets-env
+  name: phishlets-ig-template
   namespace: evilginx2
 data:
   instagram.yaml: |

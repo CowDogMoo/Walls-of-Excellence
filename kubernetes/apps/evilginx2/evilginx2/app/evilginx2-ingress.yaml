@@ -20,4 +20,4 @@ spec:
   tls:
     - hosts:
         - *host
-      secretName: toptierbooks-com-staging-tls
+      secretName: techvomit-xyz-production-tls
