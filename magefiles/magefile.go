@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"context"
 	"fmt"
@@ -81,6 +82,7 @@ func RunPreCommit() error {
 // its subdirectories.
 //
 // It does the following:
+// 0. Skips any directory named 'deprecated'
 // 1. For every directory, it checks for a kustomization.yaml file. If it
 // exists, it runs 'kubectl apply -k .'
 // 2. For every file named ks.yaml, it runs 'kubectl apply -f ks.yaml'
@@ -100,6 +102,13 @@ func Reconcile() error {
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if strings.Contains(path, "deprecated") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		if info.IsDir() {
