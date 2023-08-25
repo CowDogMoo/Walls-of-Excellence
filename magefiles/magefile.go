@@ -12,7 +12,9 @@ import (
 
 	"github.com/bitfield/script"
 	"github.com/fatih/color"
-	goutils "github.com/l50/goutils"
+	"github.com/l50/goutils/v2/dev/lint"
+	mageutils "github.com/l50/goutils/v2/dev/mage"
+	"github.com/l50/goutils/v2/sys"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 	corev1 "k8s.io/api/core/v1"
@@ -27,16 +29,14 @@ func init() {
 
 // InstallDeps Installs go dependencies
 func InstallDeps() error {
-	fmt.Println(color.YellowString("Installing dependencies."))
+	fmt.Println("Installing dependencies.")
 
-	if err := goutils.InstallGoPCDeps(); err != nil {
-		return fmt.Errorf(color.RedString(
-			"failed to install pre-commit dependencies: %v", err))
+	if err := lint.InstallGoPCDeps(); err != nil {
+		return fmt.Errorf("failed to install pre-commit dependencies: %v", err)
 	}
 
-	if err := goutils.InstallVSCodeModules(); err != nil {
-		return fmt.Errorf(color.RedString(
-			"failed to install vscode-go modules: %v", err))
+	if err := mageutils.InstallVSCodeModules(); err != nil {
+		return fmt.Errorf("failed to install vscode-go modules: %v", err)
 	}
 
 	return nil
@@ -47,7 +47,7 @@ func InstallPreCommitHooks() error {
 	mg.Deps(InstallDeps)
 
 	fmt.Println(color.YellowString("Installing pre-commit hooks."))
-	if err := goutils.InstallPCHooks(); err != nil {
+	if err := lint.InstallPCHooks(); err != nil {
 		return err
 	}
 
@@ -59,18 +59,18 @@ func RunPreCommit() error {
 	mg.Deps(InstallDeps)
 
 	fmt.Println(color.YellowString("Updating pre-commit hooks."))
-	if err := goutils.UpdatePCHooks(); err != nil {
+	if err := lint.UpdatePCHooks(); err != nil {
 		return err
 	}
 
 	fmt.Println(color.YellowString(
 		"Clearing the pre-commit cache to ensure we have a fresh start."))
-	if err := goutils.ClearPCCache(); err != nil {
+	if err := lint.ClearPCCache(); err != nil {
 		return err
 	}
 
 	fmt.Println(color.YellowString("Running all pre-commit hooks locally."))
-	if err := goutils.RunPCHooks(); err != nil {
+	if err := lint.RunPCHooks(); err != nil {
 		return err
 	}
 
@@ -152,7 +152,7 @@ func applyKustomize(dir string) error {
 		return fmt.Errorf("error getting current working directory: %w", err)
 	}
 
-	if err := goutils.Cd(dir); err != nil {
+	if err := sys.Cd(dir); err != nil {
 		return fmt.Errorf("error changing directory: %w", err)
 	}
 
@@ -160,7 +160,7 @@ func applyKustomize(dir string) error {
 		return fmt.Errorf("error applying kustomize: %w", err)
 	}
 
-	if err := goutils.Cd(cwd); err != nil {
+	if err := sys.Cd(cwd); err != nil {
 		return fmt.Errorf("error changing directory: %w", err)
 	}
 
@@ -230,7 +230,7 @@ func DestroyStuckNS() error {
 func DestroyRancher() error {
 	rancherNS := "cattle-system"
 	hackDir := "hack"
-	goutils.Cd(hackDir)
+	sys.Cd(hackDir)
 	cmds := []string{
 		// Delete webhook that breaks deployments when rancher fails to fully uninstall.
 		"kubectl delete -n cattle-system MutatingWebhookConfiguration rancher.cattle.io",
