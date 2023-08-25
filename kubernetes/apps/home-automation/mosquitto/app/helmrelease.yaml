@@ -45,22 +45,22 @@ spec:
       # -- Set the container timezone
       TZ: "America/Denver"
 
-    # -- Configures service settings for the chart. Normally this does not need to be modified.
-    # @default -- See values.yaml
-    service:
-      main:
-        type: LoadBalancer
-        externalTrafficPolicy: Local
-        annotations:
-          # External DNS Annotation
-          external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
-        ports:
-          http:
-            enabled: false
-          mqtt:
-            enabled: true
-            primary: true
-            port: 1883
+    # # -- Configures service settings for the chart. Normally this does not need to be modified.
+    # # @default -- See values.yaml
+    # service:
+    #   main:
+    #     type: LoadBalancer
+    #     externalTrafficPolicy: Local
+    #     annotations:
+    #       # External DNS Annotation
+    #       external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
+    #     ports:
+    #       http:
+    #         enabled: false
+    #       mqtt:
+    #         enabled: true
+    #         primary: true
+    #         port: 1883
 
     securityContext:
       runAsUser: 1883
@@ -80,6 +80,9 @@ spec:
     # @default -- See values.yaml
     ingress:
       main:
+        annotations:
+          # External DNS Annotation
+          external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
         enabled: true
         ingressClassName: ingress-traefik
         hosts:
