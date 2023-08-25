@@ -13,3 +13,6 @@ logs
 *terragrunt-debug.tfvars.json
 backend.tf
 provider.tf
+
+# Deprecated directories
+deprecated
