@@ -44,6 +44,9 @@ spec:
       username: admin
 
     ingress:
+      annotations:
+        # External DNS Annotation
+        external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
       enabled: true
       className: ingress-traefik
       hosts:
@@ -57,7 +60,7 @@ spec:
           secretName: techvomit-xyz-production-tls
 
     networkPolicy:
-      create: false
+      create: true
 
     # metrics:
     #   enabled: true
