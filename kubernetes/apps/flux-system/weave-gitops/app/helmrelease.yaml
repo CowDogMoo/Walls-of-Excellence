@@ -59,8 +59,8 @@ spec:
     networkPolicy:
       create: false
 
-    metrics:
-      enabled: true
+    # metrics:
+    #   enabled: true
 
     rbac:
       create: true
