@@ -47,4 +47,4 @@ repos:
     rev: v2.2.6
     hooks:
       - id: codespell
-        entry: codespell -q 3 -f -S ".git,.github"
+        entry: codespell -q 3 -f -S ".git,.github,go.*,magefiles/go.*" README.md

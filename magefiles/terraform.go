@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/color"
-	"github.com/magefile/mage/sh"
+	"github.com/l50/goutils/v2/sys"
 )
 
 var debug = false
@@ -19,7 +19,7 @@ func Apply() error {
 		"Now running apply on %s, please wait.\n", tfDir))
 
 	if debug {
-		err = sh.RunV(
+		_, err = sys.RunCommand(
 			"terragrunt", "run-all", "apply",
 			"--terragrunt-non-interactive",
 			"-auto-approve",
@@ -28,7 +28,7 @@ func Apply() error {
 			"--terragrunt-log-level", "debug",
 			"--terragrunt-debug")
 	} else {
-		err = sh.RunV(
+		_, err = sys.RunCommand(
 			"terragrunt", "run-all", "apply",
 			"--terragrunt-non-interactive",
 			"-auto-approve",
@@ -49,7 +49,7 @@ func Destroy() error {
 	fmt.Println(color.RedString(
 		"Now destroying %s, please wait.\n", tfDir))
 	if debug {
-		err = sh.RunV(
+		_, err = sys.RunCommand(
 			"terragrunt", "run-all", "destroy",
 			"--terragrunt-non-interactive", "-auto-approve",
 			"-lock=false", "--terragrunt-working-dir",
@@ -57,7 +57,7 @@ func Destroy() error {
 			"--terragrunt-log-level", "debug",
 			"--terragrunt-debug")
 	} else {
-		err = sh.RunV(
+		_, err = sys.RunCommand(
 			"terragrunt", "run-all", "destroy",
 			"--terragrunt-non-interactive", "-auto-approve",
 			"-lock=false", "--terragrunt-working-dir",

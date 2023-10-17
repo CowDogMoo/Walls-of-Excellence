@@ -1,3 +1,6 @@
+//go:build mage
+// +build mage
+
 package main
 
 import (
@@ -16,7 +19,6 @@ import (
 	mageutils "github.com/l50/goutils/v2/dev/mage"
 	"github.com/l50/goutils/v2/sys"
 	"github.com/magefile/mage/mg"
-	"github.com/magefile/mage/sh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -156,7 +158,7 @@ func applyKustomize(dir string) error {
 		return fmt.Errorf("error changing directory: %w", err)
 	}
 
-	if err := sh.RunV(cmd, args...); err != nil {
+	if _, err := sys.RunCommand(cmd, args...); err != nil {
 		return fmt.Errorf("error applying kustomize: %w", err)
 	}
 
@@ -171,7 +173,7 @@ func applyKubectl(file string) error {
 	cmd := "kubectl"
 	args := []string{"apply", "-f", file}
 
-	if err := sh.RunV(cmd, args...); err != nil {
+	if _, err := sys.RunCommand(cmd, args...); err != nil {
 		return fmt.Errorf("error applying kubectl: %w", err)
 	}
 

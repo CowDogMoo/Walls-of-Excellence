@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/color"
-	"github.com/magefile/mage/sh"
+	"github.com/l50/goutils/v2/sys"
 )
 
 // AnsiblePing runs ansible all -m ping against all k8s nodes.
@@ -116,7 +116,7 @@ func runAnsiblePlaybook(playbook, group string) error {
 
 // runAnsibleCommand is a helper function that runs the given ansible command with the provided arguments.
 func runAnsibleCommand(cmd string, args ...string) error {
-	if err := sh.RunV(cmd, args...); err != nil {
+	if _, err := sys.RunCommand(cmd, args...); err != nil {
 		fmt.Println(color.RedString("failed to run ansible command: %v", err))
 		return err
 	}
