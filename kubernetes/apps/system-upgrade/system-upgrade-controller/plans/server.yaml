@@ -5,26 +5,13 @@ metadata:
   name: server
   namespace: system-upgrade
 spec:
-  version: "v1.26.1+k3s1"
+  # renovate: datasource=github-releases depName=k3s-io/k3s
+  version: "v1.28.2+k3s1"
   serviceAccountName: system-upgrade
   concurrency: 1
   cordon: true
   nodeSelector:
     matchExpressions:
-      - key: node-role.kubernetes.io/master
-        operator: In
-        values:
-          - "true"
-      - key: k3os.io/mode
-        operator: DoesNotExist
-      - key: k3s-upgrade
-        operator: NotIn
-        values: ["disabled", "false"]
-  tolerations:
-    - key: "node-role.kubernetes.io/master"
-      operator: "Exists"
-  drain:
-    force: true
+      - { key: node-role.kubernetes.io/control-plane, operator: Exists }
   upgrade:
     image: rancher/k3s-upgrade
-  channel: https://update.k3s.io/v1-release/channels/stable
