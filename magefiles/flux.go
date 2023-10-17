@@ -163,9 +163,8 @@ func UninstallFlux() error {
 
 	if err != nil {
 		return fmt.Errorf(color.RedString(
-			"failed to apply TF modules: %v", err))
+			"failed to uninstall flux: %v", err))
 	}
 
 	return nil
-
 }
