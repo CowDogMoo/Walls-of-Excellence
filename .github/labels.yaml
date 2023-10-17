@@ -1,29 +1,54 @@
 ---
 # Area
+- name: area/ansible
+  color: "0075ca"
+  description: >-
+    Changes made to Ansible configurations and scripts
+
+- name: area/docs
+  color: "fbca04"
+  description: >-
+    Changes made in the docs directory
+
 - name: area/github
   color: "72ccf3"
   description: >-
     Changes made to github actions
 
-- name: area/pre-commit
-  color: "BC9BE3"
+- name: area/hack-scripts
+  color: "fc0356"
   description: >-
-    Changes made to pre-commit hooks
+    Changes made to scripts in the hack directory
 
 - name: area/kubernetes
   color: "72ccf3"
   description: >-
     Changes made to kubernetes resources
 
+- name: area/k3s-ansible
+  color: "0e76a8"
+  description: >-
+    Changes made to k3s-ansible submodule
+
+- name: area/magefiles
+  color: "6a0572"
+  description: >-
+    Changes made to magefiles
+
+- name: area/pre-commit
+  color: "BC9BE3"
+  description: >-
+    Changes made to pre-commit hooks
+
+- name: area/terraform
+  color: "7c9494"
+  description: >-
+    Changes made to Terraform configurations
+
 - name: area/go
-  color: "7BD7E0"
+  color: "7bd7e0"
   description: >-
     Changes made to go resources
-
-- name: area/docs
-  color: "FBCA04"
-  description: >-
-    Changes made in the docs directory
 
 # Renovate
 - name: renovate/container
@@ -45,9 +70,6 @@
   color: "F6412D"
 - name: type/break
   color: "F6412D"
-# Release Issue
-- name: image-not-found
-  color: "ee0701"
 # Uncategorized
 - name: bug
   color: "ee0701"

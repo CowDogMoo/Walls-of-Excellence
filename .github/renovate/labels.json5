@@ -29,5 +29,45 @@
       "matchManagers": ["github-actions"],
       "addLabels": ["renovate/github-action"]
     },
+    {
+      "matchPaths": ["ansible/**"],
+      "addLabels": ["area/ansible"]
+    },
+    {
+      "matchPaths": ["docs/**"],
+      "addLabels": ["area/docs"]
+    },
+    {
+      "matchPaths": [".github/**"],
+      "addLabels": ["area/github"]
+    },
+    {
+      "matchPaths": ["hack/**"],
+      "addLabels": ["area/hack-scripts"]
+    },
+    {
+      "matchPaths": ["kubernetes/**"],
+      "addLabels": ["area/kubernetes"]
+    },
+    {
+      "matchPaths": ["k3s-ansible/**"],
+      "addLabels": ["area/k3s-ansible"]
+    },
+    {
+      "matchPaths": ["magefiles/**"],
+      "addLabels": ["area/magefiles"]
+    },
+    {
+      "matchPaths": [".pre-commit-config.yaml"],
+      "addLabels": ["area/pre-commit"]
+    },
+    {
+      "matchPaths": ["infrastructure/**"],
+      "addLabels": ["area/terraform"]
+    },
+    {
+      "matchPaths": ["**/*.go"],
+      "addLabels": ["area/go"]
+    }
   ]
 }
