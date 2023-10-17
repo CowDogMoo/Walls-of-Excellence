@@ -5,6 +5,10 @@ metadata:
   name: server
   namespace: system-upgrade
 spec:
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
   # renovate: datasource=github-releases depName=k3s-io/k3s
   version: "v1.25.12+k3s1"
   serviceAccountName: system-upgrade
