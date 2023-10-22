@@ -5,32 +5,24 @@ metadata:
   name: home-assistant
   namespace: home-automation
 spec:
+  interval: 15m
   chart:
     spec:
-      chart: home-assistant
-      reconcileStrategy: ChartVersion
+      chart: app-template
+      version: 1.5.1
       sourceRef:
         kind: HelmRepository
-        name: k8s-at-home
+        name: bjw-s
         namespace: flux-system
-  interval: 15m
-  maxHistory: 3
+  maxHistory: 2
   install:
+    createNamespace: true
     remediation:
       retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      remediateLastFailure: true
       retries: 3
-      strategy: rollback
-    cleanupOnFail: true
-    crds: CreateReplace
-  test:
-    enable: true
-  rollback:
-    recreate: true
-    force: true
-    cleanupOnFail: true
   uninstall:
     keepHistory: false
   values:
