@@ -11,7 +11,7 @@ spec:
       reconcileStrategy: ChartVersion
       sourceRef:
         kind: HelmRepository
-        name: bjw-s
+        name: k8s-at-home
         namespace: flux-system
   interval: 15m
   maxHistory: 3
@@ -34,13 +34,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    controller:
-      type: statefulset
-
-    image:
-      repository: ghcr.io/bjw-s/calibre-web
-      tag: 0.6.20@sha256:5bd1c1cee482e52ece70e4e2fe0589d1910455e3e09e330c92c24bd304edccfb
-
     env:
       # -- Set the container timezone
       TZ: "America/Denver"
