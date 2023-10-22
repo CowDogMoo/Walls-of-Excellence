@@ -271,3 +271,18 @@ func DestroyRancher() error {
 
 	return nil
 }
+
+func ApplySecrets() error {
+	cmds := []string{
+		"find . -iname \"*secret.yaml\" -exec kubectl apply -f {} \\;",
+	}
+	for _, cmd := range cmds {
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+	}
+
+	return nil
+}
