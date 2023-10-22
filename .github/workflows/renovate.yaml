@@ -1,6 +1,21 @@
 ---
 name: Renovate
 on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - .github/renovate-bot.json5
+      - .github/renovate.json5
+      - .github/renovate/**.json5
+      - .github/workflows/renovate.yml
+  merge_group:
+  push:
+    branches: ["main"]
+    paths:
+      - .github/renovate-bot.json5
+      - .github/renovate.json5
+      - .github/renovate/**.json5
+      - .github/workflows/renovate.yml
   workflow_dispatch:
     inputs:
       dryRun:
@@ -14,12 +29,6 @@ on:
   schedule:
     # Run once per week - at 00:00 on Sunday
     - cron: "0 0 * * 0"
-  push:
-    branches: ["main"]
-    paths:
-      - .github/renovate-bot.json5
-      - .github/renovate.json5
-      - .github/renovate/**.json5
 
 env:
   LOG_LEVEL: debug
@@ -32,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up git repository
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           token: "${{ secrets.BOT_TOKEN }}"
 
@@ -41,8 +50,19 @@ jobs:
           echo "RENOVATE_DRY_RUN=${{ github.event.inputs.dryRun || env.RENOVATE_DRY_RUN }}" >> "${GITHUB_ENV}"
           echo "LOG_LEVEL=${{ github.event.inputs.logLevel || env.LOG_LEVEL }}" >> "${GITHUB_ENV}"
 
+      - name: Delete old dashboard
+        run: |
+          ISSUE_NUMBER=$(gh issue list -S 'Renovate Dashboard 🤖' --json number -q '.[0].number')
+          if [ "$ISSUE_NUMBER" != "null" ] && [ -n "$ISSUE_NUMBER" ]; then
+            gh issue close "$ISSUE_NUMBER"
+          else
+            echo "No issue found to close."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
+
       - name: Renovate
-        uses: renovatebot/github-action@eb0ef0ca2efe27f0b0a70ca6cd1eee63fcfbb61a # v39.0.0
+        uses: renovatebot/github-action@89c8a9b60f5bc8395658abab8f40f96e4b490ebf # v39.1.0
         with:
           configurationFile: "${{ env.RENOVATE_CONFIG_FILE }}"
           token: "${{ secrets.BOT_TOKEN }}"
