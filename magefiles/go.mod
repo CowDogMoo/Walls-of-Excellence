@@ -7,7 +7,7 @@ toolchain go1.21.1
 require (
 	github.com/bitfield/script v0.22.0
 	github.com/fatih/color v1.15.0
-	github.com/l50/goutils/v2 v2.1.4
+	github.com/l50/goutils/v2 v2.1.5
 	github.com/magefile/mage v1.15.0
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
