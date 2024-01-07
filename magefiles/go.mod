@@ -7,7 +7,7 @@ toolchain go1.21.1
 require (
 	github.com/bitfield/script v0.22.0
 	github.com/fatih/color v1.16.0
-	github.com/l50/goutils/v2 v2.1.9
+	github.com/l50/goutils/v2 v2.2.1
 	github.com/magefile/mage v1.15.0
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
@@ -51,7 +51,7 @@ require (
 	github.com/skeema/knownhosts v1.2.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
