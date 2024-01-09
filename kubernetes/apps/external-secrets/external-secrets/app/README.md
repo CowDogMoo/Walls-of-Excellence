@@ -31,7 +31,8 @@ op item get 'your age key'
 ## Encrypting YAML Content
 
 1. **Prepare the YAML File**: Create a YAML file containing both the sensitive
-   (to be encrypted) and non-sensitive data.
+   (to be encrypted) and non-sensitive data. If you're working with
+   a Kubernetes secret, be sure to base64 encode the sensitive data.
 
 2. **Selective Encryption**: Encrypt only specific fields in the YAML file,
    typically the fields containing sensitive data. For example:
