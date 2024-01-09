@@ -8,7 +8,7 @@ resources:
   - bjw-s.yaml
   # - dex.yaml
   - external-dns.yaml
-  # - external-secrets.yaml
+  - external-secrets.yaml
   - grafana.yaml
   - ingress-traefik.yaml
   - jetstack.yaml
