@@ -34,7 +34,7 @@ spec:
           main:
             image:
               repository: docker.io/1password/connect-api
-              tag: 1.7.2@sha256:0c5ae74396e3c18c3b65acb89cb76d31088968cf0c25deca3818c72b01586606
+              tag: latest
             env:
               XDG_DATA_HOME: &configDir /config
               OP_HTTP_PORT: &apiPort 80
@@ -78,7 +78,7 @@ spec:
           sync:
             image:
               repository: docker.io/1password/connect-sync
-              tag: 1.7.2@sha256:7233a9d65ffaef6b0edc9147d99b76a89b06d5f0f7c60aacff97a9c4eed2438d
+              tag: 1.7.2@sha256:d7f8c259af5bcc1568a9c5c665375adc67690d60ae862b14c44cc5ad3c43d3fc
             env:
               XDG_DATA_HOME: *configDir
               OP_HTTP_PORT: &syncPort 8081
