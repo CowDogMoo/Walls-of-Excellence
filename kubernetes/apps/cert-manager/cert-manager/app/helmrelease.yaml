@@ -35,8 +35,12 @@ spec:
     replicaCount: 3
     dns01RecursiveNameservers: "1.1.1.1:53,9.9.9.9:53"
     dns01RecursiveNameserversOnly: true
-    # prometheus:
-    #   enabled: true
-    #   servicemonitor:
-    #     enabled: true
-    #     prometheusInstance: monitoring
+    prometheus:
+      enabled: true
+      servicemonitor:
+        enabled: true
+        prometheusInstance: observability
+    webhook:
+      replicaCount: 2
+    cainjector:
+      replicaCount: 2
