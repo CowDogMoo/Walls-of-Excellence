@@ -6,7 +6,7 @@ rules:
     max: 200
     level: warning
   truthy: false
-  # https://github.com/redhat-developer/vscode-yaml/issues/433#issuecomment-1235681987
   comments:
     min-spaces-from-content: 1
   braces: disable
+  indentation: disable
