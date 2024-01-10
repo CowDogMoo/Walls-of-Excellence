@@ -124,14 +124,14 @@ spec:
         enabled: true
         className: ingress-traefik
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: &host onepassword-connect.techvomit.xyz
+          external-dns.alpha.kubernetes.io/hostname: onepassword-connect.techvomit.xyz
         hosts:
-          - host: *host
+          - host: &host onepassword-connect.techvomit.xyz
             paths:
               - path: /
                 service:
                   name: main
-                  port: https
+                  port: http
         tls:
           - hosts:
               - *host
