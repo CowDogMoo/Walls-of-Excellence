@@ -133,9 +133,9 @@ spec:
         - name: ndots
           value: "1"
 
-    experimental:
-      plugins:
-        enabled: true
+    # experimental:
+    #   plugins:
+    #     enabled: true
 
     persistence:
       config:
