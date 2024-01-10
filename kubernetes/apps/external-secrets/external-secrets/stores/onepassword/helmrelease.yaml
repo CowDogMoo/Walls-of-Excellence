@@ -120,9 +120,12 @@ spec:
             fsGroup: 999
             fsGroupChangePolicy: OnRootMismatch
     ingress:
+      annotations:
+        # External DNS Annotation
+        external-dns.alpha.kubernetes.io/hostname: "{{ .Release.Name }}.techvomit.xyz"
       main:
         enabled: true
-        className: internal
+        className: ingress-traefik
         hosts:
           - host: &host "{{ .Release.Name }}.techvomit.xyz"
             paths:
