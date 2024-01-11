@@ -5,40 +5,51 @@ metadata:
   name: home-assistant
   namespace: home-automation
 spec:
-  interval: 15m
+  interval: 30m
   chart:
     spec:
       chart: app-template
       version: 2.4.0
+      interval: 30m
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-      interval: 15m
-  maxHistory: 3
   install:
-    createNamespace: true
     remediation:
       retries: 3
-    timeout: 10m
   upgrade:
     cleanupOnFail: true
     remediation:
       retries: 3
-    timeout: 10m
   uninstall:
     keepHistory: false
   values:
-    image:
-      repository: ghcr.io/home-assistant/home-assistant
-      tag: 2023.12.4
-
-    env:
-      # -- Set the container timezone
-      TZ: "America/Denver"
-
-    deployment:
-      replicas: 1
+    controllers:
+      main:
+        annotations:
+          # -- Set the container timezone
+          TZ: "America/Denver"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/home-assistant/home-assistant
+              tag: 2024.1.2
+            env:
+              # -- Set the container timezone
+              TZ: "America/Denver"
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 1Gi
 
     service:
       main:
@@ -55,6 +66,9 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
@@ -65,7 +79,6 @@ spec:
         format: json
         level: DEBUG
 
-    # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
     dnsPolicy: ClusterFirstWithHostNet
 
     # -- Enable devices to be discoverable
