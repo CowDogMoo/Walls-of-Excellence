@@ -2,13 +2,25 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
-      "description": "Auto merge GitHub Actions",
+      "description": "Auto-merge GitHub Actions",
       "matchManagers": ["github-actions"],
       "matchDatasources": ["github-tags"],
       "automerge": true,
-      "ignoreTests": true,
+      "automergeType": "branch",
+    },
+    {
+      "description": "Auto merge GitHub Actions for tf",
+      "matchDatasources": ["terraform-module"],
+      "automerge": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["minor", "patch", "digest"]
-    }
+      "matchUpdateTypes": ["digest"]
+    },
+    {
+      "description": "Auto merge GitHub Actions for go",
+      "matchDatasources": ["gomod"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["digest"]
+    },
   ]
 }
