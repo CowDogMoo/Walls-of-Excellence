@@ -25,7 +25,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    replicaCount: 3
     controllers:
       main:
         annotations:
