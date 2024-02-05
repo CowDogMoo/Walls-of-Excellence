@@ -94,4 +94,4 @@ spec:
         enabled: true
         type: nfs
         server: 192.168.20.210
-        path: /volume1/k8s
+        path: /volume1/k8s/home-assistant
