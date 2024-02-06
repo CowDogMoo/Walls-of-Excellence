@@ -28,19 +28,6 @@ and follow along.
   brew install --cask flux
   ```
 
-- [Install gvm](https://github.com/moovweb/gvm):
-
-  ```bash
-  bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
-  source "${GVM_BIN}"
-  ```
-
-- [Install golang](https://go.dev/):
-
-  ```bash
-  source .gvm
-  ```
-
 - [Install Mage](https://magefile.org/):
 
   ```bash
