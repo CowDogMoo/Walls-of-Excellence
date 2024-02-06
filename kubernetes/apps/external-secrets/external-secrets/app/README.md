@@ -43,6 +43,12 @@ op item get 'your age key'
 
    This command encrypts only the data under the `data` field.
 
+## Decrypt and Apply to Kubernetes
+
+```bash
+sops -d kubernetes/apps/external-secrets/external-secrets/app/onepassword-connect.secret.sops.yaml | kubectl apply -f -
+```
+
 ## Editing Encrypted Files
 
 To directly edit an encrypted file, use:

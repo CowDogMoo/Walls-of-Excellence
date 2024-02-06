@@ -85,3 +85,5 @@ mage runreset all
 # Rebuild the cluster
 mage runansible all
 ```
+
+Then follow [these instructions](../kubernetes/bootstrap/README.md) to continue.
