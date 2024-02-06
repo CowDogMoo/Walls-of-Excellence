@@ -5,7 +5,7 @@
 1. Install flux
 
    ```bash
-    kubectl apply --server-side --kustomize ./bootstrap
+   kubectl apply --server-side --kustomize ./bootstrap
    ```
 
 1. Install the age key
