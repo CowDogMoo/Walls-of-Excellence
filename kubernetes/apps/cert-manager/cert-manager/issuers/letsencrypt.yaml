@@ -20,8 +20,8 @@ spec:
           cloudflare:
             email: jayson.e.grace@gmail.com
             apiKeySecretRef:
-              name: cloudflare-api-key-secret
-              key: CLOUDFLARE_API_KEY
+              name: cloudflare-api-credentials
+              key: apiKey
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
