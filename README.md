@@ -53,7 +53,7 @@ Infrastructure as Code (IaC) and GitOps practices where possible
   gh repo clone CowDogMoo/Walls-of-Excellence woe
   ```
 
-- Bootstrap flux:
+- Bootstrap flux (if you haven't already, otherwise skip this step):
 
   ```bash
   export GITHUB_TOKEN=$FLUX_PAT
@@ -67,6 +67,12 @@ Infrastructure as Code (IaC) and GitOps practices where possible
   --path=$PATH_TO_FLUX_DEPLOYMENT \
   --personal \
   --token-auth
+  ```
+
+- Run flux install:
+
+  ```bash
+  flux install
   ```
 
 - Build cloud resources:
