@@ -19,6 +19,7 @@ import (
 	mageutils "github.com/l50/goutils/v2/dev/mage"
 	"github.com/l50/goutils/v2/sys"
 	"github.com/magefile/mage/mg"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -106,6 +107,7 @@ func Reconcile() error {
 			return err
 		}
 
+		// Skip deprecated paths
 		if strings.Contains(path, "deprecated") {
 			if info.IsDir() {
 				return filepath.SkipDir
@@ -113,16 +115,28 @@ func Reconcile() error {
 			return nil
 		}
 
+		// Process directories
 		if info.IsDir() {
-			if err := processDirectory(path); err != nil {
-				return err
+			kustomizationPath := filepath.Join(path, "kustomization.yaml")
+			if _, err := os.Stat(kustomizationPath); !os.IsNotExist(err) {
+				// Parse the kustomization file to check for .sops.yaml references
+				if shouldSkip, err := shouldSkipKustomization(kustomizationPath); err != nil || shouldSkip {
+					if err != nil {
+						return err
+					}
+					fmt.Printf("Skipping directory with .sops.yaml reference: %s\n", path)
+					return filepath.SkipDir
+				}
 			}
-		} else if filepath.Base(path) == "ks.yaml" {
-			if err := applyKubectl(path); err != nil {
-				return err
-			}
-		} else if filepath.Base(path) == "externalsecret.yaml" {
-			fmt.Printf("Skipping %sexternalsecret.yaml", path)
+			return nil
+		}
+
+		// Specific file handling
+		switch {
+		case filepath.Base(path) == "ks.yaml":
+			return applyKubectl(path)
+		case filepath.Base(path) == "externalsecret.yaml", strings.HasSuffix(path, ".sops.yaml"):
+			fmt.Printf("Skipping %s\n", path)
 		}
 
 		return nil
@@ -133,6 +147,29 @@ func Reconcile() error {
 	}
 
 	return nil
+}
+
+// shouldSkipKustomization checks if the kustomization.yaml file references any .sops.yaml files
+func shouldSkipKustomization(kustomizationPath string) (bool, error) {
+	content, err := os.ReadFile(kustomizationPath)
+	if err != nil {
+		return false, err
+	}
+
+	var kustomization struct {
+		Resources []string `yaml:"resources"`
+	}
+	if err := yaml.Unmarshal(content, &kustomization); err != nil {
+		return false, err
+	}
+
+	for _, resource := range kustomization.Resources {
+		if strings.HasSuffix(resource, ".sops.yaml") {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func processDirectory(dir string) error {

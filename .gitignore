@@ -15,3 +15,6 @@ provider.tf
 
 # Deprecated directories
 deprecated
+
+# AGE
+keys.txt
