@@ -75,13 +75,13 @@ At this point, we should have the decrypted `onepassword-connect.yaml`.
 Run this command to set the 1p connect secret:
 
 ```bash
-kubectl apply -f onepassword-connect.yaml
+kubectl apply -f onepassword-connect.secret.yaml
 ```
 
 Be sure to clean it up after you're done:
 
 ```bash
-rm onepassword-connect.yaml
+rm onepassword-connect.secret.yaml
 ```
 
 ## Troubleshooting
@@ -90,5 +90,5 @@ rm onepassword-connect.yaml
   `SOPS_AGE_KEY_FILE` environment variable to its path.
 
 - **Errors in Decryption**: Ensure the correct decryption key is available and
-  accessible. The file must be encrypted with `sops` and the same keys should
-  be used for decryption.
+  accessible. The file must be encrypted with `sops` and the same keys used for
+  decryption.
