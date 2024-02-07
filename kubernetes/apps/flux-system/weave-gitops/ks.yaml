@@ -5,9 +5,6 @@ metadata:
   name: cluster-apps-weave-gitops
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-apps-cert-manager
-    - name: cluster-apps-cert-manager-issuers
   path: ./kubernetes/apps/flux-system/weave-gitops/app
   prune: true
   sourceRef:
