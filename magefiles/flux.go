@@ -168,3 +168,15 @@ func UninstallFlux() error {
 
 	return nil
 }
+
+// GetFluxNotReadyResources gathers all Flux objects that are not ready
+// by running the 'flux get all -A --status-selector ready=false' command.
+func GetFluxNotReadyResources() error {
+	fmt.Println(color.GreenString(
+		"Gathering all Flux objects that are not ready"))
+
+	cmd := exec.Command("flux", "get", "all", "-A", "--status-selector", "ready=false")
+	cmd.Stdout = color.Output
+	cmd.Stderr = color.Error
+	return cmd.Run()
+}
