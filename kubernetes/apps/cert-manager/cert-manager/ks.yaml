@@ -10,6 +10,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  dependsOn:
+    - name: cluster-apps-nfs-subdir-external-provisioner
   path: ./kubernetes/apps/cert-manager/cert-manager/app
   # account for items that are removed from the path
   prune: true
@@ -38,6 +40,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
+    - name: cluster-apps-nfs-subdir-external-provisioner
     - name: cluster-apps-cert-manager
     - name: cluster-apps-external-secrets-stores
   path: ./kubernetes/apps/cert-manager/cert-manager/issuers
