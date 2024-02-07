@@ -67,6 +67,7 @@ To decrypt the encrypted file, run the following commands:
 ```bash
 touch keys.txt
 # populate keys.txt with the age private key
+export SOPS_AGE_KEY_FILE=$(pwd)/keys.txt
 sops -d onepassword-connect.secret.sops.yaml > onepassword-connect.secret.yaml
 ```
 
