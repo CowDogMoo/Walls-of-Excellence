@@ -121,6 +121,8 @@ func Reconcile() error {
 			if err := applyKubectl(path); err != nil {
 				return err
 			}
+		} else if filepath.Base(path) == "externalsecret.yaml" {
+			fmt.Printf("Skipping %sexternalsecret.yaml", path)
 		}
 
 		return nil

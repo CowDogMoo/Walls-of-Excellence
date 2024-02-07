@@ -62,13 +62,27 @@ decrypted content. Upon saving and exiting, `sops` re-encrypts the file.
 
 ## Decrypting the Encrypted File
 
-To decrypt the encrypted file, use the following command:
+To decrypt the encrypted file, run the following commands:
 
 ```bash
+touch keys.txt
+# populate keys.txt with the age private key
 sops -d onepassword-connect.secret.sops.yaml > onepassword-connect.secret.yaml
 ```
 
-This command decrypts the content and outputs it to `decrypted-secrets.yaml`.
+At this point, we should have the decrypted `onepassword-connect.yaml`.
+
+Run this command to set the 1p connect secret:
+
+```bash
+kubectl apply -f onepassword-connect.yaml
+```
+
+Be sure to clean it up after you're done:
+
+```bash
+rm onepassword-connect.yaml
+```
 
 ## Troubleshooting
 
