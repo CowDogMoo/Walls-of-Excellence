@@ -32,7 +32,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: external-secrets
+    - name: cluster-apps-external-secrets
   path: ./kubernetes/apps/external-secrets/external-secrets/stores
   prune: true
   sourceRef:
