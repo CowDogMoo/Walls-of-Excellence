@@ -30,6 +30,9 @@ metadata:
 spec:
   dependsOn:
     - name: cluster-apps-cert-manager
+    - name: cluster-apps-external-secrets
+    - name: cluster-apps-external-dns
+    - name: cluster-apps-nfs-subdir-external-provisioner
   path: ./kubernetes/apps/cert-manager/cert-manager/issuers
   prune: true
   sourceRef:
