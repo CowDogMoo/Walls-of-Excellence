@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
   - ./externalsecret.yaml
   - ./letsencrypt.yaml
-  - ./annotate.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: cert-manager-issuers

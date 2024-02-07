@@ -36,6 +36,9 @@ spec:
   dnsNames:
     - "techvomit.xyz"
     - "*.techvomit.xyz"
+  secretTemplate:
+    annotations:
+      kubed.appscode.com/sync: ""
 ##### Staging #####
 # ---
 # apiVersion: cert-manager.io/v1
