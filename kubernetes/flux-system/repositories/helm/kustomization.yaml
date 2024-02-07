@@ -17,5 +17,5 @@ resources:
   - nfs-subdir-external-provisioner.yaml
   # - oauth2-proxy.yaml
   # - rancher.yaml
-  - weave-gitops.yaml
+  - weaveworks.yaml
   - walls-of-excellence.yaml
