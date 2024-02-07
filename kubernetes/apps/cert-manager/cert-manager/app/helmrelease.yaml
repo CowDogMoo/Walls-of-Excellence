@@ -2,6 +2,11 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
+  annotations:
+    meta.helm.sh/release-name: cert-manager
+    meta.helm.sh/release-namespace: cert-manager
+  labels:
+    app.kubernetes.io/managed-by: Helm
   name: cert-manager
   namespace: cert-manager
 spec:
@@ -25,7 +30,7 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    installCRDs: false
+    installCRDs: true
     global:
       # Set the verbosity of cert-manager. Range of 0 - 6 with 6 being the most verbose.
       logLevel: 6
