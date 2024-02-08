@@ -30,15 +30,16 @@ metadata:
   namespace: cert-manager
 spec:
   secretName: techvomit-xyz-production-tls
-  issuerRef:
-    name: letsencrypt-production
-    kind: ClusterIssuer
-  dnsNames:
-    - "techvomit.xyz"
-    - "*.techvomit.xyz"
   secretTemplate:
     annotations:
       kubed.appscode.com/sync: ""
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: techvomit.xyz
+  dnsNames:
+    - "techvomit.xyz"
+    - "*.techvomit.xyz"
 ##### Staging #####
 # ---
 # apiVersion: cert-manager.io/v1
