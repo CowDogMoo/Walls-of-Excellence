@@ -30,6 +30,7 @@ spec:
         annotations:
           # -- Set the container timezone
           TZ: "America/Denver"
+          reloader.stakater.com/auto: "true"
         containers:
           main:
             image:
@@ -73,12 +74,15 @@ spec:
           - hosts:
               - *host
             secretName: techvomit-xyz-production-tls
+            # annotations:
+            #   kubed.appscode.com/sync: ""
 
     logs:
       general:
         format: json
         level: DEBUG
 
+    # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
     dnsPolicy: ClusterFirstWithHostNet
 
     # -- Enable devices to be discoverable
