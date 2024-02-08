@@ -3,7 +3,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  # Flux-Kustomizations
   - ./nfs-subdir-external-provisioner/ks.yaml
   - ./reloader/ks.yaml
-  - ./kubed/ks.yaml
+  - ./reflector/ks.yaml
