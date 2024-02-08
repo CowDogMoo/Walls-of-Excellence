@@ -38,7 +38,7 @@ op item get 'your age key'
    typically the fields containing sensitive data. For example:
 
    ```bash
-   sops --encrypt --encrypted-regex '^(data)$' --age [your-age-public-key-recipient] secrets.yaml > encrypted-secrets.yaml
+   sops --encrypt --encrypted-regex '^(data)$' --age [your-age-public-key-recipient] onepassword-connect.secret.yaml > onepassword-connect.secret.sops.yaml
    ```
 
    This command encrypts only the data under the `data` field.
@@ -46,7 +46,9 @@ op item get 'your age key'
 ## Decrypt and Apply to Kubernetes
 
 ```bash
-sops -d kubernetes/apps/external-secrets/external-secrets/app/onepassword-connect.secret.sops.yaml | kubectl apply -f -
+pushd kubernetes/apps/external-secrets/external-secrets/app ||  exit 1
+sops -d onepassword-connect.secret.sops.yaml | kubectl apply -f -
+popd || exit 1
 ```
 
 ## Editing Encrypted Files
@@ -68,7 +70,7 @@ To decrypt the encrypted file, run the following commands:
 touch keys.txt
 # populate keys.txt with the age private key
 export SOPS_AGE_KEY_FILE=$(pwd)/keys.txt
-sops -d onepassword-connect.secret.sops.yaml > onepassword-connect.secret.yaml
+sops -d --output onepassword-connect.secret.yaml onepassword-connect.secret.sops.yaml
 ```
 
 At this point, we should have the decrypted `onepassword-connect.yaml`.
@@ -83,6 +85,43 @@ Be sure to clean it up after you're done:
 
 ```bash
 rm onepassword-connect.secret.yaml
+```
+
+## Example 1password-connect.secret.yaml (pre-encryption)
+
+```yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: onepassword-connect-secret
+  namespace: external-secrets
+stringData:
+  1password-credentials.json: |
+    {
+      "verifier": {
+        "salt": "...",
+        "localHash": "...",
+      },
+      "encCredentials": {
+        "kid": "...",
+        ...
+      },
+      "version": "2",
+      "deviceUuid": "...",
+      "uniqueKey": {
+        "alg": "A256GCM",
+        "ext": true,
+        "k": "...",
+        "key_ops": [
+          "encrypt",
+          "decrypt"
+        ],
+        "kty": "...",
+        "kid": "..."
+      }
+    }
+  token: ey...
 ```
 
 ## Troubleshooting
