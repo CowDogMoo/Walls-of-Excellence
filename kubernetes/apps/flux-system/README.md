@@ -29,7 +29,7 @@ kubectl port-forward -n flux-system deployments/weave-gitops 9001:9001
 From the root of the repo:
 
 ```bash
-mage applykubernetesresources
+mage reconcile
 ```
 
 ---

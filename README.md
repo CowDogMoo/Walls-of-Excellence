@@ -57,7 +57,7 @@ Infrastructure as Code (IaC) and GitOps practices where possible
 
   ```bash
   export GITHUB_TOKEN=$FLUX_PAT
-  export PATH_TO_FLUX_DEPLOYMENT=./kubernetes/flux-system/config
+  export PATH_TO_FLUX_DEPLOYMENT=./kubernetes/flux-system/bootstrap-config
   export REPO_OWNER=CowDogMoo
   export REPO_NAME=Walls-of-Excellence
 
@@ -67,12 +67,6 @@ Infrastructure as Code (IaC) and GitOps practices where possible
   --path=$PATH_TO_FLUX_DEPLOYMENT \
   --personal \
   --token-auth
-  ```
-
-- Run flux install:
-
-  ```bash
-  flux install
   ```
 
 - Build cloud resources:
@@ -89,6 +83,18 @@ Infrastructure as Code (IaC) and GitOps practices where possible
 
   ```bash
   mage syncgitrepositories synchelmreleases synckustomizations
+  ```
+
+- Sync flux-system Kustomization resources with source:
+
+  ```bash
+  flux reconcile ks flux-system --with-source
+  ```
+
+- Sync cluster-apps Kustomization resources with source:
+
+  ```bash
+  flux reconcile ks cluster-apps --with-source -n flux-system
   ```
 
 ---
