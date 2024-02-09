@@ -34,15 +34,9 @@ spec:
     serviceMonitor:
       enabled: true
       interval: 1m
-    backgroundController:
+    webhook:
       serviceMonitor:
         enabled: true
-        interval: 1m
-    cleanupController:
+    certController:
       serviceMonitor:
         enabled: true
-        interval: 1m
-    reportsController:
-      serviceMonitor:
-        enabled: true
-        interval: 1m
