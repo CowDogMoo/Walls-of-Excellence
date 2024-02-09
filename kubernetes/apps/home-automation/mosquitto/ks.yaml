@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-nfs-subdir-external-provisioner
+    - name: nfs-subdir-external-provisioner
   path: ./kubernetes/apps/home-automation/mosquitto/app
   # account for items that are removed from the path
   prune: false

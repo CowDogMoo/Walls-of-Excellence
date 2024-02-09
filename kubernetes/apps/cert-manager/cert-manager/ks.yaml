@@ -3,26 +3,19 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app cluster-apps-cert-manager
+  name: &app cert-manager
   namespace: flux-system
 spec:
   targetNamespace: cert-manager
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  dependsOn:
-    - name: cluster-apps-nfs-subdir-external-provisioner
   path: ./kubernetes/apps/cert-manager/cert-manager/app
   # account for items that are removed from the path
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
-      kind: HelmRelease
-      name: cert-manager
-      namespace: cert-manager
   wait: true
   interval: 30m
   retryInterval: 1m
@@ -32,7 +25,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app cluster-apps-cert-manager-issuers
+  name: &app cert-manager-issuers
   namespace: flux-system
 spec:
   targetNamespace: cert-manager
@@ -40,9 +33,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: cluster-apps-nfs-subdir-external-provisioner
-    - name: cluster-apps-cert-manager
-    - name: cluster-apps-external-secrets-stores
+    - name: cert-manager
+    - name: external-secrets-stores
   path: ./kubernetes/apps/cert-manager/cert-manager/issuers
   prune: true
   sourceRef:

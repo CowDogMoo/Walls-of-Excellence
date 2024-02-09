@@ -6,9 +6,9 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-nfs-subdir-external-provisioner
-    - name: cluster-apps-cert-manager
-    - name: cluster-apps-cert-manager-issuers
+    - name: nfs-subdir-external-provisioner
+    - name: cert-manager
+    - name: cert-manager-issuers
   path: ./kubernetes/apps/home-automation/home-assistant/app
   # account for items that are removed from the path
   prune: true

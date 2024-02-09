@@ -6,10 +6,10 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: cluster-apps-nfs-subdir-external-provisioner
-    - name: cluster-apps-cert-manager
-    - name: cluster-apps-cert-manager-issuers
-    - name: cluster-apps-external-dns
+    - name: nfs-subdir-external-provisioner
+    - name: cert-manager
+    - name: cert-manager-issuers
+    - name: external-dns
   path: ./kubernetes/apps/networking/ingress-traefik/app
   interval: 5m
   retryInterval: 1m
