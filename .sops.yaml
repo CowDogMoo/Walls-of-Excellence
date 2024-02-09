@@ -5,5 +5,10 @@ creation_rules:
     key_groups:
       - age:
           - age18z6gsrajdajtnv2h39qxsqd0g264e6c0jht9due6xmhgpe09pg2sqp4fzq
+  - path_regex: kubernetes/bootstrap/flux/age-key\.yaml
+    encrypted_regex: ^(data|stringData)$
+    key_groups:
+      - age:
+          - age18z6gsrajdajtnv2h39qxsqd0g264e6c0jht9due6xmhgpe09pg2sqp4fzq
   - filename_regex: 'age-key\.yaml$'
-    age: "age18z6gsrajdajtnv2h39qxsqd0g264e6c0jht9due6xmhgpe09pg2sqp4fzq"
+    age: age18z6gsrajdajtnv2h39qxsqd0g264e6c0jht9due6xmhgpe09pg2sqp4fzq
