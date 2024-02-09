@@ -74,8 +74,6 @@ spec:
           - hosts:
               - *host
             secretName: techvomit-xyz-production-tls
-            # annotations:
-            #   kubed.appscode.com/sync: ""
 
     logs:
       general:
