@@ -24,19 +24,19 @@
 1. Start the flux bootstrap process
 
    ```bash
-   kubectl apply --server-side --kustomize ../flux-system/config
+   kubectl apply --server-side --kustomize ../flux/config
    ```
 
 1. Install the repositories and sync
 
    ```bash
-   cd ~/cowdogmoo/woe/kubernetes/flux-system/config
-   kubectl apply -k .
-   cd ~/cowdogmoo/woe/kubernetes/flux-system/repositories
-   kubectl apply -k .
+   cd ~/cowdogmoo/woe/kubernetes/flux/config && kubectl apply -k .
+   cd ~/cowdogmoo/woe/kubernetes/flux/repositories && kubectl apply -k .
    ```
 
-## Encrypt the age key
+---
+
+## How to encrypt the age key
 
 If you haven't created the `age` key yet, you can do so by doing the following:
 
