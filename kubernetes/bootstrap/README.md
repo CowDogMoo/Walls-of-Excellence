@@ -57,7 +57,11 @@ stringData:
 EOF
 ```
 
-Then, encrypt the `age` key:
+Base64 encode the `age` key (everything starting with `AGE-SECRET-KEY-`) and
+save the changes.
+
+
+Finally, encrypt the `age` key:
 
 ```bash
 AGE_PUBLIC_KEY=age....
