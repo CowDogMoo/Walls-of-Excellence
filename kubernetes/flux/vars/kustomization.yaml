@@ -6,3 +6,5 @@ configMapGenerator:
   - name: cluster-settings
     namespace: flux-system
     envs: ["./cluster-settings.env"]
+generatorOptions:
+  disableNameSuffixHash: true
