@@ -2,8 +2,6 @@ module magefile
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/bitfield/script v0.22.0
 	github.com/fatih/color v1.16.0

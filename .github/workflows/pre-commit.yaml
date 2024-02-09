@@ -1,23 +1,61 @@
 ---
 name: Pre-Commit
-
 on:
-  pull_request:
   push:
-    branches: [main]
-
+  pull_request:
+    types:
+      - opened
+      - synchronize
+  # Run once a week (see https://crontab.guru)
+  schedule:
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
 jobs:
   pre-commit:
-    name: Run pre-commit
+    name: Update pre-commit hooks and run pre-commit
     runs-on: ubuntu-latest
     steps:
       - name: Set up git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Install python for pre-commit
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
         with:
-          python-version: "3"
+          python-version: "3.12.0"
+
+      - name: Install dependencies
+        run: python3 -m pip install ansible \
+          ansible-lint \
+          docker \
+          molecule[docker] \
+          pre-commit
+
+      - name: Set up Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+        with:
+          go-version: "1.21.5"
+
+      - name: Install go module dependencies
+        run: |
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest
+          go install github.com/magefile/mage@latest
+
+      - name: Install pre-commit
+        run: python3 -m pip install pre-commit
+
+      - name: Run go mod tidy - necessary to avoid errors with dependabot PRs
+        run: pushd magefiles; go mod tidy; popd
+
+      - name: Commit go.mod and go.sum changes to keep pre-commit happy
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add magefiles/go.mod magefiles/go.sum
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "Update go.mod and go.sum"
+
+      - name: Install pre-commit dependencies
+        run: mage installDeps
 
       - name: Run pre-commit
-        uses: pre-commit/action@v2.0.3
+        run: mage runPreCommit
