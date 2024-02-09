@@ -5,7 +5,7 @@ metadata:
   name: reflector
   namespace: kube-system
 spec:
-  interval: 30m
+  interval: 5m
   chart:
     spec:
       # renovate: registryUrl=https://emberstack.github.io/helm-charts
@@ -16,11 +16,3 @@ spec:
         name: emberstack
         namespace: flux-system
       interval: 5m
-  install:
-    remediation:
-      retries: 3
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  values: {}

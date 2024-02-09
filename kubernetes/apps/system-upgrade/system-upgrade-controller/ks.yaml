@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-system-upgrade-controller
+  name: system-upgrade-controller
   namespace: flux-system
 spec:
   targetNamespace: system-upgrade
@@ -21,12 +21,12 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-system-upgrade-controller-plans
+  name: system-upgrade-controller-plans
   namespace: flux-system
 spec:
   targetNamespace: system-upgrade
   dependsOn:
-    - name: cluster-apps-system-upgrade-controller
+    - name: system-upgrade-controller
   path: ./kubernetes/apps/system-upgrade/system-upgrade-controller/plans
   prune: true
   sourceRef:
