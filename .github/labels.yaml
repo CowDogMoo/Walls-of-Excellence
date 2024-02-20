@@ -25,11 +25,6 @@
   description: >-
     Changes made to kubernetes resources
 
-- name: area/k3s-ansible
-  color: "0e76a8"
-  description: >-
-    Changes made to k3s-ansible submodule
-
 - name: area/magefiles
   color: "6a0572"
   description: >-

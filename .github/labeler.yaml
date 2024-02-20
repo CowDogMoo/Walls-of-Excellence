@@ -1,16 +1,38 @@
 ---
-area/github:
-  - ".github/**/*"
-
-area/pre-commit:
-  - ".pre-commit-config.yaml"
-  - ".hooks/**/*"
-
-area/kubernetes:
-  - "kubernetes/**/*"
-
-area/go:
-  - "magefiles/*"
+area/ansible:
+  - changed-files:
+      - any-glob-to-any-file: "k3s-ansible/**/*"
 
 area/docs:
-  - "docs/*"
+  - changed-files:
+      - any-glob-to-any-file: "docs/**/*"
+
+area/github:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**/*"
+
+area/hack-scripts:
+  - changed-files:
+      - any-glob-to-any-file: "hack/*"
+
+area/kubernetes:
+  - changed-files:
+      - any-glob-to-any-file: "kubernetes/**/*"
+
+area/magefiles:
+  - changed-files:
+      - any-glob-to-any-file: "magefiles/**/*"
+
+area/pre-commit:
+  - changed-files:
+      - any-glob-to-any-file: .pre-commit-config.yaml
+      - any-glob-to-any-file: .hooks/**/*
+
+area/terraform:
+  - changed-files:
+      - any-glob-to-any-file: "infrastructure/**/*"
+
+area/go:
+  - changed-files:
+      - any-glob-to-any-file: "go.mod"
+      - any-glob-to-any-file: "go.sum"
