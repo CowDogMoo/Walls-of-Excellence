@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: c2
+resources:
+  - ./sliver-pvc.yaml
+  - ./sliver-deployment.yaml
+  - ./sliver-service.yaml
+  - ./sliver-ingress.yaml
+commonLabels:
+  app.kubernetes.io/name: sliver
+  app.kubernetes.io/instance: sliver

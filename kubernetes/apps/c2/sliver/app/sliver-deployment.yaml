@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sliver
+  namespace: c2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sliver
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: sliver
+    spec:
+      restartPolicy: Always
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["/bin/sh", "-ec", "chown -R 999:999 /home/sliver/.sliver"]
+          volumeMounts:
+            - name: sliver-pvc
+              mountPath: /home/sliver/.sliver
+      containers:
+        - name: sliver
+          image: ghcr.io/cowdogmoo/sliverc2:latest
+          command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          # # Run as root
+          # securityContext:
+          #   runAsUser: 0
+          #   runAsGroup: 0
+          ports:
+            - name: sliver
+              containerPort: 80
+              # - name: sliver-31337
+              #   containerPort: 31337
+              # - name: sliver-tls
+              #   containerPort: 443
+          volumeMounts:
+            - name: sliver-pvc
+              mountPath: /home/sliver/.sliver
+      volumes:
+        - name: sliver-pvc
+          persistentVolumeClaim:
+            claimName: sliver-pvc
