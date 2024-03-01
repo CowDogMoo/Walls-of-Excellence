@@ -19,7 +19,7 @@ spec:
       restartPolicy: Always
       initContainers:
         - name: fix-permissions
-          image: busybox
+          image: busybox:latest
           command: ["/bin/sh", "-ec", "chown -R 999:999 /home/sliver/.sliver"]
           volumeMounts:
             - name: sliver-pvc
@@ -27,6 +27,7 @@ spec:
       containers:
         - name: sliver
           image: ghcr.io/cowdogmoo/sliverc2:latest
+          imagePullPolicy: Always
           command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           # # Run as root
           # securityContext:
@@ -39,6 +40,13 @@ spec:
               #   containerPort: 31337
               # - name: sliver-tls
               #   containerPort: 443
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
           volumeMounts:
             - name: sliver-pvc
               mountPath: /home/sliver/.sliver
