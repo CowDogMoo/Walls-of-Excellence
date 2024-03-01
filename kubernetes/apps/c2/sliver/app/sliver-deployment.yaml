@@ -26,8 +26,7 @@ spec:
               mountPath: /home/sliver/.sliver
       containers:
         - name: sliver
-          image: ghcr.io/cowdogmoo/sliverc2:latest
-          imagePullPolicy: Always
+          image: ghcr.io/cowdogmoo/sliverc2:latest@sha256:18e3d8cad5f70928793d4e433241e61821a649a17b169493893e2a0001b71fca
           command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           # # Run as root
           # securityContext:
