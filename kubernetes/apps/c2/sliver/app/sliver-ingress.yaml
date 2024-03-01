@@ -4,6 +4,8 @@ kind: Ingress
 metadata:
   name: sliver
   namespace: c2
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: redirect-web-to-443@internal
 spec:
   ingressClassName: ingress-traefik
   rules:
