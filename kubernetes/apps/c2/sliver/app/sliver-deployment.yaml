@@ -27,29 +27,41 @@ spec:
       containers:
         - name: sliver
           image: ghcr.io/cowdogmoo/sliverc2:latest@sha256:18e3d8cad5f70928793d4e433241e61821a649a17b169493893e2a0001b71fca
-          command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
-          # # Run as root
-          # securityContext:
-          #   runAsUser: 0
-          #   runAsGroup: 0
+          command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          # Run as root
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
           ports:
-            - name: sliver
+            - name: http
               containerPort: 80
-              # - name: sliver-31337
-              #   containerPort: 31337
-              # - name: sliver-tls
-              #   containerPort: 443
+            - name: https
+              containerPort: 443
           resources:
             requests:
               cpu: 100m
               memory: 128Mi
             limits:
-              cpu: 1000m
-              memory: 1024Mi
+              cpu: 2000m
+              memory: 4096Mi
           volumeMounts:
             - name: sliver-pvc
               mountPath: /home/sliver/.sliver
+            - name: tls-cert
+              mountPath: /home/sliver/.sliver/tls.crt
+              subPath: tls.crt
+            - name: tls-key
+              mountPath: /home/sliver/.sliver/tls.key
+              subPath: tls.key
       volumes:
         - name: sliver-pvc
           persistentVolumeClaim:
             claimName: sliver-pvc
+        - name: tls-cert
+          secret:
+            secretName: techvomit-xyz-production-tls
+            defaultMode: 0444
+        - name: tls-key
+          secret:
+            secretName: techvomit-xyz-production-tls
+            defaultMode: 0444
