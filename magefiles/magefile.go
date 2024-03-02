@@ -135,7 +135,7 @@ func Reconcile() error {
 		switch {
 		case filepath.Base(path) == "ks.yaml":
 			return applyKubectl(path)
-		case filepath.Base(path) == "externalsecret.yaml", strings.HasSuffix(path, ".sops.yaml"):
+		case strings.HasSuffix(path, ".sops.yaml"):
 			fmt.Printf("Skipping %s\n", path)
 		}
 
