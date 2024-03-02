@@ -6,7 +6,7 @@ metadata:
   name: onepassword-connect
   namespace: external-secrets
 spec:
-  interval: 30m
+  interval: 10m
   chart:
     spec:
       chart: app-template
@@ -130,15 +130,17 @@ spec:
             paths:
               - path: /
                 service:
-                  name: main
-                  port: http
+                  name: http
+                  port: 80
         tls:
           - hosts:
               - *host
     persistence:
       config:
         enabled: true
-        type: emptyDir
+        type: nfs
+        server: 192.168.20.210
+        path: /volume1/k8s/external-secrets
         globalMounts:
           - path: *configDir
     service:
