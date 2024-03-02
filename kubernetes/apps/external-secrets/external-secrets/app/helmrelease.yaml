@@ -26,6 +26,9 @@ spec:
     keepHistory: false
   values:
     installCRDs: true
+    replicaCount: 1
+    grafana:
+      enabled: true
     serviceMonitor:
       enabled: true
       interval: 1m
