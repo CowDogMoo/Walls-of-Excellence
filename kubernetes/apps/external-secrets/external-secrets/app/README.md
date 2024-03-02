@@ -10,6 +10,10 @@ popd || exit 1
 
 ## Create the 1password-connect.secret.yaml file
 
+1. You will need to create a dedicated vault and access token using the
+   1password web interface. Be sure to assign ONLY `read` permissions
+   to the access token.
+
 1. Retrieve your public key used to bootstrap the cluster. If using 1password,
    you can use the cli to get this information:
 
