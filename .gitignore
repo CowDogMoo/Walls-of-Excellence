@@ -18,4 +18,4 @@ deprecated
 
 # AGE
 keys.txt
-*secret*
+*.secret.yaml*

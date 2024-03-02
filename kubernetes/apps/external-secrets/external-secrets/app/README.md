@@ -34,7 +34,7 @@ popd || exit 1
      name: onepassword-connect-secret
      namespace: external-secrets
    stringData:
-     1password-credentials.json: $(cat 1password-credentials.json | base64)
+     1password-credentials-json: $(cat 1password-credentials-json | base64)
      token: $(op item get 'woe Access Token: k8s' --fields credential | base64)
    EOF
    ```
@@ -114,7 +114,7 @@ metadata:
   name: onepassword-connect-secret
   namespace: external-secrets
 stringData:
-  1password-credentials.json: |
+  1password-credentials-json: |
     {
       "verifier": {
         "salt": "...",
