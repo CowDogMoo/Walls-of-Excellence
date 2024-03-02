@@ -3,7 +3,7 @@
 1. Install flux
 
    ```bash
-   kubectl apply --server-side -k ./flux
+   kubectl apply --server-side -k ./flux --force-conflicts
    kubectl apply -k ./flux
    ```
 
