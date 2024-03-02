@@ -45,17 +45,17 @@ spec:
                   secretKeyRef:
                     name: onepassword-connect-secret
                     key: 1password-credentials.json
-            probes:
-              liveness:
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /heartbeat
-                    port: *apiPort
-                  initialDelaySeconds: 15
-              startup:
-                enabled: false
+            # probes:
+            #   liveness:
+            #     enabled: true
+            #     custom: true
+            #     spec:
+            #       httpGet:
+            #         path: /heartbeat
+            #         port: *apiPort
+            #       initialDelaySeconds: 15
+            #   startup:
+            #     enabled: false
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -122,10 +122,6 @@ spec:
                 service:
                   name: http
                   port: 80
-        tls:
-          - hosts:
-              - *host
-            secretName: techvomit-xyz-production-tls
     persistence:
       config:
         enabled: true
