@@ -55,7 +55,7 @@
        name: sops-age
        namespace: flux-system
    stringData:
-     age.agekey: $(cat keys.txt | grep "AGE-SECRET-KEY" | base64)
+     agekey: $(cat keys.txt | grep -i "AGE-SECRET-KEY" | base64)
    EOF
    ```
 
