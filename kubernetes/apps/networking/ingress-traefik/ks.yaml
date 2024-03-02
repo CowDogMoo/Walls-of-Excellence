@@ -7,7 +7,6 @@ metadata:
 spec:
   dependsOn:
     - name: nfs-subdir-external-provisioner
-    - name: cert-manager
   path: ./kubernetes/apps/networking/ingress-traefik/app
   interval: 5m
   retryInterval: 1m
