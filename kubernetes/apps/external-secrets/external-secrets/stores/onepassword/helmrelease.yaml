@@ -142,6 +142,9 @@ spec:
           - path: *configDir
     service:
       main:
+        metadata:
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: onepassword-connect.techvomit.xyz
         ports:
           http:
             port: 80
