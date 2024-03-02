@@ -6,11 +6,11 @@ metadata:
   name: onepassword-connect
   namespace: external-secrets
 spec:
-  interval: 10m
+  interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 2.4.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -34,7 +34,7 @@ spec:
           main:
             image:
               repository: docker.io/1password/connect-api
-              tag: latest
+              tag: 1.7.2@sha256:0c5ae74396e3c18c3b65acb89cb76d31088968cf0c25deca3818c72b01586606
             env:
               XDG_DATA_HOME: &configDir /config
               OP_HTTP_PORT: &apiPort 80
@@ -45,17 +45,25 @@ spec:
                   secretKeyRef:
                     name: onepassword-connect-secret
                     key: 1password-credentials.json
-              # probes:
-              #   liveness:
-              #     enabled: true
-              #     custom: true
-              #     spec:
-              #       httpGet:
-              #         path: /heartbeat
-              #         port: *apiPort
-              #       initialDelaySeconds: 15
-              #   startup:
-              #     enabled: false
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /heartbeat
+                    port: *apiPort
+                  initialDelaySeconds: 15
+                  periodSeconds: 30
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *apiPort
+                  initialDelaySeconds: 15
               startup:
                 enabled: false
             securityContext: &securityContext
@@ -70,7 +78,7 @@ spec:
           sync:
             image:
               repository: docker.io/1password/connect-sync
-              tag: latest
+              tag: 1.7.2@sha256:ff5bf86187ac4da88224e63a5896b393b5a53f81434e8dbc5314e406a0f1db89
             env:
               XDG_DATA_HOME: *configDir
               OP_HTTP_PORT: &syncPort 8081
@@ -81,25 +89,25 @@ spec:
                   secretKeyRef:
                     name: onepassword-connect-secret
                     key: 1password-credentials.json
-              # probes:
-              #   liveness:
-              #     enabled: true
-              #     custom: true
-              #     spec:
-              #       httpGet:
-              #         path: /heartbeat
-              #         port: *syncPort
-              #       initialDelaySeconds: 15
-              #       periodSeconds: 30
-              #       failureThreshold: 3
-              # readiness:
-              #   enabled: true
-              #   custom: true
-              #   spec:
-              #     httpGet:
-              #       path: /health
-              #       port: *syncPort
-              #     initialDelaySeconds: 15
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /heartbeat
+                    port: *syncPort
+                  initialDelaySeconds: 15
+                  periodSeconds: 30
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *syncPort
+                  initialDelaySeconds: 15
               startup:
                 enabled: false
               securityContext: *securityContext
@@ -114,11 +122,9 @@ spec:
     ingress:
       main:
         enabled: true
-        className: ingress-traefik
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: onepassword-connect.techvomit.xyz
+        className: internal
         hosts:
-          - host: &host onepassword-connect.techvomit.xyz
+          - host: &host "{{ .Release.Name }}.techvomit.xyz"
             paths:
               - path: /
                 service:
@@ -127,7 +133,6 @@ spec:
         tls:
           - hosts:
               - *host
-              # secretName: techvomit-xyz-production-tls
     persistence:
       config:
         enabled: true

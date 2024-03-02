@@ -15,6 +15,9 @@ creation_rules:
       - age:
           - *user_flux
 
+  - filename_regex: 'age-key\.yaml$'
+    age: *user_flux
+
 stores:
   yaml:
     indent: 2
