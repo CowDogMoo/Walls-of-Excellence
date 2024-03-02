@@ -122,9 +122,9 @@ spec:
     ingress:
       main:
         enabled: true
-        className: internal
+        className: ingress-traefik
         hosts:
-          - host: &host "{{ .Release.Name }}.techvomit.xyz"
+          - host: &host "onepassword-connect.techvomit.xyz"
             paths:
               - path: /
                 service:
