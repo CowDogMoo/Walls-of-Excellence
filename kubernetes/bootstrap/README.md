@@ -7,7 +7,7 @@
    kubectl apply -k ./flux
    ```
 
-1. Install the age key
+1. Add age key to the cluster
 
    ```bash
    sops -d flux/age-key.secret.sops.yaml | kubectl apply -f -
@@ -34,49 +34,43 @@
 
 ---
 
-## Create the age key
+## Initial Creation of the age key
 
-If you haven't created the `age` key yet, you can do so by doing the following:
+1. Create the `age` key:
 
-```bash
-cd flux
-age-keygen -o keys.txt
-```
+   ```bash
+   cd flux
+   age-keygen -o keys.txt
+   ```
 
-## Encrypt the age key
+1. Create `age-key.secret.yaml` with the following content:
 
-After the age key is created, next you'll need to create a `sops` file to store
-the `age` key:
+   ```bash
+   cat <<EOF > age-key.secret.yaml
+   ---
+   # yamllint disable
+   apiVersion: v1
+   kind: Secret
+   metadata:
+       name: sops-age
+       namespace: flux-system
+   stringData:
+     age.agekey: $(cat keys.txt | grep "AGE-SECRET-KEY" | base64)
+   EOF
+   ```
 
-```bash
-# create age-key.secret.yaml
-cat <<EOF > age-key.secret.yaml
----
-# yamllint disable
-apiVersion: v1
-kind: Secret
-metadata:
-    name: sops-age
-    namespace: flux-system
-stringData:
-  age.agekey: AGE-SECRET-KEY-
-EOF
-```
+1. Create the `age-key.secret.sops.yaml` file by running the
+   following command:
 
-Base64 encode the `age` key (everything starting with `AGE-SECRET-KEY-`) and
-save the changes.
+   ```bash
+   AGE_PUBLIC_KEY=age....
+   sops --encrypt \
+   --age $AGE_PUBLIC_KEY \
+   age-key.secret.yaml > age-key.secret.sops.yaml
+   ```
 
-Encrypt the `age` key:
+1. Delete the `age-key.secret.yaml` file:
 
-```bash
-AGE_PUBLIC_KEY=age....
-sops --encrypt \
---age $AGE_PUBLIC_KEY \
-age-key.yaml > age-key.secret.sops.yaml
-```
-
-Delete the `age-key.secret.yaml` file:
-
-```bash
-rm age-key.secret.yaml
-```
+   ```bash
+   rm age-key.secret.yaml
+   ```
