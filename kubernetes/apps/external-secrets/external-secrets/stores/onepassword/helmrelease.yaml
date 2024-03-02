@@ -124,15 +124,16 @@ spec:
         enabled: true
         className: ingress-traefik
         hosts:
-          - host: &host "onepassword-connect.techvomit.xyz"
+          - host: onepassword-connect.techvomit.xyz
             paths:
               - path: /
                 service:
                   name: main
-                  port: http
+                  port: 80
         tls:
           - hosts:
-              - *host
+              - onepassword-connect.techvomit.xyz
+            secretName: techvomit-xyz-production-tls
     persistence:
       config:
         enabled: true
@@ -143,4 +144,4 @@ spec:
       main:
         ports:
           http:
-            port: *apiPort
+            port: 80
