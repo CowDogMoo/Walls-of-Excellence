@@ -1,0 +1,24 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atomicred
+  namespace: atomic-red
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atomicred
+  template:
+    metadata:
+      labels:
+        app: atomicred
+    spec:
+      containers:
+        - name: atomicred
+          image: issif/atomic-red:latest
+          command: ["sleep", "3560d"]
+          securityContext:
+            privileged: true
+      nodeSelector:
+        kubernetes.io/os: linux
