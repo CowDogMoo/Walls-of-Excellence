@@ -94,8 +94,8 @@ spec:
       serviceMonitor:
         enabled: true
       admin:
-        existingSecret: grafana-admin-credentials
-        userKey: admin-user
+        existingSecret: grafana-admin-secret
+        userKey: GRAFANA_ADMIN_USER
         passwordKey: admin-password
 
     kube-state-metrics:
