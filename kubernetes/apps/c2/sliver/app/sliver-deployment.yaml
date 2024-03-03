@@ -36,7 +36,7 @@ spec:
             - name: http
               containerPort: 80
             - name: https
-              containerPort: 8443
+              containerPort: 44344
           resources:
             requests:
               cpu: 100m
