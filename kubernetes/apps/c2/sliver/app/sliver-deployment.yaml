@@ -26,7 +26,7 @@ spec:
               mountPath: /home/sliver/.sliver
       containers:
         - name: sliver
-          image: ghcr.io/cowdogmoo/sliverc2:latest@sha256:18e3d8cad5f70928793d4e433241e61821a649a17b169493893e2a0001b71fca
+          image: ghcr.io/cowdogmoo/sliverc2:latest@sha256:f5fd77f147ed1d0682e8588c45c7a1b5aef4cb44caceed4976938d77be9c5cd7
           command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           # Run as root
           securityContext:
