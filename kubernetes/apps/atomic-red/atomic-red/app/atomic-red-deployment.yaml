@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atomicred
+  name: atomic-red
   namespace: atomic-red
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: atomicred
+      app: atomic-red
   template:
     metadata:
       labels:
-        app: atomicred
+        app: atomic-red
     spec:
       containers:
-        - name: atomicred
+        - name: atomic-red
           image: ghcr.io/cowdogmoo/invoke-atomicredteam:latest
           command: ["sleep", "3560d"]
           securityContext:
