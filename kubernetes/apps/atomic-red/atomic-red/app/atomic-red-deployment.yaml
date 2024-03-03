@@ -16,9 +16,13 @@ spec:
     spec:
       containers:
         - name: atomicred
-          image: issif/atomic-red:latest
+          image: ghcr.io/cowdogmoo/invoke-atomicredteam:latest
           command: ["sleep", "3560d"]
           securityContext:
             privileged: true
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
       nodeSelector:
         kubernetes.io/os: linux
