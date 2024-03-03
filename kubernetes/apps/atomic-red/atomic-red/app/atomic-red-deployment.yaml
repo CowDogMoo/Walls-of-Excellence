@@ -4,6 +4,8 @@ kind: Deployment
 metadata:
   name: atomic-red
   namespace: atomic-red
+  labels:
+    app: atomic-red
 spec:
   replicas: 1
   selector:
@@ -17,12 +19,16 @@ spec:
       containers:
         - name: atomic-red
           image: ghcr.io/cowdogmoo/invoke-atomicredteam:latest
+          imagePullPolicy: "IfNotPresent"
           command: ["sleep", "3560d"]
           securityContext:
             privileged: true
           resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
             limits:
-              cpu: "1"
-              memory: "1Gi"
+              cpu: 1000m
+              memory: 2048Mi
       nodeSelector:
         kubernetes.io/os: linux
