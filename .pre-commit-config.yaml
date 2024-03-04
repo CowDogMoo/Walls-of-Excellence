@@ -47,4 +47,4 @@ repos:
     rev: v2.2.6
     hooks:
       - id: codespell
-        entry: codespell -q 3 -f -S ".git,.github,go.*,magefiles/go.*,kubernetes/flux-system/*" README.md
+        entry: codespell -q 3 -f -S ".git,.github,go.*,magefiles/go.*,kubernetes/flux/config/*" README.md
