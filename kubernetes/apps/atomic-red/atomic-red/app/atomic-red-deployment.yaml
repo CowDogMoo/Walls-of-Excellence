@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: atomic-red
-          image: ghcr.io/cowdogmoo/atomic-red:latest
+          image: ghcr.io/cowdogmoo/atomic-red:latest@sha256:8ca34b43710bf1f2217faea34307a75318a2d3696d86dff6a49e2045f9448454
           imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           securityContext:
@@ -30,10 +30,3 @@ spec:
             limits:
               cpu: 1000m
               memory: 2048Mi
-          volumeMounts:
-            - name: atomic-red-pvc
-              mountPath: /root/AtomicRedTeam
-      volumes:
-        - name: atomic-red-pvc
-          persistentVolumeClaim:
-            claimName: atomic-red-pvc
