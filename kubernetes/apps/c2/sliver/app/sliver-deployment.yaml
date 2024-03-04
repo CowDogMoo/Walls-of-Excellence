@@ -16,7 +16,7 @@ spec:
       labels:
         app: sliver
     spec:
-      hostNetwork: true
+      # hostNetwork: true
       restartPolicy: Always
       initContainers:
         - name: fix-permissions

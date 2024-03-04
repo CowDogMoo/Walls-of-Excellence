@@ -7,7 +7,7 @@ metadata:
 spec:
   ingressClassName: ingress-traefik
   rules:
-    - host: &host sliver.techvomit.xyz
+    - host: sliver.techvomit.xyz
       http:
         paths:
           - pathType: Prefix
@@ -16,8 +16,8 @@ spec:
               service:
                 name: sliver
                 port:
-                  number: 80
+                  number: 8443
   tls:
     - hosts:
-        - *host
+        - sliver.techvomit.xyz
       secretName: techvomit-xyz-production-tls
