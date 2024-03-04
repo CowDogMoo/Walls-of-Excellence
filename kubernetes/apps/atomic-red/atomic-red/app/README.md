@@ -23,15 +23,14 @@
 
 ## Container Image Creation
 
-To push the container image to the GitHub Container Registry (GHCR), you will
-need to create a classic personal access token by following
-
 Begin by cloning the sliver repo locally and building the container image:
 
 ```bash
 git clone https://github.com/redcanaryco/invoke-atomicredteam.git
 cd invoke-atomicredteam/docker
 ```
+
+### Pushing the Container Image to Github Container Registry
 
 To push the container image to the `GitHub Container Registry` (`GHCR`), you
 will need to create a classic personal access token by following
@@ -43,8 +42,10 @@ With that out of the way, you can build and push the container image to `GHCR`:
 
 ```bash
 echo $GITHUB_TOKEN | docker login ghcr.io -u cowdogmoo --password-stdin
-docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t ghcr.io/cowdogmoo/atomic-red:latest --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/cowdogmoo/atomic-red:latest --push .
 ```
+
+### Testing the Container Image
 
 If everything worked, you should now be able to pull the new container image
 from `GHCR`:
