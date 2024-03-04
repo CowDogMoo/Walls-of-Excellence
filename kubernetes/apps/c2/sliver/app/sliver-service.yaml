@@ -12,9 +12,5 @@ spec:
       port: 80
       targetPort: 80
       protocol: TCP
-    - name: https
-      port: 44344
-      targetPort: 44344
-      protocol: TCP
   selector:
     app: sliver

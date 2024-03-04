@@ -16,6 +16,7 @@ spec:
       labels:
         app: sliver
     spec:
+      hostNetwork: true
       restartPolicy: Always
       initContainers:
         - name: fix-permissions
@@ -32,11 +33,6 @@ spec:
           securityContext:
             runAsUser: 0
             runAsGroup: 0
-          ports:
-            - name: http
-              containerPort: 80
-            - name: https
-              containerPort: 44344
           resources:
             requests:
               cpu: 100m
