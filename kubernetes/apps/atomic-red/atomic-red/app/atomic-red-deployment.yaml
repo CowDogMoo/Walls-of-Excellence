@@ -19,8 +19,8 @@ spec:
       containers:
         - name: atomic-red
           image: ghcr.io/cowdogmoo/atomic-red:latest
-          imagePullPolicy: Always
-          # command: ["sleep", "3560d"]
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           securityContext:
             privileged: true
           resources:
@@ -30,5 +30,10 @@ spec:
             limits:
               cpu: 1000m
               memory: 2048Mi
-      nodeSelector:
-        kubernetes.io/os: linux
+          volumeMounts:
+            - name: atomic-red-pvc
+              mountPath: $HOME/AtomicRedTeam
+      volumes:
+        - name: atomic-red-pvc
+          persistentVolumeClaim:
+            claimName: atomic-red-pvc
