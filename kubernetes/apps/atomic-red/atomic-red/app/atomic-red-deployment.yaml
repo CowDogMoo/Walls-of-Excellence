@@ -32,7 +32,7 @@ spec:
               memory: 2048Mi
           volumeMounts:
             - name: atomic-red-pvc
-              mountPath: $HOME/AtomicRedTeam
+              mountPath: /root/AtomicRedTeam
       volumes:
         - name: atomic-red-pvc
           persistentVolumeClaim:
