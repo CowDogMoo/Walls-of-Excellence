@@ -19,7 +19,8 @@ spec:
       containers:
         - name: atomic-red
           image: ghcr.io/cowdogmoo/atomic-red:latest
-          command: ["sleep", "3560d"]
+          imagePullPolicy: Always
+          # command: ["sleep", "3560d"]
           securityContext:
             privileged: true
           resources:
