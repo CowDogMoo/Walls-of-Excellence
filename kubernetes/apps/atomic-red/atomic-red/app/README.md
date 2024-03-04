@@ -23,14 +23,14 @@
 
 ## Container Image Creation
 
-Begin by cloning the sliver repo locally and building the container image:
+Begin by cloning the sliver repo locally:
 
 ```bash
 git clone https://github.com/redcanaryco/invoke-atomicredteam.git
 cd invoke-atomicredteam/docker
 ```
 
-### Pushing the Container Image to Github Container Registry
+### Building and Pushing the Container Image to Github Container Registry
 
 To push the container image to the `GitHub Container Registry` (`GHCR`), you
 will need to create a classic personal access token by following
