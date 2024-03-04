@@ -108,8 +108,17 @@ spec:
         replicas: 2
         replicaExternalLabelName: __replica__
         scrapeInterval: 1m
+        ruleNamespaceSelector:
+          any: true
+        ruleSelector: {}
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorNamespaceSelector:
+          any: true
+        serviceMonitorSelector: {}
+        podMonitorNamespaceSelector:
+          any: true
+        podMonitorSelector: {}
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
@@ -127,7 +136,7 @@ spec:
               storageClassName: nfs-client
               resources:
                 requests:
-                  storage: 20Gi
+                  storage: 100Gi
 
     nodeExporter:
       enabled: true
