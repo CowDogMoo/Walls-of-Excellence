@@ -1,0 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: runzero-explorer
+  namespace: monitoring
+spec:
+  ingressClassName: ingress-traefik
+  rules:
+    - host: &host runzero-explorer.techvomit.xyz
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: runzero-explorer
+                port:
+                  number: 80
+            path: /
+  tls:
+    - hosts:
+        - *host
+      secretName: techvomit-xyz-production-tls
