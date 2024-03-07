@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: atomic-red
-          image: ghcr.io/cowdogmoo/atomic-red:latest@sha256:8ca34b43710bf1f2217faea34307a75318a2d3696d86dff6a49e2045f9448454
+          image: ghcr.io/cowdogmoo/atomic-red:latest
           imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           securityContext:
