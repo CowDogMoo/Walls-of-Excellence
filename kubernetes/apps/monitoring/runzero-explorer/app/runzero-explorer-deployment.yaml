@@ -20,7 +20,7 @@ spec:
         - name: runzero-explorer
           image: ghcr.io/cowdogmoo/runzero-explorer:latest
           imagePullPolicy: Always
-          # command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
           securityContext:
             privileged: true
           resources:
