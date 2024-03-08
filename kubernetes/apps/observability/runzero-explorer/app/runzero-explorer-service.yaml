@@ -9,9 +9,9 @@ metadata:
   namespace: observability
 spec:
   ports:
-    - name: http
-      port: 80
-      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
       protocol: TCP
   selector:
     app: runzero-explorer

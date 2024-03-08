@@ -15,7 +15,7 @@ spec:
               service:
                 name: runzero-explorer
                 port:
-                  number: 80
+                  number: 443
             path: /
   tls:
     - hosts:
