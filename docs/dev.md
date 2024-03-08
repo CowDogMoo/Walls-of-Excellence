@@ -87,3 +87,8 @@ mage runansible all
 ```
 
 Then follow [these instructions](../kubernetes/bootstrap/README.md) to continue.
+
+## Debugging
+
+The official flux cheatsheet is chalk full of useful commands and tips for
+debugging: <https://fluxcd.io/flux/cheatsheets/troubleshooting/>
