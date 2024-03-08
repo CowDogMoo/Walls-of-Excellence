@@ -16,13 +16,29 @@ spec:
       labels:
         app: runzero-explorer
     spec:
+      initContainers:
+        - name: init-symlink
+          image: busybox
+          command:
+            [
+              "/bin/sh",
+              "-c",
+              "ln -s /opt/runzero/bin/runzero-agent-* /opt/runzero/bin/runzero-agent",
+            ]
+          volumeMounts:
+            - name: runzero-explorer-pvc
+              mountPath: /opt/runzero/bin
       containers:
         - name: runzero-explorer
           image: ghcr.io/cowdogmoo/runzero-explorer:latest
           imagePullPolicy: Always
-          command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          command: ["/opt/runzero/bin/runzero-agent", "manual"]
           securityContext:
-            privileged: true
+            runAsUser: 0 # Run as root user
+            privileged: true # Required for full functionality of runZero scanner
+          volumeMounts:
+            - name: runzero-explorer-pvc
+              mountPath: /opt/runzero/bin
           resources:
             requests:
               cpu: 100m
@@ -30,3 +46,7 @@ spec:
             limits:
               cpu: 1000m
               memory: 1024Mi
+      volumes:
+        - name: runzero-explorer-pvc
+          persistentVolumeClaim:
+            claimName: runzero-explorer-pvc
