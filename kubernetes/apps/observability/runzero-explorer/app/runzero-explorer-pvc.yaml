@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: runzero-explorer-pvc
-  namespace: monitoring
+  namespace: observability
 spec:
   accessModes:
     - ReadWriteOnce
