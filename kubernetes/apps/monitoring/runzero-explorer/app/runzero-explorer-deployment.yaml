@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runzero-explorer
+  namespace: monitoring
+  labels:
+    app: runzero-explorer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: runzero-explorer
+  template:
+    metadata:
+      labels:
+        app: runzero-explorer
+    spec:
+      containers:
+        - name: runzero-explorer
+          image: ghcr.io/cowdogmoo/runzero-explorer:latest
+          imagePullPolicy: Always
+          # command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
