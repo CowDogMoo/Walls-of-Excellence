@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: atomic-red
+resources:
+  - atomic-red-deployment.yaml
+  - atomic-red-service.yaml
+  - atomic-red-ingress.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/name: atomic-red
+      app.kubernetes.io/instance: atomic-red
