@@ -2,22 +2,22 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: sliver
-  namespace: c2
+  name: runzero-explorer
+  namespace: monitoring
 spec:
   ingressClassName: ingress-traefik
   rules:
-    - host: sliver.techvomit.xyz
+    - host: &host runzero-explorer.techvomit.xyz
       http:
         paths:
           - pathType: Prefix
-            path: /
             backend:
               service:
-                name: sliver
+                name: runzero-explorer
                 port:
-                  number: 8443
+                  number: 80
+            path: /
   tls:
     - hosts:
-        - sliver.techvomit.xyz
+        - *host
       secretName: techvomit-xyz-production-tls

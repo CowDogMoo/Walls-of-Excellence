@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atomic-red
+  namespace: atomic-red
+  labels:
+    app: atomic-red
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atomic-red
+  template:
+    metadata:
+      labels:
+        app: atomic-red
+    spec:
+      containers:
+        - name: atomic-red
+          image: ghcr.io/cowdogmoo/atomic-red:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 2048Mi
