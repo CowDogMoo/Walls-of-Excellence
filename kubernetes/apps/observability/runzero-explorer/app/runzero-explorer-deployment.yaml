@@ -39,6 +39,8 @@ spec:
           volumeMounts:
             - name: runzero-explorer-pvc
               mountPath: /opt/runzero/bin
+            - name: runzero-explorer-pvc
+              mountPath: /tmp
           resources:
             requests:
               cpu: 100m
