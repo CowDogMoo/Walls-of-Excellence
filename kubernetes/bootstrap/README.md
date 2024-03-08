@@ -1,5 +1,7 @@
 # Bootstrap Instructions
 
+Navigate to the bootstrap directory (`kubernetes/bootstrap`) and do the following:
+
 1. Install flux
 
    ```bash
