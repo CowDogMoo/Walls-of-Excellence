@@ -2,7 +2,8 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: walls-of-excellence
+  name: flux-system
+  # name: walls-of-excellence
   namespace: flux-system
 spec:
   interval: 1m
