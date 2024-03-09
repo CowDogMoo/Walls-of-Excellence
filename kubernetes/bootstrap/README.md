@@ -5,7 +5,6 @@ Navigate to the bootstrap directory (`kubernetes/bootstrap`) and do the followin
 1. Install flux
 
    ```bash
-   kubectl apply --server-side -k ./flux --force-conflicts
    kubectl apply -k ./flux
    ```
 
@@ -22,9 +21,11 @@ Navigate to the bootstrap directory (`kubernetes/bootstrap`) and do the followin
    kubectl apply -k ../flux/config
    ```
 
-1. Create the cluster settings ConfigMap
+1. Create the cluster settings ConfigMap and configure sops
 
    ```bash
+   kubectl apply --server-side -f ../flux/apps.yaml
+   kubectl apply -f ../flux/apps.yaml
    kubectl apply -k ../flux/vars
    ```
 
