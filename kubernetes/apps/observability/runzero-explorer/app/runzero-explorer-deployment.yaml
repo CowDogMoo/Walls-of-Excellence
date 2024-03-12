@@ -24,11 +24,6 @@ spec:
           securityContext:
             runAsUser: 0 # Run as root user
             privileged: true # Required for full functionality of runZero scanner
-          volumeMounts:
-            - name: runzero-explorer-pvc
-              mountPath: /opt/runzero/bin
-            - name: runzero-explorer-pvc
-              mountPath: /tmp
           resources:
             requests:
               cpu: 100m
@@ -36,7 +31,3 @@ spec:
             limits:
               cpu: 1000m
               memory: 1024Mi
-      volumes:
-        - name: runzero-explorer-pvc
-          persistentVolumeClaim:
-            claimName: runzero-explorer-pvc
