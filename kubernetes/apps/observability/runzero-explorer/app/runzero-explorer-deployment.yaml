@@ -16,6 +16,7 @@ spec:
       labels:
         app: runzero-explorer
     spec:
+      restartPolicy: Always
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       affinity:
