@@ -18,14 +18,24 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - runzero-explorer
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: runzero-explorer
           image: ghcr.io/cowdogmoo/runzero-explorer:latest
           imagePullPolicy: Always
           command: ["/opt/runzero/bin/runzero-explorer.bin", "manual"]
           securityContext:
-            runAsUser: 0 # Run as root user
-            privileged: true # Required for full functionality of runZero scanner
+            runAsUser: 0
+            privileged: true
           resources:
             requests:
               cpu: 100m
