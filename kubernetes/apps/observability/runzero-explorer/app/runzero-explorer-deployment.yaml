@@ -16,6 +16,8 @@ spec:
       labels:
         app: runzero-explorer
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: runzero-explorer
           image: ghcr.io/cowdogmoo/runzero-explorer:latest
