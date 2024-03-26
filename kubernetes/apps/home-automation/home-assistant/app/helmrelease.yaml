@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -26,13 +27,11 @@ spec:
     keepHistory: false
   values:
     controllers:
-      main:
+      home-assistant:
         annotations:
-          # -- Set the container timezone
-          TZ: "America/Denver"
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/home-assistant/home-assistant
               tag: 2024.3.3
@@ -51,25 +50,28 @@ spec:
                 cpu: 10m
               limits:
                 memory: 1Gi
-
     service:
-      main:
+      app:
+        controller: home-assistant
+        type: LoadBalancer
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: ha.techvomit.xyz
         ports:
           http:
             port: 8123
-
     ingress:
-      main:
+      app:
         enabled: true
-        ingressClassName: ingress-traefik
+        className: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/target: ha.techvomit.xyz
         hosts:
           - host: &host ha.techvomit.xyz
             paths:
               - path: /
-                pathType: Prefix
                 service:
-                  name: main
-                  port: http
+                  name: ha
+                  port: 80
         tls:
           - hosts:
               - *host
