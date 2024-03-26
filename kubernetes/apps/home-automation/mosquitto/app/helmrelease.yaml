@@ -1,120 +1,122 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
   name: mosquitto
   namespace: home-automation
 spec:
+  interval: 30m
   chart:
     spec:
-      chart: mosquitto
-      reconcileStrategy: ChartVersion
+      chart: app-template
+      version: 3.0.2
       sourceRef:
         kind: HelmRepository
-        name: k8s-at-home
+        name: bjw-s
         namespace: flux-system
-  interval: 15m
   install:
-    timeout: 10m
-    replace: true
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      remediateLastFailure: true
-      retries: 3
       strategy: rollback
-    cleanupOnFail: true
-    crds: CreateReplace
-  test:
-    enable: true
-  rollback:
-    recreate: true
-    force: true
-    cleanupOnFail: true
-  uninstall:
-    keepHistory: false
-  maxHistory: 3
+      retries: 3
   values:
-    # Lock to the k8s3 node since MQTT can't be load balanced.
-    nodeSelector:
-      node: k8s3
-
-    env:
-      # -- Set the container timezone
-      TZ: "America/Denver"
-
-    # # -- Configures service settings for the chart. Normally this does not need to be modified.
-    # # @default -- See values.yaml
-    # service:
-    #   main:
-    #     type: LoadBalancer
-    #     externalTrafficPolicy: Local
-    #     annotations:
-    #       # External DNS Annotation
-    #       external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
-    #     ports:
-    #       http:
-    #         enabled: false
-    #       mqtt:
-    #         enabled: true
-    #         primary: true
-    #         port: 1883
-
-    securityContext:
-      runAsUser: 1883
-      runAsGroup: 1883
-
-    configMaps:
-      config:
-        enabled: true
-        data:
-          mosquitto.conf: |
-            listener 1883
-            allow_anonymous true
-            persistence false
-            connection_messages false
-
-    # -- Enable and configure ingress settings for the chart under this key.
-    # @default -- See values.yaml
-    ingress:
-      main:
+    controllers:
+      mosquitto:
         annotations:
-          # External DNS Annotation
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          init-config:
+            image:
+              repository: docker.io/library/eclipse-mosquitto
+              tag: 2.0.18
+            command: ["/bin/sh", "-c"]
+            args:
+              [
+                "cp /tmp/secret/* /mosquitto/external_config/ && mosquitto_passwd -U /mosquitto/external_config/mosquitto_pwd",
+              ]
+        containers:
+          app:
+            image:
+              repository: docker.io/library/eclipse-mosquitto
+              tag: 2.0.18
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 16Mi
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            runAsNonRoot: true
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        controller: mosquitto
+        type: LoadBalancer
+        annotations:
           external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
+        ports:
+          mqtt:
+            port: 1883
+    ingress:
+      app:
         enabled: true
-        ingressClassName: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
         hosts:
-          - host: &host mosquitto.techvomit.xyz
+          - host: mosquitto.techvomit.xyz
             paths:
               - path: /
                 pathType: Prefix
-        tls:
-          - hosts:
-              - *host
-            secretName: techvomit-xyz-production-tls
-
+                service:
+                  name: mosquitto
+                  port: 1883
+    persistence:
+      config:
+        type: nfs
+        server: 192.168.20.210
+        path: /volume1/k8s/mosquitto
+        globalMounts:
+          - path: /mosquitto/config
+      config-file:
+        type: configMap
+        name: mosquitto-configmap
+        advancedMounts:
+          mosquitto:
+            app:
+              - path: /mosquitto/config/mosquitto.conf
+      secret-file:
+        type: secret
+        name: mosquitto-secret
+        advancedMounts:
+          mosquitto:
+            init-config:
+              - path: /tmp/secret
+      external-config:
+        type: emptyDir
+        globalMounts:
+          - path: /mosquitto/external_config
+    env:
+      TZ: "America/Denver"
+    securityContext:
+      runAsUser: 1883
+      runAsGroup: 1883
     logs:
       general:
         format: json
         level: DEBUG
-
-    # # -- When hostNetwork is true set dnsPolicy to ClusterFirstWithHostNet
-    # dnsPolicy: ClusterFirstWithHostNet
-
-    # -- Enable devices to be discoverable
-    # DO NOT COMMENT THIS OUT EVER AGAIN:
-    # hostNetwork: true
-    # SERIOUSLY, DO NOT DO IT YOU BASTARD!
-    # Resource: https://www.reddit.com/r/kubernetes/comments/ixucya/homekit_integration_for_home_assistant_on_a/
-
-    # -- Configure a persistent volume to place mosquitto data in.
-    # When enabled, this enables `persistence` and `persistence_location` in the mosquitto config.
-    persistence:
-      config:
-        enabled: true
-        type: nfs
-        server: 192.168.20.210
-        path: /volume1/k8s/mosquitto
-        mountPath: /config/mosquitto

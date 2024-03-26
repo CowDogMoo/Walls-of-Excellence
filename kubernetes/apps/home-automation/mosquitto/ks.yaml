@@ -5,19 +5,16 @@ metadata:
   name: mosquitto
   namespace: flux-system
 spec:
+  targetNamespace: home-automation
   dependsOn:
     - name: nfs-subdir-external-provisioner
+    - name: external-secrets-stores
   path: ./kubernetes/apps/home-automation/mosquitto/app
-  # account for items that are removed from the path
-  prune: false
+  prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
-      kind: HelmRelease
-      name: mosquitto
-      namespace: home-automation
+  wait: false
   interval: 30m
   retryInterval: 1m
-  timeout: 3m
+  timeout: 5m
