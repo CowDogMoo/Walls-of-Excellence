@@ -37,14 +37,16 @@ spec:
               tag: 2.0.18
             command: ["/bin/sh", "-c"]
             args:
-              [
-                "cp /tmp/secret/* /mosquitto/external_config/ && mosquitto_passwd -U /mosquitto/external_config/mosquitto_pwd",
-              ]
+              - |
+                touch /mosquitto/config/passwd && \
+                cp /tmp/secret/* /mosquitto/config/ && \
+                mosquitto_passwd -U /mosquitto/config/passwd
         containers:
           app:
             image:
               repository: docker.io/library/eclipse-mosquitto
               tag: 2.0.18
+            command: [mosquitto, -c, /mosquitto/config/mosquitto.conf]
             probes:
               liveness:
                 enabled: true
@@ -63,24 +65,9 @@ spec:
           external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
         ports:
           mqtt:
+            port: 1883
+          mqtts:
             port: 8883
-    ingress:
-      app:
-        className: ingress-traefik
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: mosquitto.techvomit.xyz
-        hosts:
-          - host: &host mosquitto.techvomit.xyz
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  name: mosquitto
-                  port: 8883
-        tls:
-          - hosts:
-              - mosquitto.techvomit.xyz
-            secretName: techvomit-xyz-production-tls
     env:
       TZ: "America/Denver"
     logs:
@@ -89,30 +76,34 @@ spec:
         level: DEBUG
     persistence:
       config:
-        type: nfs
-        server: 192.168.20.210
-        path: /volume1/k8s/mosquitto
-        globalMounts:
-          - path: /data
-      config-file:
+        enabled: true
         type: configMap
-        name: mosquitto-configmap
+        name: mosquitto-config
         advancedMounts:
           mosquitto:
             app:
               - path: /mosquitto/config/mosquitto.conf
                 subPath: mosquitto.conf
-      secret-file:
+      data:
+        enabled: true
+        storageClass: nfs-client
+        accessMode: ReadWriteOnce
+        size: 64Mi
+        advancedMounts:
+          mosquitto:
+            app:
+              - path: /mosquitto/data
+      auth:
+        enabled: true
         type: secret
         name: mosquitto-secret
         advancedMounts:
           mosquitto:
-            init-config:
-              - path: /tmp/secret
-      external-config:
-        type: emptyDir
-        globalMounts:
-          - path: /mosquitto/external_config
+            app:
+              - path: /mosquitto/config/passwd
+                subPath: passwd
+              - path: /mosquitto/config/acl
+                subPath: acl
       tls-certs:
         type: secret
         name: techvomit-xyz-production-tls
@@ -123,3 +114,24 @@ spec:
                 subPath: tls.crt
               - path: /mosquitto/certs/tls.key
                 subPath: tls.key
+    configMaps:
+      config:
+        enabled: true
+        data:
+          mosquitto.conf: |
+            per_listener_settings false
+            listener 1883
+            listener 8883
+            allow_anonymous false
+            persistence true
+            persistence_location /mosquitto/data
+            autosave_interval 1800
+            # SSL/TLS settings
+            certfile /mosquitto/certs/tls.crt
+            keyfile /mosquitto/certs/tls.key
+            log_dest stderr
+            log_type error
+            log_type warning
+
+            password_file /mosquitto/config/passwd
+            acl_file /mosquitto/config/acl

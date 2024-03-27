@@ -6,12 +6,12 @@ namespace: home-automation
 resources:
   - externalsecret.yaml
   - helmrelease.yaml
-configMapGenerator:
-  - name: mosquitto-configmap
-    files:
-      - mosquitto.conf=./config/mosquitto.conf
-generatorOptions:
-  disableNameSuffixHash: true
+# configMapGenerator:
+#   - name: mosquitto-configmap
+#     files:
+#       - mosquitto.conf=./config/mosquitto.conf
+# generatorOptions:
+#   disableNameSuffixHash: true
 labels:
   - pairs:
       app.kubernetes.io/name: mosquitto
