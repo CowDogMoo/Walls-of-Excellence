@@ -64,14 +64,12 @@ spec:
             runAsNonRoot: true
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
-
     service:
       app:
         controller: mosquitto
         ports:
-          http: # TODO: Change to mqtt if we can get it to work
-            port: 1883
-
+          mqtt:
+            port: 8883
     ingress:
       app:
         className: ingress-traefik
@@ -81,21 +79,20 @@ spec:
           - host: &host mosquitto.techvomit.xyz
             paths:
               - path: /
+                pathType: Prefix
                 service:
-                  identifier: app
-                  port: http
+                  name: mosquitto
+                  port: 8883
         tls:
           - hosts:
-              - *host
+              - mosquitto.techvomit.xyz
             secretName: techvomit-xyz-production-tls
-
     env:
       TZ: "America/Denver"
     logs:
       general:
         format: json
         level: DEBUG
-
     persistence:
       config:
         type: nfs
@@ -122,3 +119,13 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /mosquitto/external_config
+      tls-certs:
+        type: secret
+        name: techvomit-xyz-production-tls
+        advancedMounts:
+          mosquitto:
+            app:
+              - path: /mosquitto/certs/tls.crt
+                subPath: tls.crt
+              - path: /mosquitto/certs/tls.key
+                subPath: tls.key
