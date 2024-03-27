@@ -50,28 +50,26 @@ spec:
                 cpu: 10m
               limits:
                 memory: 1Gi
+
     service:
       app:
         controller: home-assistant
-        type: LoadBalancer
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: ha.techvomit.xyz
         ports:
           http:
             port: 8123
+
     ingress:
       app:
-        enabled: true
         className: ingress-traefik
         annotations:
-          external-dns.alpha.kubernetes.io/target: ha.techvomit.xyz
+          external-dns.alpha.kubernetes.io/hostname: ha.techvomit.xyz
         hosts:
           - host: &host ha.techvomit.xyz
             paths:
               - path: /
                 service:
-                  name: ha
-                  port: 80
+                  identifier: app
+                  port: http
         tls:
           - hosts:
               - *host
