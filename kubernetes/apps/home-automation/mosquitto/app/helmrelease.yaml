@@ -75,8 +75,6 @@ spec:
         ports:
           mqtt:
             port: 1883
-          mqtts:
-            port: 8883
 
     env:
       TZ: "America/Denver"
@@ -118,14 +116,3 @@ spec:
           mosquitto:
             init-config:
               - path: /tmp/secret
-
-      tls-certs:
-        type: secret
-        name: techvomit-xyz-production-tls
-        advancedMounts:
-          mosquitto:
-            app:
-              - path: /mosquitto/certs/tls.crt
-                subPath: tls.crt
-              - path: /mosquitto/certs/tls.key
-                subPath: tls.key
