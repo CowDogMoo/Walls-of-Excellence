@@ -54,6 +54,7 @@ spec:
     service:
       app:
         controller: home-assistant
+        type: LoadBalancer
         ports:
           http:
             port: 8123
@@ -97,3 +98,7 @@ spec:
         type: nfs
         server: 192.168.20.210
         path: /volume1/k8s/home-assistant
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /config/logs
