@@ -51,29 +51,21 @@ spec:
               limits:
                 memory: 2Gi
     pod:
-      securityContext:
-        capabilities:
-          add:
-            - NET_ADMIN
-            - NET_RAW
-            - NET_BROADCAST
+      # -- Enable devices to be discoverable
+      hostNetwork: true
+      # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
+      dnsPolicy: ClusterFirstWithHostNet
 
     service:
       app:
         controller: home-assistant
         type: LoadBalancer
+        externalTrafficPolicy: Cluster
         ports:
           http:
             port: 8123
-
-    # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
-    dnsPolicy: ClusterFirstWithHostNet
-
-    # -- Enable devices to be discoverable
-    # DO NOT COMMENT THIS OUT EVER AGAIN:
-    hostNetwork: true
-    # SERIOUSLY, DO NOT DO IT YOU BASTARD!
-    # Resource: https://www.reddit.com/r/kubernetes/comments/ixucya/homekit_integration_for_home_assistant_on_a/
+          homekit:
+            port: 21063
 
     ingress:
       app:
