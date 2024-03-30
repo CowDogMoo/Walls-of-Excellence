@@ -5,10 +5,6 @@ kind: Kustomization
 namespace: c2
 resources:
   - helmrelease.yaml
-  # - ./sliver-pvc.yaml
-  # - ./sliver-deployment.yaml
-  # - ./sliver-service.yaml
-  # - ./sliver-ingress.yaml
 commonLabels:
   app.kubernetes.io/name: sliver
   app.kubernetes.io/instance: sliver
