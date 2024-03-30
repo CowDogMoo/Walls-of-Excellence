@@ -1,0 +1,115 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: sliver
+  namespace: c2
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.0.4
+      interval: 30m
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      sliver:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        strategy: Recreate
+        initContainers:
+          fix-permissions:
+            image:
+              repository: busybox
+              tag: latest
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                chown -R 999:999 /home/sliver/.sliver
+        containers:
+          app:
+            image:
+              repository: ghcr.io/cowdogmoo/sliverc2
+              tag: latest@sha256:18e3d8cad5f70928793d4e433241e61821a649a17b169493893e2a0001b71fca
+            command:
+              - /bin/bash
+              - -ec
+              - while :; do echo '.'; sleep 5; done
+            env:
+              # -- Set the container timezone
+              TZ: "America/Denver"
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 2000m
+                memory: 4096Mi
+    pod:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: sliver-pvc
+          persistentVolumeClaim:
+            claimName: sliver-pvc
+
+    service:
+      app:
+        controller: sliver
+        type: LoadBalancer
+        externalTrafficPolicy: Cluster
+        ports:
+          http:
+            port: 80
+          https:
+            port: 443
+
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: &host sliver.techvomit.xyz
+        hosts:
+          - host: *host
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+
+    logs:
+      general:
+        format: json
+        level: DEBUG
+
+    persistence:
+      config:
+        enabled: true
+        type: nfs
+        server: 192.168.20.210
+        path: /volume1/k8s/sliver
+        advancedMounts:
+          sliver:
+            fix-permissions:
+              - path: /home/sliver/.sliver
