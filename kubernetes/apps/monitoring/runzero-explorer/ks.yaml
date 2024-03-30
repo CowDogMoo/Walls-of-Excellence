@@ -5,7 +5,7 @@ metadata:
   name: runzero-explorer
   namespace: flux-system
 spec:
-  path: ./kubernetes/apps/observability/runzero-explorer/app
+  path: ./kubernetes/apps/monitoring/runzero-explorer/app
   interval: 5m
   retryInterval: 1m
   timeout: 3m

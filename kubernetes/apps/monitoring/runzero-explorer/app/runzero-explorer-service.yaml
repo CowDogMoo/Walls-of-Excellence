@@ -6,7 +6,7 @@ metadata:
     # External DNS Annotations
     external-dns.alpha.kubernetes.io/hostname: runzero-explorer.techvomit.xyz
   name: runzero-explorer
-  namespace: observability
+  namespace: monitoring
 spec:
   ports:
     - name: https

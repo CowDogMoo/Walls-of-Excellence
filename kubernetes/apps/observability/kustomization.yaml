@@ -6,4 +6,4 @@ resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
   # Flux-Kustomizations
-  - ./runzero-explorer/ks.yaml
+  - ./kube-prometheus-stack/ks.yaml
