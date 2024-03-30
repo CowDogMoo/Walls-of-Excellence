@@ -40,6 +40,7 @@ spec:
             args:
               - |
                 chown -R 999:999 /home/sliver/.sliver
+
         containers:
           app:
             image:
@@ -62,6 +63,7 @@ spec:
               limits:
                 cpu: 2000m
                 memory: 4096Mi
+
     pod:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -74,7 +76,8 @@ spec:
       app:
         controller: sliver
         type: LoadBalancer
-        externalTrafficPolicy: Cluster
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: sliver.techvomit.xyz
         ports:
           http:
             port: 80
@@ -82,23 +85,6 @@ spec:
             port: 443
           mtls:
             port: 8888
-
-    ingress:
-      app:
-        className: ingress-traefik
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: &host sliver.techvomit.xyz
-        hosts:
-          - host: *host
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
-        tls:
-          - hosts:
-              - *host
-            secretName: techvomit-xyz-production-tls
 
     logs:
       general:
