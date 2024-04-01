@@ -44,8 +44,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/cowdogmoo/sliverc2
-              tag: latest@sha256:18e3d8cad5f70928793d4e433241e61821a649a17b169493893e2a0001b71fca
+              repository: ghcr.io/l50/sliver
+              tag: latest
             command:
               - /bin/bash
               - -ec
