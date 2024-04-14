@@ -2,9 +2,10 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: attack-simulation
 resources:
-  # Pre Flux-Kustomizations
-  - ./namespace.yaml
-  # Flux-Kustomizations
-  - ./atomic-red-team/ks.yaml
-  - ./ttpforge/ks.yaml
+  - helmrelease.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/name: ttpforge
+      app.kubernetes.io/instance: ttpforge

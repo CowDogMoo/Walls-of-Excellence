@@ -1,0 +1,61 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: ttpforge
+  namespace: attack-simulation
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.1.0
+      interval: 30m
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      ttpforge:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        strategy: Recreate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/l50/ttpforge
+              tag: latest
+            command:
+              - /bin/bash
+              - -ec
+              - while :; do echo '.'; sleep 5; done
+            env:
+              # -- Set the container timezone
+              TZ: "America/Denver"
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 2000m
+                memory: 4096Mi
+
+    pod:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+    logs:
+      general:
+        format: json
+        level: DEBUG
