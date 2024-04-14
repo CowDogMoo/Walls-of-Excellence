@@ -8,7 +8,7 @@ spec:
   path: ./kubernetes/apps/attack-simulation/atomic-red-team/app
   interval: 5m
   retryInterval: 1m
-  timeout: 3m
+  timeout: 10m
   prune: true # account for items that are removed from the path
   sourceRef:
     kind: GitRepository
