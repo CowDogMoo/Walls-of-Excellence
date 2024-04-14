@@ -2,22 +2,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atomic-red
-  namespace: atomic-red
+  name: atomic-red-team
+  namespace: attack-simulation
   labels:
-    app: atomic-red
+    app: atomic-red-team
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: atomic-red
+      app: atomic-red-team
   template:
     metadata:
       labels:
-        app: atomic-red
+        app: atomic-red-team
     spec:
       containers:
-        - name: atomic-red
+        - name: atomic-red-team
           image: ghcr.io/l50/atomic-red-team:latest
           imagePullPolicy: IfNotPresent
           command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]

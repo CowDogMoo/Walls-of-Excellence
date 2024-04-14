@@ -4,9 +4,9 @@ kind: Service
 metadata:
   annotations:
     # External DNS Annotations
-    external-dns.alpha.kubernetes.io/hostname: atomic-red.techvomit.xyz
-  name: atomic-red
-  namespace: atomic-red
+    external-dns.alpha.kubernetes.io/hostname: atomic-red-team.techvomit.xyz
+  name: atomic-red-team
+  namespace: attack-simulation
 spec:
   ports:
     - name: http
@@ -14,4 +14,4 @@ spec:
       targetPort: 80
       protocol: TCP
   selector:
-    app: atomic-red
+    app: atomic-red-team

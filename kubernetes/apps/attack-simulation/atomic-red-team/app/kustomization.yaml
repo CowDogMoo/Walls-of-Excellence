@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: attack-simulation
+resources:
+  - atomic-red-team-deployment.yaml
+  - atomic-red-team-service.yaml
+  - atomic-red-team-ingress.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/name: atomic-red-team
+      app.kubernetes.io/instance: atomic-red-team

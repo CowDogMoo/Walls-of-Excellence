@@ -5,10 +5,10 @@ validate security controls and test detection capabilities.
 
 ## Using Atomic Red Team in k8s
 
-1. Get a shell to the `atomic-red` pod:
+1. Get a shell to the `atomic-red-team` pod:
 
    ```bash
-   kubectl exec -it -n atomic-red deployments/atomic-red -- pwsh
+   kubectl exec -it -n attack-simulation deployments/atomic-red-team -- pwsh
    ```
 
 1. Import the `Invoke-AtomicRedTeam` module and set the default parameter
