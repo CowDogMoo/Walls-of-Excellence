@@ -109,6 +109,8 @@ spec:
 
     deployment:
       replicas: 1
+      labels:
+        app: ingress-traefik
 
     autoscaling:
       enabled: true
