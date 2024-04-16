@@ -11,6 +11,7 @@ Navigate to the bootstrap directory (`kubernetes/bootstrap`) and do the followin
 1. Add age key to the cluster
 
    ```bash
+   export SOPS_AGE_KEY_FILE='/path/to/generated/keys/file/from/age/keys.txt'
    sops -d flux/age-key.secret.sops.yaml | kubectl apply -f -
    ```
 
