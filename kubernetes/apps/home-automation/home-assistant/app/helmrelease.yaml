@@ -11,7 +11,6 @@ spec:
     spec:
       chart: app-template
       version: 3.1.0
-      interval: 30m
       sourceRef:
         kind: HelmRepository
         name: bjw-s
