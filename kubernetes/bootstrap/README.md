@@ -36,6 +36,13 @@ Navigate to the bootstrap directory (`kubernetes/bootstrap`) and do the followin
    kubectl apply -k ../flux/repositories
    ```
 
+1. Add all of the k8s apps to the cluster:
+
+   ```bash
+   cd ../apps
+   find . -type f -name "kustomization.yaml" -execdir kubectl apply -k . \;
+   ```
+
 ---
 
 ## Initial Creation of the age key
