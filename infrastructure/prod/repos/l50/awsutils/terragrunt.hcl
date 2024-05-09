@@ -5,8 +5,8 @@ locals {
   repo_vars = read_terragrunt_config(find_in_parent_folders("repo.hcl"))
 
   # Extract the variables we need for easy access
-  aws_account_id   = "898493401173"
-  aws_region       = "us-west-1"
+  aws_account_id   = env_vars.locals.aws_account_id
+  aws_region       = env_vars.locals.aws_region
   owner           = local.repo_vars.locals.owner
 
   # Local values

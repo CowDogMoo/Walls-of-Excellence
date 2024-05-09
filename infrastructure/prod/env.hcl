@@ -2,6 +2,6 @@
 # feed forward to the child modules.
 locals {
   aws_account_name   = "personal"
-  env                = "prod"
-  name               = "walls-of-excellence"
+  env            = "prod"
+  region         = "us-west-1"
 }
