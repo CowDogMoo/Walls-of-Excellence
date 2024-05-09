@@ -33,7 +33,7 @@ include {
 inputs = {
   openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
   repo                        = "${local.owner}/${local.repo_name}"
-  role_name                   = "${local.name}-${local.owner}-oidc-s3"
+  role_name                   = "${local.name}-${local.owner}-oidc"
   # override default conditions
   default_conditions          = ["allow_main"]
   role_policy_arns            = ["arn:aws:iam::aws:policy/AdministratorAccess"]
