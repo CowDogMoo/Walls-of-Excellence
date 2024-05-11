@@ -13,9 +13,9 @@ terraform {
   source = "github.com/philips-labs/terraform-aws-github-oidc//?ref=main"
 }
 
-// dependency "provider" {
-//   config_path = "../provider"
-// }
+dependency "provider" {
+  config_path = "../../provider"
+}
 
 include {
   path = find_in_parent_folders()
@@ -26,7 +26,7 @@ include {
 # github.com/philips-labs/terraform-aws-github-oidc
 ##################################################################
 inputs = {
-  // openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
+  openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
   repo = "${local.project_owner}/${local.project_name}"
   role_name = "${local.env}-${local.project_owner}-${local.project_name}-oidc"
   default_conditions = ["allow_main"]
