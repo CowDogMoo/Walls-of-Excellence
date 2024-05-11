@@ -9,7 +9,7 @@ import (
 )
 
 var debug = false
-var tfDir = filepath.Join("infrastructure", "prod")
+var tfDir = filepath.Join("infrastructure", "prod", "repos")
 
 // Apply runs terragrunt init, plan, and apply
 func Apply() error {
