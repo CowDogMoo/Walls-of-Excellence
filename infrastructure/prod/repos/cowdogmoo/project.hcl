@@ -3,5 +3,5 @@
 # feed forward to the child modules.
 locals {
   project_name = "warpgate"
-  project_owner = "CowDogMoo"
+  project_owner = "cowdogmoo"
 }
