@@ -28,15 +28,15 @@ include {
 inputs = {
   openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
   repo = "${local.project_owner}/${local.project_name}"
-  role_name = "${local.env}-${local.project_owner}-${local.project_name}-oidc"
-  default_conditions = ["allow_main"]
-  role_policy_arns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
-  conditions = [{
+  role_name           = "${local.env}-${local.project_owner}-${local.project_name}-oidc"
+  role_policy_arns    = ["arn:aws:iam::aws:policy/AdministratorAccess"]
+   # Define condition to restrict based on the GitHub Action's environment
+  default_conditions          = ["allow_main"]
+  conditions                  = [{
     test = "StringLike"
     variable = "token.actions.githubusercontent.com:sub"
     values = [
       "repo:${local.project_owner}/${local.project_name}:pull_request",
-      "repo:${local.project_owner}/${local.project_name}:refs/heads/main",
     ]
   }]
 }
