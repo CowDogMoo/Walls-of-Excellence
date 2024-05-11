@@ -4,8 +4,10 @@
 # remote state, and locking: https://github.com/gruntwork-io/terragrunt
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
-  aws_account_id   = "898493401173"
-  aws_region       = "us-west-1"
+  # Automatically load environment-level variables
+  env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  aws_account_id      = local.env_vars.locals.aws_account_id
+  aws_region      = local.env_vars.locals.aws_region
 }
 
 # Generate an AWS provider block
@@ -36,3 +38,14 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# GLOBAL PARAMETERS
+# These variables apply to all configurations in this subfolder. These are automatically merged into the child
+# `terragrunt.hcl` config via the include block.
+# ---------------------------------------------------------------------------------------------------------------------
+# Configure root level variables that all resources can inherit. This is especially helpful with multi-account configs
+# where terraform_remote_state data sources are placed directly into the modules.
+inputs = merge(
+  local.env_vars.locals,
+)
