@@ -54,6 +54,16 @@ spec:
       hostNetwork: true
       # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
       dnsPolicy: ClusterFirstWithHostNet
+      # -- Add node affinity to avoid scheduling on node k8s6
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - k8s6
 
     service:
       app:
