@@ -6,7 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/bitfield/script v0.22.1
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/l50/goutils/v2 v2.2.6
 	github.com/magefile/mage v1.15.0
 	gopkg.in/yaml.v2 v2.4.0
