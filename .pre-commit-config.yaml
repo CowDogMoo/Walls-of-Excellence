@@ -44,7 +44,7 @@ repos:
         exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         entry: codespell -q 3 -f -S ".git,.github,go.*,magefiles/go.*,kubernetes/flux/config/*" README.md
