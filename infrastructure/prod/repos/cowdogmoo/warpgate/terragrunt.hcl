@@ -28,6 +28,7 @@ include {
 inputs = {
   openid_connect_provider_arn = dependency.provider.outputs.openid_connect_provider.arn
   repo = "${local.project_owner}/${local.project_name}"
+  role_max_session_duration = 7200
   role_name           = "${local.env}-${local.project_owner}-${local.project_name}-oidc"
   role_policy_arns    = ["arn:aws:iam::aws:policy/AdministratorAccess"]
    # Define condition to restrict based on the GitHub Action's environment
