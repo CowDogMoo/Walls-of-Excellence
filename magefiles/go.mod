@@ -2,14 +2,14 @@ module magefile
 
 go 1.22.0
 
-toolchain go1.22.5
+toolchain go1.22.6
 
 require (
 	github.com/bitfield/script v0.22.1
 	github.com/fatih/color v1.17.0
 	github.com/l50/goutils/v2 v2.2.6
 	github.com/magefile/mage v1.15.0
-	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
