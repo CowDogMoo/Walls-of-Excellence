@@ -84,7 +84,7 @@ spec:
       image:
         pullPolicy: "IfNotPresent"
         repository: "rancher/mirrored-bci-micro"
-        tag: 15.6.19.1
+        tag: 15.6.24.2
 
     # As of Rancher v2.5.0 this flag is deprecated and must be set to 'true' in order for Rancher to start
     addLocal: "true"
