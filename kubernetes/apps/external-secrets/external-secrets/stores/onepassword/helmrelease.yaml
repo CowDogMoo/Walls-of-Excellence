@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 3.4.0
+      version: 3.5.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -26,7 +26,7 @@ spec:
     keepHistory: false
   values:
     controllers:
-      main:
+      onepassword-connect:
         strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -34,7 +34,7 @@ spec:
           main:
             image:
               repository: docker.io/1password/connect-api
-              tag: 1.7.3
+              tag: 1.7.3@sha256:0601c7614e102eada268dbda6ba4b5886ce77713be2c332ec6a2fd0f028484ba
             env:
               XDG_DATA_HOME: &configDir /config
               OP_HTTP_PORT: &apiPort 80
@@ -64,8 +64,6 @@ spec:
                     path: /health
                     port: *apiPort
                   initialDelaySeconds: 15
-              startup:
-                enabled: false
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -78,7 +76,7 @@ spec:
           sync:
             image:
               repository: docker.io/1password/connect-sync
-              tag: 1.7.3
+              tag: 1.7.3@sha256:2f17621c7eb27bbcb1f86bbc5e5a5198bf54ac3b9c2ffac38064d03c932b07d5
             env:
               XDG_DATA_HOME: *configDir
               OP_HTTP_PORT: &syncPort 8081
@@ -108,17 +106,22 @@ spec:
                     path: /health
                     port: *syncPort
                   initialDelaySeconds: 15
-              startup:
-                enabled: false
-              securityContext: *securityContext
-              resources: *resources
-        pod:
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            runAsNonRoot: true
-            fsGroup: 999
-            fsGroupChangePolicy: OnRootMismatch
+            securityContext: *securityContext
+            resources: *resources
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: { type: RuntimeDefault }
+    service:
+      main:
+        controller: onepassword-connect
+        ports:
+          http:
+            port: *apiPort
     ingress:
       main:
         enabled: true
@@ -129,22 +132,13 @@ spec:
               - path: /
                 service:
                   name: main
-                  port: 80
+                  port: *apiPort
         tls:
           - hosts:
               - onepassword-connect.techvomit.xyz
             secretName: techvomit-xyz-production-tls
     persistence:
       config:
-        enabled: true
         type: emptyDir
         globalMounts:
           - path: *configDir
-    service:
-      main:
-        metadata:
-          annotations:
-            external-dns.alpha.kubernetes.io/hostname: onepassword-connect.techvomit.xyz
-        ports:
-          http:
-            port: 80
