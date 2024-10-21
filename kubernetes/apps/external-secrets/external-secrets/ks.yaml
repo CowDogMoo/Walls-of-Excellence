@@ -15,13 +15,8 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
   wait: true
-  interval: 10m
-  retryInterval: 1m
+  interval: 30m
   timeout: 5m
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -42,11 +37,6 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
   wait: true
-  interval: 10m
-  retryInterval: 1m
+  interval: 30m
   timeout: 5m
