@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: c2
 resources:
   - helmrelease.yaml
-commonLabels:
-  app.kubernetes.io/name: sliver
-  app.kubernetes.io/instance: sliver
+labels:
+  - pairs:
+      app.kubernetes.io/name: sliver
+      app.kubernetes.io/instance: sliver
