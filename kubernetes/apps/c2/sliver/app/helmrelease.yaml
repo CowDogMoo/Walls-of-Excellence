@@ -40,7 +40,6 @@ spec:
             args:
               - |
                 chown -R 999:999 /home/sliver/.sliver
-
         containers:
           app:
             image:
@@ -63,7 +62,6 @@ spec:
               limits:
                 cpu: 2000m
                 memory: 4096Mi
-
     pod:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -71,7 +69,6 @@ spec:
         - name: sliver-pvc
           persistentVolumeClaim:
             claimName: sliver-pvc
-
     service:
       app:
         controller: sliver
@@ -85,12 +82,10 @@ spec:
             port: 443
           mtls:
             port: 8888
-
     logs:
       general:
         format: json
         level: DEBUG
-
     persistence:
       config:
         enabled: true
@@ -101,3 +96,11 @@ spec:
           sliver:
             fix-permissions:
               - path: /home/sliver/.sliver
+      sliver-pvc:
+        enabled: true
+        type: persistentVolumeClaim
+        existingClaim: sliver-pvc
+      sliver-db-config:
+        enabled: true
+        type: secret
+        name: sliver-db-secret
