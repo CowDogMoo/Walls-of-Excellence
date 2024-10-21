@@ -16,6 +16,9 @@ spec:
         name: bjw-s
         namespace: flux-system
   install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
@@ -25,6 +28,7 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
     controllers:
       mosquitto:
