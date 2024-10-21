@@ -31,7 +31,7 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          onepassword-connect:
             image:
               repository: docker.io/1password/connect-api
               tag: 1.7.3@sha256:0601c7614e102eada268dbda6ba4b5886ce77713be2c332ec6a2fd0f028484ba
@@ -117,13 +117,15 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
     service:
-      main:
+      onepassword-connect:
         controller: onepassword-connect
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: onepassword-connect.techvomit.xyz
         ports:
           http:
             port: *apiPort
     ingress:
-      main:
+      onepassword-connect:
         enabled: true
         className: ingress-traefik
         hosts:
@@ -131,7 +133,7 @@ spec:
             paths:
               - path: /
                 service:
-                  name: main
+                  name: onepassword-connect
                   port: *apiPort
         tls:
           - hosts:
