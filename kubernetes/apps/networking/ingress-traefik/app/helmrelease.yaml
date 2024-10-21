@@ -153,7 +153,7 @@ spec:
 
     ports:
       traefik:
-        expose: true
+        expose: {}
       web:
         redirectTo:
           port: websecure
