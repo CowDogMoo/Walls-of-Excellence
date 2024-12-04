@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.3
 
 require (
-	github.com/bitfield/script v0.23.0
+	github.com/bitfield/script v0.24.0
 	github.com/fatih/color v1.18.0
 	github.com/l50/goutils/v2 v2.2.7
 	github.com/magefile/mage v1.15.0
