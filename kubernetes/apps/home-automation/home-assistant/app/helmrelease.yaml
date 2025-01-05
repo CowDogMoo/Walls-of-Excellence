@@ -61,9 +61,9 @@ spec:
             nodeSelectorTerms:
               - matchExpressions:
                   - key: kubernetes.io/hostname
-                    operator: In
+                    operator: NotIn
                     values:
-                      - k8s3
+                      - k8s6
 
     service:
       app:
