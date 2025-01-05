@@ -49,22 +49,27 @@ spec:
                 cpu: 100m
               limits:
                 memory: 2Gi
-    pod:
-      # -- Enable devices to be discoverable
-      hostNetwork: true
-      # -- When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
-      dnsPolicy: ClusterFirstWithHostNet
-      # -- Add node affinity to schedule only on node k8s3
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: NotIn
-                    values:
-                      - k8s6
-
+        pod:
+          # Enable devices to be discoverable
+          hostNetwork: true
+          # When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
+          dnsPolicy: ClusterFirstWithHostNet
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: NotIn
+                        values:
+                          - k8s6
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: home-assistant
     service:
       app:
         controller: home-assistant
@@ -75,7 +80,6 @@ spec:
             port: 8123
           homekit:
             port: 21063
-
     ingress:
       app:
         className: ingress-traefik
@@ -92,13 +96,10 @@ spec:
           - hosts:
               - *host
             secretName: techvomit-xyz-production-tls
-
     logs:
       general:
         format: json
         level: DEBUG
-
-    # -- Configure persistence settings for the chart under this key.
     # Mount path running on nfs server to /config (default storageClass)
     persistence:
       config:
