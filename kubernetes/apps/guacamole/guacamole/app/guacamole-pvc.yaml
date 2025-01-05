@@ -5,6 +5,7 @@ metadata:
   name: guacamole-pvc
   namespace: guacamole
 spec:
+  storageClassName: nfs-client
   accessModes:
     - ReadWriteOnce
   resources:
