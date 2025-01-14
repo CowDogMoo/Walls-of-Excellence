@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: loki
-      version: 5.41.6
+      version: 6.24.0
       sourceRef:
         kind: HelmRepository
         name: grafana
@@ -26,10 +26,25 @@ spec:
   values:
     loki:
       auth_enabled: false
+      analytics:
+        reporting_enabled: false
+      server:
+        log_level: info
       commonConfig:
         replication_factor: 1
+      ingester:
+        chunk_encoding: snappy
       storage:
         type: filesystem
+      schemaConfig:
+        configs:
+          - from: "2024-04-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: loki_index_
+              period: 24h
       limits_config:
         retention_period: 14d
         enforce_metric_name: false
@@ -48,18 +63,26 @@ spec:
         enabled: true
         size: 10Gi
         storageClass: nfs-client
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 1
+          memory: 1Gi
     gateway:
       enabled: true
+      replicas: 1
+      verboseLogging: true
     ingress:
       enabled: true
       ingressClassName: ingress-traefik
       annotations:
         external-dns.alpha.kubernetes.io/hostname: loki.techvomit.xyz
-        traefik.ingress.kubernetes.io/router.middlewares: "default-strip-prefix@kubernetescrd"
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
       paths:
         read:
-          - /ready
-          - /metrics
           - /loki/api/v1/health
           - /loki/api/v1/tail
           - /loki/api/v1/query
@@ -69,6 +92,8 @@ spec:
           - /loki/api/v1/series
           - /loki/api/v1/alerts
           - /loki/api/v1/rules
+          - /ready
+          - /metrics
         write:
           - /loki/api/v1/push
       hosts:

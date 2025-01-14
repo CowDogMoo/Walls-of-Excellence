@@ -9,20 +9,30 @@ spec:
   chart:
     spec:
       chart: promtail
-      version: 6.15.3
+      version: 6.16.6
       sourceRef:
         kind: HelmRepository
         name: grafana
         namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
   values:
+    fullnameOverride: promtail
     config:
       logLevel: info
       serverPort: 3101
-      lokiAddress: http://loki:3100/loki/api/v1/push
+      clients:
+        - url: http://loki:3100/loki/api/v1/push
     tolerations:
       - operator: Exists
     resources:
       limits:
+        cpu: 200m
         memory: 256Mi
       requests:
         cpu: 100m
