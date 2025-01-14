@@ -39,35 +39,37 @@ spec:
         split_queries_by_interval: 15m
         ingestion_rate_mb: 16
         ingestion_burst_size_mb: 32
-        per_stream_rate_limit: 8MB
-        per_stream_rate_limit_burst: 16MB
-
+        per_stream_rate_limit: "8MB" # Changed to string
+        per_stream_rate_limit_burst: "16MB" # Changed to string
+    mode: single-binary # Added this to explicitly set single binary mode
     singleBinary:
       replicas: 1
       persistence:
         enabled: true
         size: 10Gi
         storageClass: nfs-client
-
-    service:
-      type: ClusterIP
-      externalTrafficPolicy: Cluster
-
+    gateway:
+      enabled: true
     ingress:
       enabled: true
       ingressClassName: ingress-traefik
       annotations:
         external-dns.alpha.kubernetes.io/hostname: loki.techvomit.xyz
+      paths: # Added paths configuration
+        read:
+          - /loki/api/v1/tail
+          - /loki/api
+        write:
+          - /loki/api/v1/push
       hosts:
-        - host: &host loki.techvomit.xyz
+        - host: loki.techvomit.xyz
           paths:
             - path: /
               pathType: Prefix
       tls:
         - hosts:
-            - *host
+            - loki.techvomit.xyz
           secretName: techvomit-xyz-production-tls
-
     monitoring:
       dashboards:
         enabled: true
