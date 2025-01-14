@@ -196,6 +196,23 @@ spec:
         existingSecret: grafana-admin-secret
         userKey: GRAFANA_ADMIN_USER
         passwordKey: GRAFANA_ADMIN_PW
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          uid: loki
+          url: http://loki.observability.svc.cluster.local:3100
+          access: proxy
+          jsonData:
+            maxLines: 1000
+            timeout: 30
+            derivedFields:
+              - datasourceUid: prometheus # Allows clicking on a trace ID to jump to your trace visualization
+                matcherRegex: "traceID=(\\w+)" # Extract traceID from logs
+                name: TraceID
+                url: "$${__value.raw}"
+          secureJsonData: {}
+          version: 1
+          editable: true
 
   postRenderers:
     - kustomize:
