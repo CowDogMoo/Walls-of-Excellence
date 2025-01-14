@@ -39,9 +39,9 @@ spec:
         split_queries_by_interval: 15m
         ingestion_rate_mb: 16
         ingestion_burst_size_mb: 32
-        per_stream_rate_limit: "8MB" # Changed to string
-        per_stream_rate_limit_burst: "16MB" # Changed to string
-    mode: single-binary # Added this to explicitly set single binary mode
+        per_stream_rate_limit: "8MB"
+        per_stream_rate_limit_burst: "16MB"
+    mode: single-binary
     singleBinary:
       replicas: 1
       persistence:
@@ -55,17 +55,27 @@ spec:
       ingressClassName: ingress-traefik
       annotations:
         external-dns.alpha.kubernetes.io/hostname: loki.techvomit.xyz
-      paths: # Added paths configuration
+        traefik.ingress.kubernetes.io/router.middlewares: "default-strip-prefix@kubernetescrd"
+      paths:
         read:
+          - /ready
+          - /metrics
+          - /loki/api/v1/health
           - /loki/api/v1/tail
-          - /loki/api
+          - /loki/api/v1/query
+          - /loki/api/v1/query_range
+          - /loki/api/v1/labels
+          - /loki/api/v1/label
+          - /loki/api/v1/series
+          - /loki/api/v1/alerts
+          - /loki/api/v1/rules
         write:
           - /loki/api/v1/push
       hosts:
         - host: loki.techvomit.xyz
           paths:
             - path: /
-              pathType: Prefix
+              pathType: ImplementationSpecific
       tls:
         - hosts:
             - loki.techvomit.xyz
