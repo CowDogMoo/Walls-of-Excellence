@@ -8,7 +8,9 @@ spec:
   chart:
     spec:
       chart: traefik
+      version: "34.1.0"
       reconcileStrategy: ChartVersion
+      interval: 15m
       sourceRef:
         kind: HelmRepository
         name: ingress-traefik
@@ -37,9 +39,18 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    # Core configs
+    image:
+      tag: "v3.3.2"
+
     ingressClass:
       enabled: true
       isDefaultClass: true
+
+    # Dashboard access
+    api:
+      dashboard: true
+      insecure: false
 
     # Install and publish the dashboard
     ingressRoute:
@@ -60,6 +71,7 @@ spec:
           basicAuth:
             secret: traefik-dashboard-auth-secret
 
+    ping: true
     logs:
       general:
         format: json
@@ -157,8 +169,8 @@ spec:
           exposedPort: 9000
           protocol: TCP
       web:
-        redirectTo:
-          port: websecure
+        expose:
+          exposedPort: 80
       websecure:
         tls:
           enabled: true
