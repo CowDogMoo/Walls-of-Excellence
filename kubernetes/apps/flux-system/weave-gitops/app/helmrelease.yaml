@@ -12,7 +12,9 @@ spec:
   chart:
     spec:
       chart: weave-gitops
+      version: "4.0.36"
       reconcileStrategy: ChartVersion
+      interval: 15m
       sourceRef:
         kind: HelmRepository
         name: weave-gitops
@@ -21,6 +23,8 @@ spec:
   maxHistory: 3
   install:
     timeout: 10m
+    replace: true
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
@@ -29,6 +33,7 @@ spec:
       retries: 3
       strategy: rollback
     cleanupOnFail: true
+    crds: CreateReplace
   rollback:
     recreate: true
     force: true
@@ -36,6 +41,8 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    image:
+      tag: "0.38.0"
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
 
