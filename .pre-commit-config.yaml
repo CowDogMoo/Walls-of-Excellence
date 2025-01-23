@@ -43,7 +43,7 @@ repos:
         exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.0
     hooks:
       - id: codespell
         entry: codespell -q 3 -f -S ".git,.github,magefiles/go.*,kubernetes/flux/config/*,kubernetes/apps/home-automation/home-assistant/app/helmrelease.yaml" README.md
