@@ -36,6 +36,9 @@ spec:
         chunk_encoding: snappy
       storage:
         type: filesystem
+        filesystem:
+          chunks_directory: /var/loki/chunks
+          rules_directory: /var/loki/rules
       schemaConfig:
         configs:
           - from: "2024-04-01"
@@ -47,7 +50,7 @@ spec:
               period: 24h
       limits_config:
         retention_period: 14d
-        enforce_metric_name: false
+        allow_structured_metadata: false
         reject_old_samples: true
         reject_old_samples_max_age: 168h
         max_cache_freshness_per_query: 10m
@@ -56,8 +59,13 @@ spec:
         ingestion_burst_size_mb: 32
         per_stream_rate_limit: "8MB"
         per_stream_rate_limit_burst: "16MB"
-    mode: single-binary
+
+    test:
+      enabled: false
+
+    deploymentMode: "SingleBinary<->SimpleScalable"
     singleBinary:
+      enabled: true
       replicas: 1
       persistence:
         enabled: true
@@ -70,41 +78,15 @@ spec:
         limits:
           cpu: 1
           memory: 1Gi
+
+    scalable:
+      enabled: false
+
     gateway:
       enabled: true
       replicas: 1
       verboseLogging: true
-    ingress:
-      enabled: true
-      ingressClassName: ingress-traefik
-      annotations:
-        external-dns.alpha.kubernetes.io/hostname: loki.techvomit.xyz
-        traefik.ingress.kubernetes.io/router.entrypoints: websecure
-        traefik.ingress.kubernetes.io/router.tls: "true"
-      paths:
-        read:
-          - /loki/api/v1/health
-          - /loki/api/v1/tail
-          - /loki/api/v1/query
-          - /loki/api/v1/query_range
-          - /loki/api/v1/labels
-          - /loki/api/v1/label
-          - /loki/api/v1/series
-          - /loki/api/v1/alerts
-          - /loki/api/v1/rules
-          - /ready
-          - /metrics
-        write:
-          - /loki/api/v1/push
-      hosts:
-        - host: loki.techvomit.xyz
-          paths:
-            - path: /
-              pathType: ImplementationSpecific
-      tls:
-        - hosts:
-            - loki.techvomit.xyz
-          secretName: techvomit-xyz-production-tls
+
     monitoring:
       dashboards:
         enabled: true
@@ -118,3 +100,9 @@ spec:
         enabled: true
         grafanaAgent:
           installOperator: false
+
+    lokiCanary:
+      enabled: false
+
+    chunksCache:
+      enabled: false
