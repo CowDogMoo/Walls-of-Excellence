@@ -50,7 +50,7 @@ spec:
     # Dashboard access
     api:
       dashboard: true
-      insecure: false
+      insecure: true
 
     # Install and publish the dashboard
     ingressRoute:
@@ -60,9 +60,25 @@ spec:
         entryPoints: ["websecure"]
         middlewares:
           - name: traefik-dashboard-auth
+            namespace: networking
+        routes:
+          - match: Host(`traefik.techvomit.xyz`)
+            kind: Rule
+            services:
+              - name: api@internal
+                kind: TraefikService
 
     # Create the custom middlewares used by the IngressRoute dashboard (can also be created in another way).
     extraObjects:
+      - apiVersion: traefik.io/v1alpha1
+        kind: Middleware
+        metadata:
+          name: traefik-dashboard-auth
+          namespace: networking
+        spec:
+          basicAuth:
+            secret: traefik-dashboard-auth-secret
+
       - apiVersion: traefik.containo.us/v1alpha1
         kind: Middleware
         metadata:
