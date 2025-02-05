@@ -2,7 +2,7 @@ module magefile
 
 go 1.23.0
 
-toolchain go1.23.5
+toolchain go1.23.6
 
 require (
 	github.com/bitfield/script v0.24.0
