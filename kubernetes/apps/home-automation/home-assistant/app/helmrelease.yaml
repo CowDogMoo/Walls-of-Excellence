@@ -33,7 +33,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-assistant/home-assistant
-              tag: 2025.3.1
+              tag: 2025.3.2
             env:
               # -- Set the container timezone
               TZ: "America/Denver"
