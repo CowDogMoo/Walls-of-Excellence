@@ -22,6 +22,7 @@
   "suppressNotifications": ["prIgnoreNotification"],
   "rebaseWhen": "conflicted",
   "commitBodyTable": true,
+  "labels": ["renovate"],
   "pre-commit": {
     "enabled": true
   },
