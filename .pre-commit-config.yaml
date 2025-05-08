@@ -14,7 +14,7 @@ repos:
         exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         entry: yamllint --strict -c .hooks/linters/yamllint.yaml
