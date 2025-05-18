@@ -23,6 +23,7 @@
   "rebaseWhen": "conflicted",
   "commitBodyTable": true,
   "labels": ["renovate"],
+  "platformAutomerge": true,
   "pre-commit": {
     "enabled": true
   },
