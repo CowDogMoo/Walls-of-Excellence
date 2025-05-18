@@ -6,21 +6,29 @@
       "matchManagers": ["github-actions"],
       "matchDatasources": ["github-tags"],
       "automerge": true,
-      "automergeType": "branch",
+      "automergeType": "branch"
     },
     {
-      "description": "Auto merge GitHub Actions for tf",
+      "description": "Auto merge terraform module digests",
       "matchDatasources": ["terraform-module"],
       "automerge": true,
       "automergeType": "pr",
       "matchUpdateTypes": ["digest"]
     },
     {
-      "description": "Auto merge GitHub Actions for go",
+      "description": "Auto merge go module digests",
       "matchDatasources": ["gomod"],
       "automerge": true,
       "automergeType": "pr",
       "matchUpdateTypes": ["digest"]
     },
+    {
+      "description": "Auto merge Kubernetes/Flux/Helm minor and patch updates",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": ["flux", "helm-values", "kubernetes", "helm-chart"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge-queue"
+    }
   ]
 }
