@@ -1,6 +1,7 @@
 ---
 name: Renovate
 on:
+  # checkov:skip=CKV_GHA_7: "Workflow dispatch inputs are required for manual debugging and configuration"
   workflow_dispatch:
     inputs:
       dryRun:
@@ -9,7 +10,7 @@ on:
         required: false
       logLevel:
         description: Log Level
-        default: "info"
+        default: "debug"
         required: false
       version:
         description: Renovate version
@@ -24,23 +25,6 @@ on:
       - .github/renovate.json5
       - .github/renovate/**.json5
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
-  cancel-in-progress: true
-
-# Retrieve BOT_USER_ID via `curl -s "https://api.github.com/users/${BOT_USERNAME}%5Bbot%5D" | jq .id`
-env:
-  WORKFLOW_DRY_RUN: false
-  WORKFLOW_LOG_LEVEL: debug
-  WORKFLOW_VERSION: latest # 37.59.8
-  RENOVATE_PLATFORM: github
-  RENOVATE_PLATFORM_COMMIT: true
-  RENOVATE_ONBOARDING_CONFIG_FILE_NAME: .github/renovate.json5
-  RENOVATE_AUTODISCOVER: true
-  RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
-  RENOVATE_USERNAME: "${{ secrets.BOT_USERNAME }}[bot]"
-  RENOVATE_GIT_AUTHOR: "${{ secrets.BOT_USERNAME }} <${{ secrets.BOT_USER_ID }}+${{ secrets.BOT_USERNAME }}[bot]@users.noreply.github.com>"
-
 # Permissions block for GitHub App
 permissions:
   actions: write
@@ -49,13 +33,30 @@ permissions:
   pull-requests: write
   statuses: read
 
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.run_number || github.ref }}
+
+# Retrieve BOT_USER_ID via `curl -s "https://api.github.com/users/${BOT_USERNAME}%5Bbot%5D" | jq .id`
+env:
+  RENOVATE_AUTODISCOVER: true
+  RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
+  RENOVATE_GIT_AUTHOR: "${{ secrets.BOT_USERNAME }} <${{ secrets.BOT_USER_ID }}+${{ secrets.BOT_USERNAME }}[bot]@users.noreply.github.com>"
+  RENOVATE_ONBOARDING_CONFIG_FILE_NAME: .github/renovate.json5
+  RENOVATE_PLATFORM: github
+  RENOVATE_PLATFORM_COMMIT: true
+  RENOVATE_USERNAME: "${{ secrets.BOT_USERNAME }}[bot]"
+  WORKFLOW_DRY_RUN: false
+  WORKFLOW_LOG_LEVEL: debug
+  WORKFLOW_VERSION: latest # 37.59.8
+
 jobs:
   renovate:
     name: Renovate
     runs-on: ubuntu-latest
     steps:
       - name: Generate Token
-        uses: actions/create-github-app-token@af35edadc00be37caa72ed9f3e6d5f7801bfdf09 # v1.11.7
+        uses: actions/create-github-app-token@3ff1caaa28b64c9cc276ce0a02e2ff584f3900c5 # v2.0.2
         id: app-token
         with:
           app-id: "${{ secrets.BOT_APP_ID }}"
@@ -83,8 +84,10 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
 
       - name: Renovate
-        uses: renovatebot/github-action@08ed9fa83e24bfe6222557f9e221395c57972127 # v41.0.16
+        uses: renovatebot/github-action@19ba43e1bc58ed95c0ba205dee8b1bc0f27b630d # v42.0.0
         with:
           configurationFile: "${{ env.RENOVATE_ONBOARDING_CONFIG_FILE_NAME }}"
           token: "${{ steps.app-token.outputs.token }}"
           renovate-version: "${{ github.event.inputs.version || env.WORKFLOW_VERSION }}"
+        env:
+          LOG_LEVEL: "${{ env.LOG_LEVEL }}"
