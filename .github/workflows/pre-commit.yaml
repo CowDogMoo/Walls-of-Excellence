@@ -1,15 +1,22 @@
 ---
 name: Pre-Commit
 on:
-  push:
+  merge_group:
   pull_request:
+    branches:
+      - main
     types:
       - opened
       - synchronize
-  # Run once a week (see https://crontab.guru)
+      - reopened
+  push:
+    branches:
+      - main
   schedule:
+    # Run once a week (see https://crontab.guru)
     - cron: "0 0 * * 0"
   workflow_dispatch:
+
 jobs:
   pre-commit:
     name: Update pre-commit hooks and run pre-commit
