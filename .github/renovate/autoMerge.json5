@@ -6,21 +6,79 @@
       "matchManagers": ["github-actions"],
       "matchDatasources": ["github-tags"],
       "automerge": true,
-      "automergeType": "branch",
+      "automergeType": "pr",
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
     },
     {
-      "description": "Auto merge GitHub Actions for tf",
+      "description": "Auto merge terraform module digests",
       "matchDatasources": ["terraform-module"],
       "automerge": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["digest"]
+      "matchUpdateTypes": ["digest"],
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
     },
     {
-      "description": "Auto merge GitHub Actions for go",
+      "description": "Auto merge terraform module version updates",
+      "matchDatasources": ["terraform-module"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto merge go module version updates",
       "matchDatasources": ["gomod"],
       "automerge": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["digest"]
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
     },
+    {
+      "description": "Auto merge go module digests",
+      "matchDatasources": ["gomod"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["digest"],
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto merge Kubernetes/Flux/Helm minor and patch updates",
+      "matchManagers": ["flux", "helm-values", "kubernetes", "helm-chart"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto merge Docker image updates",
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto merge other minor and patch updates",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "auto",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto merge all go updates if tests pass",
+      "matchPackagePatterns": ["*"],
+      "matchManagers": ["gomod"],
+      "automerge": true,
+      "automergeStrategy": "squash",
+      "requiredStatusChecks": ["Semgrep Analysis", "Labeler"]
+     }
   ]
 }
