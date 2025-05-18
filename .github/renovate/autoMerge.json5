@@ -29,24 +29,6 @@
       "platformAutomerge": true
     },
     {
-      "description": "Auto merge go module version updates",
-      "matchDatasources": ["gomod"],
-      "automerge": true,
-      "automergeType": "pr",
-      "matchUpdateTypes": ["major", "minor", "patch"],
-      "automergeStrategy": "auto",
-      "platformAutomerge": true
-    },
-    {
-      "description": "Auto merge go module digests",
-      "matchDatasources": ["gomod"],
-      "automerge": true,
-      "automergeType": "pr",
-      "matchUpdateTypes": ["digest"],
-      "automergeStrategy": "auto",
-      "platformAutomerge": true
-    },
-    {
       "description": "Auto merge Kubernetes/Flux/Helm minor and patch updates",
       "matchManagers": ["flux", "helm-values", "kubernetes", "helm-chart"],
       "automerge": true,
