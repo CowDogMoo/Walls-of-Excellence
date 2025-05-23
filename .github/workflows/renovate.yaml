@@ -1,5 +1,5 @@
 ---
-name: Renovate
+name: 🤖 Renovate
 on:
   push:
     branches: ["main"]
