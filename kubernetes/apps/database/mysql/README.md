@@ -22,7 +22,6 @@ MySQL is a popular open-source relational database management system (RDBMS).
    ```
 
    This command will:
-
    - Create a temporary pod with the MySQL client
    - Connect to the MySQL server using the correct host and credentials
    - Automatically clean up the pod after you're done
