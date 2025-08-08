@@ -29,6 +29,20 @@ spec:
       home-assistant:
         annotations:
           reloader.stakater.com/auto: "true"
+        # Init container to setup the initial ts configuration
+        initContainers:
+          setup-ts:
+            image:
+              repository: busybox
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                if [ -f ~/.ts/config.yaml ]; then
+                  rm -f ~/.ts/config.yaml
+                fi
+                /config/ts room list > /dev/null 2>&1
         containers:
           app:
             image:
