@@ -1,0 +1,5 @@
+[codespell]
+skip = .git,.github,magefiles/go.*,kubernetes/flux/config/*,kubernetes/apps/home-automation/home-assistant/app/helmrelease.yaml,kubernetes/apps/home-automation/music-assistant/app/helmrelease.yaml
+ignore-words-list = NotIn,notin
+quiet-level = 3
+check-filenames =

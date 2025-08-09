@@ -1,0 +1,122 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: music-assistant
+  namespace: home-automation
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.7.3
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      music-assistant:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/music-assistant/server
+              tag: latest
+            env:
+              TZ: "America/Denver"
+              LOG_LEVEL: "info" # options: critical, error, warning, info, debug
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 8095
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 8095
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+            securityContext:
+              privileged: true # Required for network discovery
+              capabilities:
+                add:
+                  - DAC_READ_SEARCH
+                  - SYS_ADMIN
+        pod:
+          hostNetwork: true # Required for Music Assistant to discover Sonos speakers
+          dnsPolicy: ClusterFirstWithHostNet
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: NotIn
+                        values:
+                          - k8s6
+    service:
+      app:
+        controller: music-assistant
+        type: LoadBalancer
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: music.techvomit.xyz
+        ports:
+          http:
+            port: 8095
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: music.techvomit.xyz
+        hosts:
+          - host: &host music.techvomit.xyz
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+    persistence:
+      data:
+        enabled: true
+        type: nfs
+        server: 192.168.20.210
+        path: /volume1/k8s/music-assistant
+        globalMounts:
+          - path: /data

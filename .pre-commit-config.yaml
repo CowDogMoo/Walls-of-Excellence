@@ -46,4 +46,3 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
-        entry: codespell -q 3 -f -S ".git,.github,magefiles/go.*,kubernetes/flux/config/*,kubernetes/apps/home-automation/home-assistant/app/helmrelease.yaml" README.md
