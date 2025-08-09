@@ -8,3 +8,4 @@ resources:
   # Flux-Kustomizations
   - ./home-assistant/ks.yaml
   - ./mosquitto/ks.yaml
+  - ./music-assistant/ks.yaml
