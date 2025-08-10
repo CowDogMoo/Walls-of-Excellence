@@ -39,10 +39,13 @@ spec:
               - sh
               - -c
               - |
-                if [ -f ~/.ts/config.yaml ]; then
-                  rm -f ~/.ts/config.yaml
+                rm -rf ~/.ts
+                ln -s /config/.ts ~/.ts
+
+                # Only initialize if config doesn't exist
+                if [ ! -f /config/.ts/config.yaml ]; then
+                  /config/ts room list
                 fi
-                /config/ts room list > /dev/null 2>&1
         containers:
           app:
             image:
