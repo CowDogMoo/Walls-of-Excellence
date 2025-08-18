@@ -3,7 +3,19 @@
 version: "3"
 
 tasks:
+  check-kubectl:
+    desc: "Validate that kubectl is installed"
+    cmds:
+      - |
+        if ! command -v kubectl &> /dev/null; then
+          echo -e "Error: 'kubectl' command not found"
+          echo "Please install kubectl: https://kubernetes.io/docs/tasks/tools/"
+          exit 1
+        fi
+    silent: true
+
   reconcile:
+    deps: [check-kubectl]
     desc: "Apply Kubernetes configurations from yaml files and kustomization directories"
     summary: |
       Applies Kubernetes configuration defined in .yaml files and kustomization directories.
@@ -15,11 +27,6 @@ tasks:
       - Skips .sops.yaml files and directories referencing them
     cmds:
       - |
-        if ! command -v kubectl &> /dev/null; then
-          echo -e "\033[31mError: kubectl not found. Please install kubectl.\033[0m"
-          exit 1
-        fi
-
         echo "Starting Kubernetes resource reconciliation..."
 
         # Function to check if kustomization references .sops.yaml
@@ -70,16 +77,12 @@ tasks:
         echo -e "\033[32mReconciliation complete!\033[0m"
 
   apply-secrets:
-    desc: "Apply all Kubernetes secret files"
+    deps: [check-kubectl]
+    desc: Apply all Kubernetes secret files
     summary: |
       Finds and applies all files matching *secret.yaml pattern
     cmds:
       - |
-        if ! command -v kubectl &> /dev/null; then
-          echo -e "\033[31mError: kubectl not found. Please install kubectl.\033[0m"
-          exit 1
-        fi
-
         echo "Applying Kubernetes secrets..."
         find . -iname "*secret.yaml" -type f | while read -r secret_file; do
           echo "Applying: $secret_file"
@@ -89,20 +92,17 @@ tasks:
           }
         done
         echo -e "\033[32mAll secrets applied successfully!\033[0m"
+    silent: true
 
   destroy-stuck-ns:
-    desc: "Fix namespaces stuck in terminating state"
+    deps: [check-kubectl]
+    desc: Fix namespaces stuck in terminating state
     summary: |
       Removes finalizers from namespaces stuck in terminating state.
       This forces the deletion of stuck namespaces.
     prompt: "This will forcefully delete stuck namespaces. Continue?"
     cmds:
       - |
-        if ! command -v kubectl &> /dev/null; then
-          echo -e "\033[31mError: kubectl not found. Please install kubectl.\033[0m"
-          exit 1
-        fi
-
         echo "Finding namespaces stuck in terminating state..."
 
         # Get all terminating namespaces
@@ -125,20 +125,17 @@ tasks:
         done
 
         echo -e "\033[32mStuck namespace cleanup complete!\033[0m"
+    silent: true
 
   destroy-rancher:
-    desc: "Completely remove Rancher from the cluster"
+    deps: [check-kubectl]
+    desc: Completely remove Rancher from the cluster
     summary: |
       Tears down a Rancher deployment including all related resources,
       webhooks, and namespaces. Also runs cleanup scripts.
-    prompt: "This will completely remove Rancher from your cluster. Are you sure?"
+    prompt: This will completely remove Rancher from your cluster. Are you sure?
     cmds:
       - |
-        if ! command -v kubectl &> /dev/null; then
-          echo -e "\033[31mError: kubectl not found. Please install kubectl.\033[0m"
-          exit 1
-        fi
-
         if ! command -v helm &> /dev/null; then
           echo -e "\033[31mError: helm not found. Please install helm.\033[0m"
           exit 1
@@ -184,14 +181,18 @@ tasks:
         task k8s:destroy-stuck-ns
 
         echo -e "\033[32mRancher removal complete!\033[0m"
+    silent: true
 
   get-pods-all-ns:
-    desc: "Get all pods across all namespaces"
+    deps: [check-kubectl]
+    desc: Get all pods across all namespaces
     cmds:
       - kubectl get pods --all-namespaces -o wide
+    silent: true
 
   get-events:
-    desc: "Get cluster events sorted by timestamp"
+    deps: [check-kubectl]
+    desc: Get cluster events sorted by timestamp
     vars:
       NAMESPACE: '{{.NAMESPACE | default ""}}'
     cmds:
@@ -201,9 +202,11 @@ tasks:
         else
           kubectl get events --all-namespaces --sort-by='.lastTimestamp'
         fi
+    silent: true
 
   describe-node:
-    desc: "Describe a specific node"
+    deps: [check-kubectl]
+    desc: Describe a specific node
     summary: |
       Get detailed information about a specific node
 
@@ -214,14 +217,15 @@ tasks:
     cmds:
       - |
         if [ -z "{{.NODE}}" ]; then
-          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo -e "Error: NODE variable not set"
           echo "Usage: task k8s:describe-node NODE=nodename"
           exit 1
         fi
         kubectl describe node {{.NODE}}
 
   drain-node:
-    desc: "Drain a node for maintenance"
+    deps: [check-kubectl]
+    desc: Drain a node for maintenance
     summary: |
       Safely evict all pods from a node for maintenance
 
@@ -233,14 +237,15 @@ tasks:
     cmds:
       - |
         if [ -z "{{.NODE}}" ]; then
-          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo -e "Error: NODE variable not set"
           echo "Usage: task k8s:drain-node NODE=nodename"
           exit 1
         fi
         kubectl drain {{.NODE}} --ignore-daemonsets --delete-emptydir-data
 
   uncordon-node:
-    desc: "Uncordon a node after maintenance"
+    deps: [check-kubectl]
+    desc: Uncordon a node after maintenance
     summary: |
       Mark a node as schedulable again after maintenance
 
@@ -251,7 +256,7 @@ tasks:
     cmds:
       - |
         if [ -z "{{.NODE}}" ]; then
-          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo -e "Error: NODE variable not set"
           echo "Usage: task k8s:uncordon-node NODE=nodename"
           exit 1
         fi

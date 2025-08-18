@@ -22,3 +22,6 @@ keys.txt
 
 # taskfiles
 .task/
+
+# VSCode artifacts
+node_modules
