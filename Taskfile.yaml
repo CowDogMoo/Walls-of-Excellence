@@ -1,0 +1,138 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+set: [pipefail]
+
+includes:
+  ansible: "https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/ansible/Taskfile.yaml"
+  terraform: "https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml"
+
+vars:
+  INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"
+  K3S_ANSIBLE_DIR: "k3s-ansible"
+
+tasks:
+  default:
+    desc: Default task that performs a comprehensive setup check for k3s deployment
+    cmds:
+      - task: ansible:check-ansible
+      - task: check-inventory
+      - |-
+        echo "All checks passed successfully."
+    silent: true
+
+  check-inventory:
+    desc: "Check if inventory file exists"
+    cmds:
+      - |
+        if [ ! -f "{{.INVENTORY}}" ]; then
+          echo "Inventory file not found: {{.INVENTORY}}"
+          echo "Please ensure your k3s-ansible inventory is properly configured."
+          exit 1
+        fi
+    silent: true
+
+  ping:
+    desc: "Ping all k3s nodes using ansible"
+    deps: [ansible:check-ansible, check-inventory]
+    vars:
+      HOSTS: '{{.HOSTS | default "all"}}'
+      DEBUG: '{{.DEBUG | default "false"}}'
+    cmds:
+      - |
+        echo "Pinging {{.HOSTS}} nodes..."
+        {{if eq .DEBUG "false"}}ANSIBLE_PYTHON_INTERPRETER=auto_silent {{end}}\
+        ansible {{.HOSTS}} -i "{{.INVENTORY}}" -m ping
+    silent: false
+
+  ping-masters:
+    desc: "Ping only master nodes"
+    cmds:
+      - task: ping
+        vars:
+          HOSTS: master
+
+  ping-nodes:
+    desc: "Ping only worker nodes"
+    cmds:
+      - task: ping
+        vars:
+          HOSTS: node
+
+  provision:
+    desc: "Provision k3s cluster (all nodes)"
+    deps: [ansible:check-ansible, check-inventory]
+    vars:
+      GROUP: '{{.GROUP | default "all"}}'
+    cmds:
+      - |
+        if [ "{{.GROUP}}" != "master" ] && [ "{{.GROUP}}" != "node" ] && [ "{{.GROUP}}" != "all" ]; then
+          echo "Invalid group: {{.GROUP}}. Group must be 'master', 'node', or 'all'"
+          exit 1
+        fi
+        echo "Provisioning k3s cluster on {{.GROUP}} nodes..."
+        ansible-playbook "{{.K3S_ANSIBLE_DIR}}/site.yml" \
+          -i "{{.INVENTORY}}" \
+          --limit {{.GROUP}}
+
+  provision-masters:
+    desc: "Provision only master nodes"
+    cmds:
+      - task: provision
+        vars:
+          GROUP: master
+
+  provision-nodes:
+    desc: "Provision only worker nodes"
+    cmds:
+      - task: provision
+        vars:
+          GROUP: node
+
+  reset:
+    desc: "Reset k3s cluster (all nodes)"
+    deps: [ansible:check-ansible, check-inventory]
+    vars:
+      GROUP: '{{.GROUP | default "all"}}'
+    cmds:
+      - |
+        if [ "{{.GROUP}}" != "master" ] && [ "{{.GROUP}}" != "node" ] && [ "{{.GROUP}}" != "all" ]; then
+          echo "Invalid group: {{.GROUP}}. Group must be 'master', 'node', or 'all'"
+          exit 1
+        fi
+        echo "Resetting k3s cluster on {{.GROUP}} nodes..."
+        ansible-playbook "{{.K3S_ANSIBLE_DIR}}/reset.yml" \
+          -i "{{.INVENTORY}}" \
+          --limit {{.GROUP}}
+
+  reset-masters:
+    desc: "Reset only master nodes"
+    cmds:
+      - task: reset
+        vars:
+          GROUP: master
+
+  reset-nodes:
+    desc: "Reset only worker nodes"
+    cmds:
+      - task: reset
+        vars:
+          GROUP: node
+
+  reset-confirm:
+    desc: "Reset k3s cluster with confirmation prompt"
+    prompt: "This will reset your k3s cluster. Are you sure?"
+    cmds:
+      - task: reset
+
+  status:
+    desc: "Check cluster status by running kubectl get nodes"
+    cmds:
+      - |
+        if ! command -v kubectl &> /dev/null; then
+          echo "kubectl not found. Please install kubectl to check cluster status."
+          exit 1
+        fi
+        echo "Checking k3s cluster status..."
+        kubectl get nodes -o wide
