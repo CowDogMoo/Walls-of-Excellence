@@ -1,0 +1,181 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+includes:
+  ansible: "https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/ansible/Taskfile.yaml"
+  terraform: "https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml"
+
+vars:
+  INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"
+  K3S_ANSIBLE_DIR: "k3s-ansible"
+  K8S_NODES: "k8s1 k8s2 k8s3 k8s4 k8s5 k8s6"
+
+tasks:
+  sync-gitrepositories:
+    desc: "Sync all Flux GitRepositories by annotating them with current timestamp"
+    summary: |
+      Triggers a sync of all Flux GitRepositories in the Kubernetes cluster
+      by annotating them with the current timestamp to force reconciliation.
+    cmds:
+      - task: sync-resource
+        vars:
+          RESOURCE_TYPE: gitrepositories
+          SUCCESS_MSG: "GitRepositories synced successfully."
+
+  sync-kustomizations:
+    desc: "Sync all Flux Kustomizations by annotating them with current timestamp"
+    summary: |
+      Triggers a sync of all Flux Kustomizations in the Kubernetes cluster
+      by annotating them with the current timestamp to force reconciliation.
+    cmds:
+      - task: sync-resource
+        vars:
+          RESOURCE_TYPE: kustomizations
+          SUCCESS_MSG: "Kustomizations synced successfully."
+
+  sync-helmreleases:
+    desc: "Sync all Flux HelmReleases by annotating them with current timestamp"
+    summary: |
+      Triggers a sync of all Flux HelmReleases in the Kubernetes cluster
+      by annotating them with the current timestamp to force reconciliation.
+    cmds:
+      - task: sync-resource
+        vars:
+          RESOURCE_TYPE: helmreleases
+          SUCCESS_MSG: "HelmReleases synced successfully."
+
+  sync-all:
+    desc: "Sync all Flux resources (GitRepositories, Kustomizations, and HelmReleases)"
+    cmds:
+      - task: sync-gitrepositories
+      - task: sync-kustomizations
+      - task: sync-helmreleases
+
+  sync-resource:
+    internal: true
+    desc: "Internal task to sync Flux resources of a specific type"
+    vars:
+      RESOURCE_TYPE: "{{.RESOURCE_TYPE}}"
+      SUCCESS_MSG: "{{.SUCCESS_MSG}}"
+      TIMESTAMP:
+        sh: date +%s
+    cmds:
+      - |
+        if ! command -v kubectl &> /dev/null; then
+          echo -e "\033[31mError: kubectl not found. Please install kubectl.\033[0m"
+          exit 1
+        fi
+
+        echo "Syncing {{.RESOURCE_TYPE}}..."
+
+        # Get all resources and annotate them
+        kubectl get {{.RESOURCE_TYPE}} --all-namespaces --no-headers 2>/dev/null | while read -r line; do
+          if [ -z "$line" ]; then
+            continue
+          fi
+
+          namespace=$(echo "$line" | awk '{print $1}')
+          name=$(echo "$line" | awk '{print $2}')
+
+          if [ -z "$namespace" ] || [ -z "$name" ]; then
+            continue
+          fi
+
+          echo "  Annotating {{.RESOURCE_TYPE}}/$name in namespace $namespace"
+          kubectl -n "$namespace" annotate {{.RESOURCE_TYPE}}/"$name" \
+            "reconcile.fluxcd.io/requestedAt={{.TIMESTAMP}}" \
+            --overwrite || {
+            echo -e "\033[31mError: Failed to annotate {{.RESOURCE_TYPE}}/$name in namespace $namespace\033[0m"
+            exit 1
+          }
+        done
+
+        echo -e "\033[32m{{.SUCCESS_MSG}}\033[0m"
+
+  uninstall:
+    desc: "Uninstall FluxCD from the Kubernetes cluster"
+    summary: |
+      Completely removes FluxCD from the Kubernetes cluster using the 'flux uninstall' command.
+      This will remove all Flux components and CRDs.
+    prompt: "This will completely remove FluxCD from your cluster. Are you sure?"
+    cmds:
+      - |
+        if ! command -v flux &> /dev/null; then
+          echo -e "\033[31mError: flux CLI not found. Please install the flux CLI.\033[0m"
+          echo "Installation instructions: https://fluxcd.io/flux/installation/#install-the-flux-cli"
+          exit 1
+        fi
+
+        echo -e "\033[32mUninstalling flux, please wait...\033[0m"
+        flux uninstall || {
+          echo -e "\033[31mError: Failed to uninstall flux\033[0m"
+          exit 1
+        }
+
+        echo -e "\033[32mFlux uninstalled successfully.\033[0m"
+
+  get-not-ready:
+    desc: "Get all Flux resources that are not in ready state"
+    summary: |
+      Gathers and displays all Flux objects across all namespaces that are not ready.
+      This helps identify resources that may be failing or stuck.
+    cmds:
+      - |
+        if ! command -v flux &> /dev/null; then
+          echo -e "\033[31mError: flux CLI not found. Please install the flux CLI.\033[0m"
+          echo "Installation instructions: https://fluxcd.io/flux/installation/#install-the-flux-cli"
+          exit 1
+        fi
+
+        echo -e "\033[32mGathering all Flux objects that are not ready...\033[0m"
+        flux get all -A --status-selector ready=false || {
+          echo -e "\033[31mError: Failed to get Flux resources\033[0m"
+          exit 1
+        }
+
+  status:
+    desc: "Check the status of all Flux resources"
+    summary: |
+      Displays the status of all Flux resources across all namespaces.
+      Shows GitRepositories, Kustomizations, HelmReleases, and other Flux resources.
+    cmds:
+      - |
+        if ! command -v flux &> /dev/null; then
+          echo -e "\033[31mError: flux CLI not found. Please install the flux CLI.\033[0m"
+          echo "Installation instructions: https://fluxcd.io/flux/installation/#install-the-flux-cli"
+          exit 1
+        fi
+
+        echo -e "\033[32mChecking Flux resources status...\033[0m"
+        flux get all -A
+
+  logs:
+    desc: "Show logs from Flux controllers"
+    summary: |
+      Display logs from Flux system controllers.
+      Use FOLLOW=true to follow logs in real-time.
+      Use CONTROLLER to specify a specific controller (e.g., source-controller, kustomize-controller)
+    vars:
+      FOLLOW: '{{.FOLLOW | default "false"}}'
+      CONTROLLER: '{{.CONTROLLER | default ""}}'
+    cmds:
+      - |
+        if ! command -v flux &> /dev/null; then
+          echo -e "\033[31mError: flux CLI not found. Please install the flux CLI.\033[0m"
+          echo "Installation instructions: https://fluxcd.io/flux/installation/#install-the-flux-cli"
+          exit 1
+        fi
+
+        follow_flag=""
+        if [ "{{.FOLLOW}}" = "true" ]; then
+          follow_flag="--follow"
+        fi
+
+        controller_flag=""
+        if [ -n "{{.CONTROLLER}}" ]; then
+          controller_flag="--name={{.CONTROLLER}}"
+        fi
+
+        echo -e "\033[32mShowing Flux controller logs...\033[0m"
+        flux logs $follow_flag $controller_flag

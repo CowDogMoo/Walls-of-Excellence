@@ -5,8 +5,11 @@ version: "3"
 set: [pipefail]
 
 includes:
-  ansible: "https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/ansible/Taskfile.yaml"
-  terraform: "https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml"
+  ansible: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/ansible/Taskfile.yaml
+  flux:
+    taskfile: .taskfiles/flux
+    optional: true
+  terraform: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml
 
 vars:
   INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"
