@@ -11,6 +11,7 @@ includes:
 vars:
   INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"
   K3S_ANSIBLE_DIR: "k3s-ansible"
+  K8S_NODES: "k8s1 k8s2 k8s3 k8s4 k8s5 k8s6"
 
 tasks:
   default:
@@ -32,6 +33,130 @@ tasks:
           exit 1
         fi
     silent: true
+
+  run-cmd-all:
+    desc: "Run a command on all k8s nodes"
+    summary: |
+      Run a command on all k8s nodes via SSH
+
+      Examples:
+        task run-cmd-all -- 'echo "hello"'
+        task run-cmd-all -- 'ip addr | grep 192'
+        task run-cmd-all -- 'sudo reboot'
+    vars:
+      CMD: "{{.CLI_ARGS}}"
+    cmds:
+      - |
+        if [ -z "{{.CMD}}" ]; then
+          echo -e "\033[31mError: no command provided\033[0m"
+          echo "Usage: task run-cmd-all -- 'your command here'"
+          exit 1
+        fi
+
+        for node in {{.K8S_NODES}}; do
+          echo -e "\033[33mNow running command on $node\033[0m"
+          ssh $node "{{.CMD}}" || {
+            echo -e "\033[31mError on $node: command failed\033[0m"
+            exit 1
+          }
+        done
+
+  run-cmd:
+    desc: "Run a command on a specific k8s node"
+    summary: |
+      Run a command on a specific k8s node via SSH
+
+      Examples:
+        task run-cmd NODE=k8s1 -- 'echo "hello"'
+        task run-cmd NODE=k8s2 -- 'ip addr | grep 192'
+    vars:
+      NODE: "{{.NODE}}"
+      CMD: "{{.CLI_ARGS}}"
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo "Usage: task run-cmd NODE=k8s1 -- 'your command here'"
+          exit 1
+        fi
+
+        if [ -z "{{.CMD}}" ]; then
+          echo -e "\033[31mError: no command provided\033[0m"
+          echo "Usage: task run-cmd NODE=k8s1 -- 'your command here'"
+          exit 1
+        fi
+
+        # Check if node is valid
+        valid=false
+        for node in {{.K8S_NODES}}; do
+          if [ "$node" = "{{.NODE}}" ]; then
+            valid=true
+            break
+          fi
+        done
+
+        if [ "$valid" = false ]; then
+          echo -e "\033[31mError: {{.NODE}} is not a valid node\033[0m"
+          echo "Valid nodes: {{.K8S_NODES}}"
+          exit 1
+        fi
+
+        echo -e "\033[33mRunning command on {{.NODE}}\033[0m"
+        ssh {{.NODE}} "{{.CMD}}"
+
+  reboot:
+    desc: "Reboot a specific node or all nodes"
+    summary: |
+      Reboot a specific k8s node or all nodes
+
+      Examples:
+        task reboot NODE=k8s1
+        task reboot NODE=all
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo "Usage: task reboot NODE=k8s1"
+          echo "       task reboot NODE=all"
+          exit 1
+        fi
+
+        if [ "{{.NODE}}" = "all" ]; then
+          echo -e "\033[33mRebooting all nodes...\033[0m"
+          for node in {{.K8S_NODES}}; do
+            echo -e "\033[33mRebooting $node\033[0m"
+            ssh $node "sudo reboot" || true
+          done
+          exit 0
+        fi
+
+        # Check if node is valid
+        valid=false
+        for node in {{.K8S_NODES}}; do
+          if [ "$node" = "{{.NODE}}" ]; then
+            valid=true
+            break
+          fi
+        done
+
+        if [ "$valid" = false ]; then
+          echo -e "\033[31mError: {{.NODE}} is not a valid node\033[0m"
+          echo "Valid nodes: {{.K8S_NODES}}"
+          exit 1
+        fi
+
+        echo -e "\033[33mRebooting {{.NODE}}\033[0m"
+        ssh {{.NODE}} "sudo reboot"
+
+  reboot-all:
+    desc: "Reboot all k8s nodes"
+    prompt: "This will reboot ALL k8s nodes. Are you sure?"
+    cmds:
+      - task: reboot
+        vars:
+          NODE: all
 
   ping:
     desc: "Ping all k3s nodes using ansible"
