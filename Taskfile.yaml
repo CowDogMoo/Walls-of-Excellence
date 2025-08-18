@@ -8,7 +8,9 @@ includes:
   ansible: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/ansible/Taskfile.yaml
   flux:
     taskfile: .taskfiles/flux
-    optional: true
+  k8s:
+    taskfile: .taskfiles/k8s
+  pre-commit: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/pre-commit/Taskfile.yaml
   terraform: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml
 
 vars:
@@ -108,7 +110,7 @@ tasks:
         ssh {{.NODE}} "{{.CMD}}"
 
   reboot:
-    desc: "Reboot a specific node or all nodes"
+    desc: Reboot a specific node or all nodes
     summary: |
       Reboot a specific k8s node or all nodes
 
@@ -154,15 +156,15 @@ tasks:
         ssh {{.NODE}} "sudo reboot"
 
   reboot-all:
-    desc: "Reboot all k8s nodes"
-    prompt: "This will reboot ALL k8s nodes. Are you sure?"
+    desc: Reboot all k8s nodes
+    prompt: This will reboot ALL k8s nodes. Are you sure?
     cmds:
       - task: reboot
         vars:
           NODE: all
 
   ping:
-    desc: "Ping all k3s nodes using ansible"
+    desc: Ping all k3s nodes using ansible
     deps: [ansible:check-ansible, check-inventory]
     vars:
       HOSTS: '{{.HOSTS | default "all"}}'
