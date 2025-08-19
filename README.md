@@ -31,71 +31,151 @@ Infrastructure as Code (IaC) and GitOps practices where possible
 ## Table of Contents
 
 - [Developer Environment Setup](docs/dev.md)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Usage](#usage)
+- [Resources](#resources)
+
+---
+
+## Prerequisites
+
+- [Task](https://taskfile.dev/installation/) - Task runner for automation
+- [Flux CLI](https://fluxcd.io/flux/installation/) - GitOps toolkit
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) - Kubernetes CLI
+- [Terraform](https://www.terraform.io/downloads) - Infrastructure as Code
+
+### Quick Install (macOS)
+
+```bash
+brew install go-task/tap/go-task
+brew install fluxcd/tap/flux
+brew install kubectl
+brew install terraform
+```
 
 ---
 
 ## Installation
 
-- Flux
+1. Clone the repository:
 
-  If you're on a mac, run this:
+   ```bash
+   gh repo clone CowDogMoo/Walls-of-Excellence woe
+   cd woe
+   ```
 
-  ```bash
-  brew install fluxcd/tap/flux
-  ```
+1. View available tasks:
 
-  Otherwise, follow [these instructions](https://fluxcd.io/flux/installation/).
+   ```bash
+   task -l
+   ```
 
-- Clone the repo:
+1. Bootstrap Flux (if you haven't already):
 
-  ```bash
-  gh repo clone CowDogMoo/Walls-of-Excellence woe
-  ```
+   ```bash
+   export GITHUB_TOKEN=$FLUX_PAT
+   export PATH_TO_FLUX_DEPLOYMENT=./kubernetes/flux-system/bootstrap-config
+   export REPO_OWNER=CowDogMoo
+   export REPO_NAME=Walls-of-Excellence
 
-- Bootstrap flux (if you haven't already, otherwise skip this step):
+   flux bootstrap github \
+     --owner=$REPO_OWNER \
+     --repository=$REPO_NAME \
+     --path=$PATH_TO_FLUX_DEPLOYMENT \
+     --personal \
+     --token-auth
+   ```
 
-  ```bash
-  export GITHUB_TOKEN=$FLUX_PAT
-  export PATH_TO_FLUX_DEPLOYMENT=./kubernetes/flux-system/bootstrap-config
-  export REPO_OWNER=CowDogMoo
-  export REPO_NAME=Walls-of-Excellence
+1. Provision infrastructure:
 
-  flux bootstrap github \
-  --owner=$REPO_OWNER \
-  --repository=$REPO_NAME \
-  --path=$PATH_TO_FLUX_DEPLOYMENT \
-  --personal \
-  --token-auth
-  ```
-
-- Build cloud resources:
-
-  ```bash
-  mage apply
-  ```
+   ```bash
+   # Initialize and apply Terraform configurations
+   task terraform:tf-apply
+   ```
 
 ---
 
 ## Usage
 
-- Reconcile flux resources:
+### Cluster Management
 
-  ```bash
-  mage syncgitrepositories synchelmreleases synckustomizations
-  ```
+```bash
+# Provision k3s cluster
+task provision
 
-- Sync flux-system Kustomization resources with source:
+# Check cluster status
+task ping
 
-  ```bash
-  flux reconcile ks flux-system --with-source
-  ```
+# Reboot all nodes
+task reboot-all
+```
 
-- Sync cluster-apps Kustomization resources with source:
+### GitOps Operations
 
-  ```bash
-  flux reconcile ks cluster-apps --with-source -n flux-system
-  ```
+```bash
+# Install Flux via Helm
+task k8s:flux:install
+
+# Reconcile Kubernetes resources
+task reconcile
+
+# Apply secrets
+task apply-secrets
+```
+
+### Flux Synchronization
+
+```bash
+# Sync flux-system Kustomization with source
+flux reconcile ks flux-system --with-source
+
+# Sync cluster-apps Kustomization with source
+flux reconcile ks cluster-apps --with-source -n flux-system
+```
+
+### Development Workflow
+
+```bash
+# Run pre-commit hooks
+task pre-commit:run-pre-commit
+
+# Lint Ansible playbooks
+task ansible:lint-ansible
+
+# Run Molecule tests
+task ansible:run-molecule-tests
+
+# Format and validate Terraform
+task terraform:tf-check
+```
+
+### Troubleshooting
+
+```bash
+# Remove stuck namespaces
+task k8s:destroy-stuck-ns
+
+# Run command on all nodes
+task run-cmd-all CMD="your-command"
+
+# Reset cluster
+task reset
+```
+
+---
+
+## Task Categories
+
+The project uses [Task](https://taskfile.dev/):
+
+- **Root tasks**: Core cluster operations (provision, reconcile, reboot, etc.)
+- `ansible:*`: Ansible automation and testing
+- `k8s:*`: Kubernetes cluster management
+- `terraform:*`: Infrastructure as Code operations
+- `pre-commit:*`: Code quality and linting
+
+Run `task -l` to see all available tasks with descriptions.
 
 ---
 
