@@ -6,10 +6,7 @@ set: [pipefail]
 
 includes:
   ansible: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/ansible/Taskfile.yaml
-  flux:
-    taskfile: .taskfiles/flux
-  k8s:
-    taskfile: .taskfiles/k8s
+  k8s: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/k8s/Taskfile.yaml
   pre-commit: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/pre-commit/Taskfile.yaml
   terraform: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml
 
@@ -29,7 +26,7 @@ tasks:
     silent: true
 
   check-inventory:
-    desc: "Check if inventory file exists"
+    desc: Check if inventory file exists
     cmds:
       - |
         if [ ! -f "{{.INVENTORY}}" ]; then
@@ -40,7 +37,7 @@ tasks:
     silent: true
 
   run-cmd-all:
-    desc: "Run a command on all k8s nodes"
+    desc: Run a command on all k8s nodes
     summary: |
       Run a command on all k8s nodes via SSH
 
@@ -53,21 +50,22 @@ tasks:
     cmds:
       - |
         if [ -z "{{.CMD}}" ]; then
-          echo -e "\033[31mError: no command provided\033[0m"
+          echo -e "Error: no command provided"
           echo "Usage: task run-cmd-all -- 'your command here'"
           exit 1
         fi
 
         for node in {{.K8S_NODES}}; do
-          echo -e "\033[33mNow running command on $node\033[0m"
+          echo -e "Now running command on $node"
           ssh $node "{{.CMD}}" || {
-            echo -e "\033[31mError on $node: command failed\033[0m"
+            echo -e "Error on $node: command failed"
             exit 1
           }
         done
+    silent: true
 
   run-cmd:
-    desc: "Run a command on a specific k8s node"
+    desc: Run a command on a specific k8s node
     summary: |
       Run a command on a specific k8s node via SSH
 
@@ -80,13 +78,13 @@ tasks:
     cmds:
       - |
         if [ -z "{{.NODE}}" ]; then
-          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo -e "Error: NODE variable not set"
           echo "Usage: task run-cmd NODE=k8s1 -- 'your command here'"
           exit 1
         fi
 
         if [ -z "{{.CMD}}" ]; then
-          echo -e "\033[31mError: no command provided\033[0m"
+          echo -e "Error: no command provided"
           echo "Usage: task run-cmd NODE=k8s1 -- 'your command here'"
           exit 1
         fi
@@ -101,13 +99,14 @@ tasks:
         done
 
         if [ "$valid" = false ]; then
-          echo -e "\033[31mError: {{.NODE}} is not a valid node\033[0m"
+          echo -e "Error: {{.NODE}} is not a valid node"
           echo "Valid nodes: {{.K8S_NODES}}"
           exit 1
         fi
 
-        echo -e "\033[33mRunning command on {{.NODE}}\033[0m"
+        echo -e "Running command on {{.NODE}}"
         ssh {{.NODE}} "{{.CMD}}"
+    silent: true
 
   reboot:
     desc: Reboot a specific node or all nodes
@@ -122,16 +121,16 @@ tasks:
     cmds:
       - |
         if [ -z "{{.NODE}}" ]; then
-          echo -e "\033[31mError: NODE variable not set\033[0m"
+          echo -e "Error: NODE variable not set"
           echo "Usage: task reboot NODE=k8s1"
           echo "       task reboot NODE=all"
           exit 1
         fi
 
         if [ "{{.NODE}}" = "all" ]; then
-          echo -e "\033[33mRebooting all nodes...\033[0m"
+          echo -e "Rebooting all nodes..."
           for node in {{.K8S_NODES}}; do
-            echo -e "\033[33mRebooting $node\033[0m"
+            echo -e "Rebooting $node"
             ssh $node "sudo reboot" || true
           done
           exit 0
@@ -147,13 +146,14 @@ tasks:
         done
 
         if [ "$valid" = false ]; then
-          echo -e "\033[31mError: {{.NODE}} is not a valid node\033[0m"
+          echo -e "Error: {{.NODE}} is not a valid node"
           echo "Valid nodes: {{.K8S_NODES}}"
           exit 1
         fi
 
-        echo -e "\033[33mRebooting {{.NODE}}\033[0m"
+        echo -e "Rebooting {{.NODE}}"
         ssh {{.NODE}} "sudo reboot"
+    silent: true
 
   reboot-all:
     desc: Reboot all k8s nodes
@@ -162,10 +162,11 @@ tasks:
       - task: reboot
         vars:
           NODE: all
+    silent: true
 
   ping:
     desc: Ping all k3s nodes using ansible
-    deps: [ansible:check-ansible, check-inventory]
+    deps: ["ansible:check-ansible", "check-inventory"]
     vars:
       HOSTS: '{{.HOSTS | default "all"}}'
       DEBUG: '{{.DEBUG | default "false"}}'
@@ -174,25 +175,27 @@ tasks:
         echo "Pinging {{.HOSTS}} nodes..."
         {{if eq .DEBUG "false"}}ANSIBLE_PYTHON_INTERPRETER=auto_silent {{end}}\
         ansible {{.HOSTS}} -i "{{.INVENTORY}}" -m ping
-    silent: false
+    silent: true
 
   ping-masters:
-    desc: "Ping only master nodes"
+    desc: Ping only master nodes
     cmds:
       - task: ping
         vars:
           HOSTS: master
+    silent: true
 
   ping-nodes:
-    desc: "Ping only worker nodes"
+    desc: Ping only worker nodes
     cmds:
       - task: ping
         vars:
           HOSTS: node
+    silent: true
 
   provision:
-    desc: "Provision k3s cluster (all nodes)"
-    deps: [ansible:check-ansible, check-inventory]
+    desc: Provision k3s cluster (all nodes)
+    deps: ["ansible:check-ansible", "check-inventory"]
     vars:
       GROUP: '{{.GROUP | default "all"}}'
     cmds:
@@ -205,24 +208,27 @@ tasks:
         ansible-playbook "{{.K3S_ANSIBLE_DIR}}/site.yml" \
           -i "{{.INVENTORY}}" \
           --limit {{.GROUP}}
+    silent: true
 
   provision-masters:
-    desc: "Provision only master nodes"
+    desc: Provision only master nodes
     cmds:
       - task: provision
         vars:
           GROUP: master
+    silent: true
 
   provision-nodes:
-    desc: "Provision only worker nodes"
+    desc: Provision only worker nodes
     cmds:
       - task: provision
         vars:
           GROUP: node
+    silent: true
 
   reset:
-    desc: "Reset k3s cluster (all nodes)"
-    deps: [ansible:check-ansible, check-inventory]
+    desc: Reset k3s cluster (all nodes)
+    deps: ["ansible:check-ansible", "check-inventory"]
     vars:
       GROUP: '{{.GROUP | default "all"}}'
     cmds:
@@ -235,34 +241,155 @@ tasks:
         ansible-playbook "{{.K3S_ANSIBLE_DIR}}/reset.yml" \
           -i "{{.INVENTORY}}" \
           --limit {{.GROUP}}
+    silent: true
 
   reset-masters:
-    desc: "Reset only master nodes"
+    desc: Reset only master nodes
     cmds:
       - task: reset
         vars:
           GROUP: master
+    silent: true
 
   reset-nodes:
-    desc: "Reset only worker nodes"
+    desc: Reset only worker nodes
     cmds:
       - task: reset
         vars:
           GROUP: node
+    silent: true
 
-  reset-confirm:
-    desc: "Reset k3s cluster with confirmation prompt"
-    prompt: "This will reset your k3s cluster. Are you sure?"
-    cmds:
-      - task: reset
-
-  status:
-    desc: "Check cluster status by running kubectl get nodes"
+  # ============================================
+  # Kubernetes Tasks
+  # ============================================
+  apply-secrets:
+    deps: ["k8s:check-kubectl"]
+    desc: Apply all Kubernetes secret files
+    summary: |
+      Finds and applies all files matching *secret.yaml pattern
     cmds:
       - |
-        if ! command -v kubectl &> /dev/null; then
-          echo "kubectl not found. Please install kubectl to check cluster status."
-          exit 1
+        echo "Applying Kubernetes secrets..."
+        find . -iname "*secret.yaml" -type f | while read -r secret_file; do
+          echo "Applying: $secret_file"
+          kubectl apply -f "$secret_file" || {
+            echo -e "Error applying $secret_file"
+            exit 1
+          }
+        done
+        echo -e "All secrets applied successfully!"
+    silent: true
+
+  destroy-rancher:
+    deps: ["k8s:check-kubectl", "k8s:helm:check-helm"]
+    desc: Completely remove Rancher from the cluster
+    summary: |
+      Tears down a Rancher deployment including all related resources,
+      webhooks, and namespaces. Also runs cleanup scripts.
+    prompt: This will completely remove Rancher from your cluster. Are you sure?
+    cmds:
+      - |
+        echo -e "Starting Rancher removal..."
+
+        # Delete webhook that breaks deployments when rancher fails to fully uninstall
+        echo "Deleting Rancher webhook..."
+        kubectl delete -n cattle-system MutatingWebhookConfiguration rancher.cattle.io 2>/dev/null || true
+
+        # Uninstall Rancher via Helm
+        echo "Uninstalling Rancher helm release..."
+        helm uninstall rancher -n cattle-system 2>/dev/null || true
+
+        # Run cleanup script if it exists
+        if [ -f "hack/rancher_cleanup.py" ]; then
+          echo "Installing Python kubernetes module..."
+          python3 -m pip install kubernetes --quiet 2>/dev/null || pip3 install kubernetes --quiet
+
+          echo "Running Rancher cleanup script..."
+          cd hack && python3 rancher_cleanup.py && cd ..
+        else
+          echo -e "Warning: hack/rancher_cleanup.py not found, skipping cleanup script"
         fi
-        echo "Checking k3s cluster status..."
-        kubectl get nodes -o wide
+
+        # Delete various Rancher resources
+        echo "Deleting Rancher resources..."
+        kubectl delete apiservices v1beta1.metrics.k8s.io 2>/dev/null || true
+        kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io rancher.cattle.io 2>/dev/null || true
+        kubectl delete clusters.provisioning.cattle.io -n fleet-local local 2>/dev/null || true
+
+        # Delete Rancher namespaces
+        echo "Deleting Rancher namespaces..."
+        for ns in cattle-system cattle-fleet-system cattle-fleet-local-system \
+                  cattle-fleet-clusters-system cattle-global-nt \
+                  cattle-impersonation-system cattle-global-data; do
+          kubectl delete ns "$ns" 2>/dev/null || true
+        done
+
+        # Clean up stuck namespaces
+        echo "Cleaning up any stuck namespaces..."
+
+      - task: k8s:destroy-stuck-ns
+      - |
+        echo -e "Rancher removal complete!"
+    silent: true
+
+  reconcile:
+    deps: ["k8s:check-kubectl"]
+    desc: Apply Kubernetes configurations from yaml files and kustomization directories
+    summary: |
+      Applies Kubernetes configuration defined in .yaml files and kustomization directories.
+
+      It does the following:
+      - Skips any directory named 'deprecated'
+      - For directories with kustomization.yaml, runs 'kubectl apply -k .'
+      - For files named ks.yaml, runs 'kubectl apply -f ks.yaml'
+      - Skips .sops.yaml files and directories referencing them
+    cmds:
+      - |
+        echo "Starting Kubernetes resource reconciliation..."
+
+        # Function to check if kustomization references .sops.yaml
+        check_sops_reference() {
+          local kustomization_file="$1"
+          if grep -q "\.sops\.yaml" "$kustomization_file" 2>/dev/null; then
+            return 0  # Found sops reference
+          fi
+          return 1  # No sops reference
+        }
+
+        # Process all directories and files
+        find . -type f -name "kustomization.yaml" -o -name "ks.yaml" | while read -r file; do
+          # Skip deprecated paths
+          if echo "$file" | grep -q "deprecated"; then
+            echo "Skipping deprecated: $file"
+            continue
+          fi
+
+          # Skip .sops.yaml files
+          if echo "$file" | grep -q "\.sops\.yaml"; then
+            echo "Skipping sops file: $file"
+            continue
+          fi
+
+          if [[ "$file" == *"kustomization.yaml" ]]; then
+            # Check for sops references
+            if check_sops_reference "$file"; then
+              echo "Skipping directory with .sops.yaml reference: $(dirname "$file")"
+              continue
+            fi
+
+            dir=$(dirname "$file")
+            echo -e "Applying kustomization in: $dir"
+            kubectl apply -k "$dir" || {
+              echo -e "Error applying kustomization in $dir"
+              exit 1
+            }
+          elif [[ "$file" == *"ks.yaml" ]]; then
+            echo -e "Applying kubectl file: $file"
+            kubectl apply -f "$file" || {
+              echo -e "Error applying $file"
+              exit 1
+            }
+          fi
+        done
+
+        echo -e "Reconciliation complete!"
