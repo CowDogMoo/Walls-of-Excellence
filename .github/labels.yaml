@@ -25,25 +25,20 @@
   description: >-
     Changes made to kubernetes resources
 
-- name: area/magefiles
-  color: "6a0572"
-  description: >-
-    Changes made to magefiles
-
 - name: area/pre-commit
   color: "BC9BE3"
   description: >-
     Changes made to pre-commit hooks
 
+- name: area/taskfiles
+  color: "6a0572"
+  description: >-
+    Changes made to taskfiles
+
 - name: area/terraform
   color: "7c9494"
   description: >-
     Changes made to Terraform configurations
-
-- name: area/go
-  color: "7bd7e0"
-  description: >-
-    Changes made to go resources
 
 # Renovate
 - name: renovate/container

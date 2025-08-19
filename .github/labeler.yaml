@@ -19,20 +19,15 @@ area/kubernetes:
   - changed-files:
       - any-glob-to-any-file: "kubernetes/**/*"
 
-area/magefiles:
-  - changed-files:
-      - any-glob-to-any-file: "magefiles/**/*"
-
 area/pre-commit:
   - changed-files:
       - any-glob-to-any-file: .pre-commit-config.yaml
       - any-glob-to-any-file: .hooks/**/*
 
+area/taskfiles:
+  - changed-files:
+      - any-glob-to-any-file: "Taskfile.yaml"
+
 area/terraform:
   - changed-files:
       - any-glob-to-any-file: "infrastructure/**/*"
-
-area/go:
-  - changed-files:
-      - any-glob-to-any-file: "go.mod"
-      - any-glob-to-any-file: "go.sum"

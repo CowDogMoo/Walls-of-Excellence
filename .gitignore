@@ -19,3 +19,9 @@ deprecated
 # AGE
 keys.txt
 *.secret.yaml*
+
+# taskfiles
+.task/
+
+# VSCode artifacts
+node_modules

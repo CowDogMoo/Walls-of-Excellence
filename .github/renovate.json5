@@ -61,28 +61,4 @@
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
   ],
-  packageRules: [
-    {
-      description: 'Loose versioning for non-semver packages',
-      matchDatasources: [
-        'docker',
-      ],
-      versioning: 'loose',
-      matchPackageNames: [
-        '/changedetection/',
-        '/plex/',
-        '/qbittorrent/',
-      ],
-    },
-    {
-      description: 'Use custom versioning for Minio',
-      matchDatasources: [
-        'docker',
-      ],
-      versioning: 'regex:^RELEASE\\.(?<major>\\d+)-(?<minor>\\d+)-(?<patch>\\d+)T.*Z$',
-      matchPackageNames: [
-        '/minio/',
-      ],
-    },
-  ],
 }

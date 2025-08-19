@@ -17,9 +17,27 @@ on:
     - cron: "0 0 * * 0"
   workflow_dispatch:
 
+# Cancel any in-progress job when a new workflow is triggered
+concurrency:
+  cancel-in-progress: true
+  group: pre-commit-${{ github.workflow }}-${{ github.ref }}
+
+env:
+  PYTHON_VERSION: 3.13.7
+  TASK_VERSION: 3.43.3
+  TASK_X_REMOTE_TASKFILES: 1
+
+permissions:
+  actions: read
+  checks: write
+  contents: read
+  id-token: write
+  pull-requests: write # Allows merge queue updates
+  security-events: write # Required for GitHub Security tab
+
 jobs:
   pre-commit:
-    name: Update pre-commit hooks and run pre-commit
+    name: Pre-Commit
     runs-on: ubuntu-latest
     steps:
       - name: Set up git repository
@@ -28,41 +46,34 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5
         with:
-          python-version: "3.13.7"
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
-        run: python3 -m pip install ansible \
-          ansible-lint \
-          docker \
-          molecule[docker] \
-          pre-commit
-
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
-        with:
-          go-version: "1.24.6"
-
-      - name: Install go module dependencies
+      - name: Install python dependencies
         run: |
-          go install mvdan.cc/sh/v3/cmd/shfmt@latest
-          go install github.com/magefile/mage@latest
+          python3 -m pip install \
+            ansible \
+            ansible-lint \
+            codespell \
+            detect-secrets \
+            docker \
+            molecule[docker] \
+            pre-commit \
+            yamllint
 
-      - name: Install pre-commit
-        run: python3 -m pip install pre-commit
-
-      - name: Run go mod tidy - necessary to avoid errors with dependabot PRs
-        run: pushd magefiles; go mod tidy; popd
-
-      - name: Commit go.mod and go.sum changes to keep pre-commit happy
+      - name: Install shfmt
         run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-          git add magefiles/go.mod magefiles/go.sum
-          git diff --quiet && git diff --staged --quiet || \
-            git commit -m "Update go.mod and go.sum"
+          curl -sL -o "/usr/local/bin/shfmt" "https://github.com/mvdan/sh/releases/download/v3.8.0/shfmt_v3.8.0_linux_amd64"
+          chmod +x "/usr/local/bin/shfmt"
 
-      - name: Install pre-commit dependencies
-        run: mage installDeps
+      - name: Install npm dependencies
+        run: |
+          sudo npm install -g markdownlint-cli prettier
+
+      - name: Setup go-task
+        run: |
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin v${{ env.TASK_VERSION }}
+          task --version
 
       - name: Run pre-commit
-        run: mage runPreCommit
+        run: |
+          task -y pre-commit:run-pre-commit
