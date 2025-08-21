@@ -6,3 +6,4 @@ namespace: observability
 resources:
   - externalsecret.yaml
   - helmrelease.yaml
+  - dashboards/home-assistant-dashboard.yaml
