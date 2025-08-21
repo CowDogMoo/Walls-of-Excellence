@@ -38,9 +38,12 @@ repos:
         exclude: kubernetes/apps/rancher/rancher/app/charts
       - id: shfmt
         exclude: kubernetes/apps/rancher/rancher/app/charts
-      # Configuration in .mdlrc and .hooks/linters/mdstyle.rb
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
       - id: markdownlint
-        exclude: kubernetes/apps/rancher/rancher/app/charts
+        args: ["--fix", "--config", ".hooks/linters/markdownlint.json"]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
