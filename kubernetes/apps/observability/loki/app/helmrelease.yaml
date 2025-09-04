@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -89,9 +90,13 @@ spec:
       ingress:
         enabled: true
         ingressClassName: ingress-traefik
-        pathType: Prefix
+        annotations: {}
+        labels: {}
         hosts:
-          - &host loki.techvomit.xyz
+          - host: &host loki.techvomit.xyz
+            paths:
+              - path: /
+                pathType: Prefix
         tls:
           - hosts:
               - *host
