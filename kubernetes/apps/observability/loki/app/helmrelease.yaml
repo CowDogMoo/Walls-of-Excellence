@@ -90,8 +90,6 @@ spec:
       ingress:
         enabled: true
         ingressClassName: ingress-traefik
-        annotations: {}
-        labels: {}
         hosts:
           - host: &host loki.techvomit.xyz
             paths:
