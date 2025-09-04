@@ -9,6 +9,7 @@ includes:
   k8s: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/k8s/Taskfile.yaml
   pre-commit: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/pre-commit/Taskfile.yaml
   terraform: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml
+  renovate: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/renovate/Taskfile.yaml
 
 vars:
   INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"
