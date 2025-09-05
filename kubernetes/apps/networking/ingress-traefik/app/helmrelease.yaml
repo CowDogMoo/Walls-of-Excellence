@@ -54,6 +54,13 @@ spec:
       dashboard: true
       insecure: true
 
+    # Enable /ping so chart’s probes pass
+    ping: {}
+
+    # Specify the port and scheme used for the /ping and /health endpoints
+    healthchecksPort: 9000
+    healthchecksScheme: HTTP
+
     # Install and publish the dashboard
     ingressRoute:
       dashboard:
@@ -89,7 +96,6 @@ spec:
           basicAuth:
             secret: traefik-dashboard-auth-secret
 
-    ping: true
     logs:
       general:
         format: json
