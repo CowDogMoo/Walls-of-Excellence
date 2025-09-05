@@ -5,7 +5,6 @@ kind: Kustomization
 resources:
   - actions-runner-controller.yaml
   - bjw-s.yaml
-  # - dex.yaml
   - emberstack.yaml
   - external-dns.yaml
   - external-secrets.yaml
@@ -15,8 +14,5 @@ resources:
   - k8s-at-home.yaml
   - prometheus-community.yaml
   - nfs-subdir-external-provisioner.yaml
-  # - oauth2-proxy.yaml
-  # - rancher.yaml
   - stakater.yaml
   - weaveworks.yaml
-  - walls-of-excellence.yaml
