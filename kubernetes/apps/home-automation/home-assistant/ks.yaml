@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -8,7 +9,6 @@ spec:
   dependsOn:
     - name: nfs-subdir-external-provisioner
   path: ./kubernetes/apps/home-automation/home-assistant/app
-  # account for items that are removed from the path
   prune: true
   sourceRef:
     kind: GitRepository
