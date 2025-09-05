@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -41,7 +42,8 @@ spec:
   values:
     # Core configs
     image:
-      tag: "v3.5.1"
+      tag: "v3.3.2"
+      pullPolicy: IfNotPresent
 
     ingressClass:
       enabled: true
