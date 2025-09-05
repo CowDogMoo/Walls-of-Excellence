@@ -67,7 +67,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|fatal:|ERROR)\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(FAILED|fatal:|ERROR)\"",
               "refId": "A"
             }
           ],
@@ -89,7 +89,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "count(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"PLAY \\[\" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"PLAY \\\\[\" [1h]))",
               "refId": "A"
             }
           ],
@@ -117,7 +117,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|fatal:)\" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(FAILED|fatal:)\" [1h]))",
               "refId": "A"
             }
           ],
@@ -277,7 +277,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(changed:|CHANGED)\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(changed:|CHANGED)\"",
               "refId": "A"
             }
           ],
@@ -298,7 +298,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(WARNING|DEPRECATION|\\[WARNING\\])\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ `(?i)(WARNING|DEPRECATION|\\[WARNING\\])`",
               "refId": "A"
             }
           ],
@@ -340,7 +340,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"TASK \\[\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"TASK \\\\[\"",
               "refId": "A"
             }
           ],
@@ -357,7 +357,7 @@ data:
         {
           "id": 11,
           "title": "Log Volume",
-          "type": "graph",
+          "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
