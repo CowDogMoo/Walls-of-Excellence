@@ -9,8 +9,6 @@ spec:
   interval: 30m
   ref:
     branch: main
-  secretRef:
-    name: flux-system
   url: https://github.com/CowDogMoo/walls-of-excellence.git
   ignore: |
     # exclude all
