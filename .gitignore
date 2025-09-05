@@ -3,7 +3,9 @@ logs
 
 # Secrets
 *cloudflare*
-*auth*
+# *auth*
+*secret.yaml
+
 *login*
 
 # Terragrunt
@@ -18,7 +20,7 @@ deprecated
 
 # AGE
 keys.txt
-*.secret.yaml*
+*.secret.yaml
 
 # taskfiles
 .task/
