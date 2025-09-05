@@ -1,0 +1,410 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ansible-logs-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Ansible"
+    dashboard-version: "1.0.0"
+    last-modified: "2024-01-10"
+data:
+  ansible-logs.json: |
+    {
+      "uid": "ansible-logs-monitoring",
+      "title": "Ansible Logs & Playbook Monitoring",
+      "description": "Monitor Ansible playbook executions, tasks, errors, and changes",
+      "tags": ["ansible", "automation", "logs", "playbooks"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "time": {
+        "from": "now-3h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "host",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({application=\"ansible\"}, host)",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "refresh": 1,
+            "sort": 1
+          },
+          {
+            "name": "environment",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({application=\"ansible\"}, environment)",
+            "multi": false,
+            "includeAll": false,
+            "current": {
+              "selected": true,
+              "text": "local",
+              "value": "local"
+            },
+            "refresh": 1,
+            "sort": 1
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Ansible Task Failures (FAILED)",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|fatal:|ERROR)\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "prettifyLogMessage": false
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 }
+        },
+        {
+          "id": 2,
+          "title": "Playbook Executions",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "count(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"PLAY \\[\" [1h]))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "blue", "value": null }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Playbook Runs (1h)"
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
+        },
+        {
+          "id": 3,
+          "title": "Failed Tasks",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|fatal:)\" [1h]))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Failed Tasks (1h)"
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 }
+        },
+        {
+          "id": 4,
+          "title": "Changed Tasks",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"changed:.*true\" [1h]))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 10 },
+                  { "color": "orange", "value": 50 }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Changed Tasks (1h)"
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 }
+        },
+        {
+          "id": 5,
+          "title": "OK Tasks",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"ok:\" [1h]))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              },
+              "unit": "short",
+              "displayName": "OK Tasks (1h)"
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 }
+        },
+        {
+          "id": 6,
+          "title": "Task Status Over Time",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"FAILED\" [5m]))",
+              "refId": "A",
+              "legendFormat": "Failed"
+            },
+            {
+              "expr": "sum(rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"changed:.*true\" [5m]))",
+              "refId": "B",
+              "legendFormat": "Changed"
+            },
+            {
+              "expr": "sum(rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"ok:\" [5m]))",
+              "refId": "C",
+              "legendFormat": "OK"
+            },
+            {
+              "expr": "sum(rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"skipping:\" [5m]))",
+              "refId": "D",
+              "legendFormat": "Skipped"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisPlacement": "auto",
+                "drawStyle": "line",
+                "fillOpacity": 20,
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "unit": "ops",
+              "displayName": "Tasks per second"
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Failed" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Changed" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "OK" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Skipped" },
+                "properties": [
+                  { "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }
+                ]
+              }
+            ]
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 }
+        },
+        {
+          "id": 7,
+          "title": "Changed Resources",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(changed:|CHANGED)\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 20 }
+        },
+        {
+          "id": 8,
+          "title": "Warnings & Deprecations",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(WARNING|DEPRECATION|\\[WARNING\\])\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 20 }
+        },
+        {
+          "id": 9,
+          "title": "Playbook Summary (PLAY RECAP)",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(PLAY RECAP|ok=|changed=|unreachable=|failed=)\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 27 }
+        },
+        {
+          "id": 10,
+          "title": "Task Execution Timeline",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"TASK \\[\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": false,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 33 }
+        },
+        {
+          "id": 11,
+          "title": "Log Volume",
+          "type": "graph",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} [1m]))",
+              "refId": "A",
+              "legendFormat": "Log Rate"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisPlacement": "auto",
+                "drawStyle": "bars",
+                "fillOpacity": 50,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": { "type": "linear" },
+                "showPoints": "never",
+                "spanNulls": true
+              },
+              "unit": "logs/sec"
+            }
+          },
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 39 }
+        },
+        {
+          "id": 12,
+          "title": "All Ansible Logs (Live Stream)",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"}",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 45 }
+        }
+      ]
+    }
