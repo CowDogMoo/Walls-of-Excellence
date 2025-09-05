@@ -17,7 +17,7 @@ spec:
         app: guacamole
     spec:
       containers:
-        - image: maxwaldorf/guacamole:1.5
+        - image: flcontainers/guacamole:1.6.0
           # Uncomment to enable TOTP 2FA
           # env:
           # - name: EXTENSIONS
