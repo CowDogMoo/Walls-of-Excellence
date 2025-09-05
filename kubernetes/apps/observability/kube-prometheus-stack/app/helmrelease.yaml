@@ -128,8 +128,13 @@ spec:
           - auto-gomaxprocs
           - memory-snapshot-on-shutdown
           - new-service-discovery-manager
-        retention: 2d
-        retentionSize: 15GB
+        retention: 14d
+        retentionSize: 50GB
+        resources:
+          requests:
+            cpu: 100m
+          limits:
+            memory: 2000Mi
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -206,8 +211,8 @@ spec:
             maxLines: 1000
             timeout: 30
             derivedFields:
-              - datasourceUid: prometheus # Allows clicking on a trace ID to jump to your trace visualization
-                matcherRegex: "traceID=(\\w+)" # Extract traceID from logs
+              - datasourceUid: prometheus
+                matcherRegex: "traceID=(\\w+)"
                 name: TraceID
                 url: "$${__value.raw}"
           secureJsonData: {}
