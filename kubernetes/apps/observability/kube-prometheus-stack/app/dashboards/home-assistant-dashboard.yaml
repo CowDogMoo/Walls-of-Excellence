@@ -8,8 +8,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Assistant"
-    dashboard-version: "1.0.0"
-    last-modified: "2024-08-21"
+    dashboard-version: "1.0.1"
+    last-modified: "2025-09-05"
 data:
   home-assistant.json: |
     {
@@ -19,7 +19,7 @@ data:
       "tags": ["home-assistant", "logs", "debugging"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "30s",
       "time": {
         "from": "now-6h",
@@ -40,6 +40,19 @@ data:
               "text": "All",
               "value": "$__all"
             }
+          },
+          {
+            "name": "container",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({namespace=\"home-automation\"}, container)",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
           }
         ]
       },
@@ -51,7 +64,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} |= \"ERROR\"",
+              "expr": "{namespace=\"home-automation\"} |~ \"(?i)error\"",
               "refId": "A"
             }
           ],
@@ -73,7 +86,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (pod) (rate({namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} |= \"ERROR\" [5m]))",
+              "expr": "sum by (pod) (rate({namespace=\"home-automation\"} |~ \"(?i)error\" [5m]))",
               "refId": "A",
               "legendFormat": "{{pod}}"
             }
@@ -105,7 +118,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} |= \"ERROR\" [1h]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\"} |~ \"(?i)error\" [1h]))",
               "refId": "A"
             }
           ],
@@ -134,7 +147,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} |= \"WARNING\" [1h]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\"} |~ \"(?i)warning\" [1h]))",
               "refId": "A"
             }
           ],
@@ -163,7 +176,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} |= \"WARNING\"",
+              "expr": "{namespace=\"home-automation\"} |~ \"(?i)warning\"",
               "refId": "A"
             }
           ],
@@ -184,7 +197,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} |= \"custom_components\"",
+              "expr": "{namespace=\"home-automation\"} |= \"custom_components\"",
               "refId": "A"
             }
           ],
@@ -204,8 +217,9 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"} [5m])) by (level)",
-              "refId": "A"
+              "expr": "sum(rate({namespace=\"home-automation\"} [5m]))",
+              "refId": "A",
+              "legendFormat": "Total logs/sec"
             }
           ],
           "fieldConfig": {
@@ -220,11 +234,7 @@ data:
                 "pointSize": 5,
                 "scaleDistribution": { "type": "linear" },
                 "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "mode": "normal",
-                  "group": "A"
-                }
+                "spanNulls": true
               },
               "unit": "logs/sec"
             }
@@ -238,7 +248,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\",app=\"home-assistant\",pod=~\"$pod\"}",
+              "expr": "{namespace=\"home-automation\"}",
               "refId": "A"
             }
           ],
@@ -250,6 +260,26 @@ data:
             "sortOrder": "Descending"
           },
           "gridPos": { "h": 10, "w": 24, "x": 0, "y": 36 }
+        },
+        {
+          "id": 9,
+          "title": "File Descriptor Issues",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\"} |= \"too many open files\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 46 }
         }
       ]
     }
