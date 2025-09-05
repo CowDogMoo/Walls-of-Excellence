@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: alloy
-      version: 1.10.2
+      version: 0.10.0
       sourceRef:
         kind: HelmRepository
         name: grafana
@@ -27,21 +27,14 @@ spec:
       configMap:
         create: true
         content: |
-          logging {
-            level = "info"
-          }
-
+          // Discover Kubernetes pods
           discovery.kubernetes "pods" {
             role = "pod"
           }
 
+          // Relabel pods to add metadata
           discovery.relabel "pods" {
             targets = discovery.kubernetes.pods.targets
-
-            rule {
-              source_labels = ["__meta_kubernetes_pod_node_name"]
-              target_label  = "node_name"
-            }
 
             rule {
               source_labels = ["__meta_kubernetes_namespace"]
@@ -57,22 +50,43 @@ spec:
               source_labels = ["__meta_kubernetes_pod_container_name"]
               target_label  = "container"
             }
+
+            rule {
+              source_labels = ["__meta_kubernetes_pod_label_app"]
+              target_label  = "app"
+            }
+
+            rule {
+              source_labels = ["__meta_kubernetes_pod_node_name"]
+              target_label  = "node"
+            }
           }
 
+          // Scrape Kubernetes pod logs
           loki.source.kubernetes "pods" {
             targets    = discovery.relabel.pods.output
             forward_to = [loki.write.loki.receiver]
           }
 
+          // Scrape systemd journal logs
           loki.source.journal "systemd" {
             path       = "/var/log/journal"
             forward_to = [loki.write.loki.receiver]
+            labels     = {
+              job = "systemd-journal",
+            }
           }
 
+          // Write logs to Loki
           loki.write "loki" {
             endpoint {
-              url = "http://loki:3100/loki/api/v1/push"
+              url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
             }
+          }
+
+          // Expose health check
+          loki.source.kubernetes_events "events" {
+            forward_to = [loki.write.loki.receiver]
           }
 
     controller:
@@ -92,7 +106,11 @@ spec:
     serviceMonitor:
       enabled: true
 
-    volumes:
+    mounts:
+      dockercontainers: true
+      varlog: true
+
+    extraVolumes:
       - name: journal
         hostPath:
           path: /var/log/journal
@@ -100,7 +118,7 @@ spec:
         hostPath:
           path: /etc/machine-id
 
-    volumeMounts:
+    extraVolumeMounts:
       - name: journal
         mountPath: /var/log/journal
         readOnly: true
