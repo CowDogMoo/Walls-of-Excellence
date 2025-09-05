@@ -36,6 +36,8 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: ingress-traefik
+        # annotations:
+        #   traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - &host alert-manager.techvomit.xyz
         tls:
@@ -99,6 +101,8 @@ spec:
         enabled: true
         ingressClassName: ingress-traefik
         pathType: Prefix
+        # annotations:
+        #   traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - &host prometheus.techvomit.xyz
         tls:
@@ -180,6 +184,8 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: ingress-traefik
+        # annotations:
+        #   traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - &grafanaHost grafana.techvomit.xyz
         tls:
@@ -196,6 +202,22 @@ spec:
         existingSecret: grafana-admin-secret
         userKey: GRAFANA_ADMIN_USER
         passwordKey: GRAFANA_ADMIN_PW
+      # Optional: Native OAuth2/OIDC integration with Authentik
+      # Uncomment and configure after creating OAuth2 provider in Authentik
+      # grafana.ini:
+      #   server:
+      #     root_url: https://grafana.techvomit.xyz
+      #   auth.generic_oauth:
+      #     enabled: true
+      #     name: Authentik
+      #     client_id: ${GRAFANA_OAUTH_CLIENT_ID}
+      #     client_secret: ${GRAFANA_OAUTH_CLIENT_SECRET}
+      #     scopes: openid profile email
+      #     auth_url: https://auth.techvomit.xyz/application/o/authorize/
+      #     token_url: https://auth.techvomit.xyz/application/o/token/
+      #     api_url: https://auth.techvomit.xyz/application/o/userinfo/
+      #     allow_sign_up: true
+      #     role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || 'Viewer'
       additionalDataSources:
         - name: Loki
           type: loki
