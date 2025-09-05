@@ -7,6 +7,7 @@ metadata:
   namespace: observability
 spec:
   interval: 5m
+  timeout: 10m
   chart:
     spec:
       chart: alloy
@@ -68,25 +69,11 @@ spec:
             forward_to = [loki.write.loki.receiver]
           }
 
-          // Scrape systemd journal logs
-          loki.source.journal "systemd" {
-            path       = "/var/log/journal"
-            forward_to = [loki.write.loki.receiver]
-            labels     = {
-              job = "systemd-journal",
-            }
-          }
-
           // Write logs to Loki
           loki.write "loki" {
             endpoint {
               url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
             }
-          }
-
-          // Expose health check
-          loki.source.kubernetes_events "events" {
-            forward_to = [loki.write.loki.receiver]
           }
 
     controller:
@@ -96,32 +83,12 @@ spec:
       - operator: Exists
 
     resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
       limits:
         cpu: 200m
         memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
 
     serviceMonitor:
       enabled: true
-
-    mounts:
-      dockercontainers: true
-      varlog: true
-
-    extraVolumes:
-      - name: journal
-        hostPath:
-          path: /var/log/journal
-      - name: machine-id
-        hostPath:
-          path: /etc/machine-id
-
-    extraVolumeMounts:
-      - name: journal
-        mountPath: /var/log/journal
-        readOnly: true
-      - name: machine-id
-        mountPath: /etc/machine-id
-        readOnly: true
