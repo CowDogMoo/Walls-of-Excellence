@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: "37.0.0"
+      version: 37.1.0
       reconcileStrategy: ChartVersion
       interval: 15m
       sourceRef:
@@ -42,7 +42,9 @@ spec:
   values:
     # Core configs
     image:
-      tag: "v3.3.2"
+      registry: ghcr.io
+      repository: traefik/traefik
+      tag: v3.5.1
       pullPolicy: IfNotPresent
 
     ingressClass:
@@ -53,13 +55,6 @@ spec:
     api:
       dashboard: true
       insecure: true
-
-    # Enable /ping so chart’s probes pass
-    ping: {}
-
-    # Specify the port and scheme used for the /ping and /health endpoints
-    healthchecksPort: 9000
-    healthchecksScheme: HTTP
 
     # Install and publish the dashboard
     ingressRoute:
@@ -147,6 +142,8 @@ spec:
       replicas: 1
       labels:
         app: ingress-traefik
+      healthchecksPort: 9000
+      healthchecksScheme: HTTP
 
     autoscaling:
       enabled: true
@@ -189,13 +186,21 @@ spec:
 
     ports:
       traefik:
+        port: 9000
         expose:
-          exposedPort: 9000
-          protocol: TCP
+          default: true
+        exposedPort: 9000
+        protocol: TCP
       web:
+        port: 8000
         expose:
-          exposedPort: 80
+          default: true
+        exposedPort: 80
       websecure:
+        port: 8443
+        expose:
+          default: true
+        exposedPort: 443
         tls:
           enabled: true
           options: "default"
