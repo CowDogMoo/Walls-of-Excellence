@@ -21,13 +21,6 @@ repos:
         exclude: >-
           ^(kubernetes/apps/(monitoring/kube-prometheus-stack/app/helmrelease.yaml|external-secrets/external-secrets/app/onepassword-connect.secret.sops.yaml))
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        files: \.(json|md|yaml|yml)$
-        exclude: kubernetes/apps/rancher/rancher/app/charts
-
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0
     hooks:
@@ -35,9 +28,6 @@ repos:
         name: Ensure shell scripts end with .sh
         types: [shell]
       - id: shellcheck
-        exclude: kubernetes/apps/rancher/rancher/app/charts
-      - id: shfmt
-        exclude: kubernetes/apps/rancher/rancher/app/charts
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.45.0
@@ -49,3 +39,17 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types_or: [json, yaml]
+
+  - repo: local
+    hooks:
+      - id: shfmt
+        name: Run shfmt hook on shell scripts
+        language: script
+        entry: .hooks/run-shfmt.sh
+        files: \.sh$
