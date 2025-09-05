@@ -51,8 +51,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/home-assistant/home-assistant
-              tag: 2025.8.3
+              repository: ghcr.io/home-operations/home-assistant
+              tag: 2025.9.0@sha256:762e782f6efc5a3fcf36092b31bef4caf76380b1cf4a3bc12fa85760792af476
             env:
               # -- Set the container timezone
               TZ: "America/Denver"
