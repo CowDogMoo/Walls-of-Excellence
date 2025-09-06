@@ -28,7 +28,7 @@ spec:
       configMap:
         create: true
         content: |
-          // Discover Kubernetes pods
+          // Kubernetes pod discovery
           discovery.kubernetes "pods" {
             role = "pod"
           }
@@ -36,27 +36,22 @@ spec:
           // Relabel pods to add metadata
           discovery.relabel "pods" {
             targets = discovery.kubernetes.pods.targets
-
             rule {
               source_labels = ["__meta_kubernetes_namespace"]
               target_label  = "namespace"
             }
-
             rule {
               source_labels = ["__meta_kubernetes_pod_name"]
               target_label  = "pod"
             }
-
             rule {
               source_labels = ["__meta_kubernetes_pod_container_name"]
               target_label  = "container"
             }
-
             rule {
               source_labels = ["__meta_kubernetes_pod_label_app"]
               target_label  = "app"
             }
-
             rule {
               source_labels = ["__meta_kubernetes_pod_node_name"]
               target_label  = "node"
@@ -66,6 +61,21 @@ spec:
           // Scrape Kubernetes pod logs
           loki.source.kubernetes "pods" {
             targets    = discovery.relabel.pods.output
+            forward_to = [loki.write.loki.receiver]
+          }
+
+          // Syslog receiver for UDM Pro logs
+          loki.source.syslog "external" {
+            listener {
+              address = "0.0.0.0:1514"
+              protocol = "udp"
+              syslog_format = "rfc3164"
+              labels = {
+                job = "syslog",
+                source = "external",
+                device = "udmpro",
+              }
+            }
             forward_to = [loki.write.loki.receiver]
           }
 

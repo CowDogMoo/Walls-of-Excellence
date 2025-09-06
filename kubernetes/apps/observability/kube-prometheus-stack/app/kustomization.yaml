@@ -8,3 +8,4 @@ resources:
   - helmrelease.yaml
   - dashboards/home-assistant-dashboard.yaml
   - dashboards/ansible-logs-dashboard.yaml
+  - dashboards/udmpro-dashboard.yaml
