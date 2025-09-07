@@ -1,0 +1,70 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: unpoller
+  namespace: observability
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: unpoller
+      version: 2.11.2-Chart6
+      sourceRef:
+        kind: HelmRepository
+        name: unpoller
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/unpoller/unpoller
+      tag: v2.11.2
+
+    dashboards:
+      create: false # This disables Grafana Operator CRD creation
+
+    # UnPoller configuration
+    upConfig: |
+      [poller]
+          debug = false
+          quiet = false
+          plugins = []
+      [prometheus]
+        disable = false
+        http_listen = "0.0.0.0:9130"
+        report_errors = false
+      [influxdb]
+        disable = true
+      [unifi]
+          dynamic = false
+      [loki]
+          disable = true
+      [[unifi.controller]]
+          url         = "${UNIFI_URL}"
+          user        = "${UNIFI_USER}"
+          pass        = "${UNIFI_PASS}"
+          sites       = ["all"]
+          save_ids    = true
+          save_dpi    = true
+          save_sites  = true
+          hash_pii    = false
+          verify_ssl  = false
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    envFrom:
+      - secretRef:
+          name: unifi-automation-secret

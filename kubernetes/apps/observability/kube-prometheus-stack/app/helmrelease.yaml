@@ -258,6 +258,38 @@ spec:
           secureJsonData: {}
           version: 1
           editable: true
+      dashboards:
+        unifi:
+          unifi-network-sites:
+            gnetId: 11311
+            revision: 1
+            datasource: Prometheus
+            folder: UniFi
+          unifi-client-insights:
+            gnetId: 11315
+            revision: 1
+            datasource: Prometheus
+            folder: UniFi
+          unifi-uap-insights:
+            gnetId: 11312
+            revision: 1
+            datasource: Prometheus
+            folder: UniFi
+          unifi-usw-insights:
+            gnetId: 11314
+            revision: 1
+            datasource: Prometheus
+            folder: UniFi
+          unifi-usg-insights:
+            gnetId: 11313
+            revision: 1
+            datasource: Prometheus
+            folder: UniFi
+          unifi-client-dpi:
+            gnetId: 11310
+            revision: 1
+            datasource: Prometheus
+            folder: UniFi
 
   postRenderers:
     - kustomize:
