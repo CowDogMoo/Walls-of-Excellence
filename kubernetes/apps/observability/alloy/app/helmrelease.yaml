@@ -67,7 +67,7 @@ spec:
           // Syslog receiver for UDM Pro logs
           loki.source.syslog "external" {
             listener {
-              address = "0.0.0.0:514"
+              address = "0.0.0.0:1514"
               protocol = "udp"
               syslog_format = "rfc3164"
               labels = {
