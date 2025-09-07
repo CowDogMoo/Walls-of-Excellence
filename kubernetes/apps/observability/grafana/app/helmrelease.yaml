@@ -191,6 +191,7 @@ spec:
           gnetId: 11312
           revision: 9
           datasource: Prometheus
+
     sidecar:
       image:
         registry: ghcr.io
@@ -208,6 +209,7 @@ spec:
         enabled: true
         searchNamespace: ALL
         labelValue: ""
+
     plugins:
       - grafana-clock-panel
       - grafana-piechart-panel
@@ -217,17 +219,19 @@ spec:
       - vonage-status-panel
     serviceMonitor:
       enabled: true
+
     ingress:
       enabled: true
       ingressClassName: ingress-traefik
       pathType: Prefix
       hosts:
-        - "{{ .Release.Name }}.techvomit.xyz"
-      parentRefs:
-        - name: internal
-          namespace: kube-system
-          sectionName: https
+        - &host "{{ .Release.Name }}.techvomit.xyz"
+      tls:
+        - hosts:
+            - *host
+
     persistence:
       enabled: false
+
     testFramework:
       enabled: false
