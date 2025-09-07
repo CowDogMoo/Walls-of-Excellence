@@ -1,0 +1,88 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: udmpro-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Network"
+data:
+  udmpro.json: |
+    {
+      "uid": "udmpro-logs",
+      "title": "UDM Pro Network Logs",
+      "tags": ["network", "firewall", "udmpro"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Firewall Events",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{device=\"udmpro\"} |~ \"(BLOCK|DROP|REJECT|FW)\"",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+        },
+        {
+          "id": 2,
+          "title": "DHCP Activity",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{device=\"udmpro\"} |~ \"DHCP\"",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+        },
+        {
+          "id": 3,
+          "title": "WiFi Events",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{device=\"udmpro\"} |~ \"(ra[0-9]:|rai[0-9]:|STA-)\"",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+        },
+        {
+          "id": 4,
+          "title": "Service Errors",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{device=\"udmpro\"} |~ \"(error|fail|refused)\"",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+        },
+        {
+          "id": 5,
+          "title": "All Logs",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{device=\"udmpro\"}",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 }
+        }
+      ]
+    }
