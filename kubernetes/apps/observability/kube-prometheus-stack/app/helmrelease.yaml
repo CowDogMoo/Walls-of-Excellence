@@ -6,83 +6,35 @@ metadata:
   name: kube-prometheus-stack
   namespace: observability
 spec:
-  interval: 30m
-  timeout: 15m
-  chart:
-    spec:
-      chart: kube-prometheus-stack
-      reconcileStrategy: ChartVersion
-      sourceRef:
-        kind: HelmRepository
-        name: prometheus-community
-        namespace: flux-system
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: kube-prometheus-stack
   install:
-    crds: CreateReplace
     remediation:
-      retries: 3
+      retries: -1
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
-    crds:
-      enabled: true
     cleanPrometheusOperatorObjectNames: true
-
-    prometheusOperator:
-      livenessProbe:
-        enabled: true
-        failureThreshold: 3
-        initialDelaySeconds: 30
-        periodSeconds: 10
-        successThreshold: 1
-        timeoutSeconds: 5
-
-      readinessProbe:
-        enabled: true
-        failureThreshold: 3
-        initialDelaySeconds: 20
-        periodSeconds: 10
-        successThreshold: 1
-        timeoutSeconds: 5
-
-      admissionWebhooks:
-        enabled: true
-        failurePolicy: Ignore
-        timeoutSeconds: 10
-        patch:
-          enabled: true
-          resources:
-            limits:
-              cpu: 100m
-              memory: 100Mi
-            requests:
-              cpu: 10m
-              memory: 20Mi
-
-      resources:
-        limits:
-          cpu: 200m
-          memory: 200Mi
-        requests:
-          cpu: 100m
-          memory: 100Mi
-
     alertmanager:
-      ingress:
-        enabled: true
-        pathType: Prefix
-        ingressClassName: ingress-traefik
-        hosts:
-          - &host alert-manager.techvomit.xyz
-        tls:
-          - hosts:
-              - *host
+      route:
+        main:
+          enabled: true
+          hostnames:
+            - alert-manager.techvomit.xyz
+          parentRefs:
+            - name: internal
+              namespace: kube-system
+              sectionName: https
       alertmanagerSpec:
-        replicas: 1
+        alertmanagerConfiguration:
+          name: alertmanager
+          global:
+            resolveTimeout: 5m
+        externalUrl: https://alert-manager.techvomit.xyz
         storage:
           volumeClaimTemplate:
             spec:
@@ -90,84 +42,37 @@ spec:
               resources:
                 requests:
                   storage: 1Gi
-
-    kubelet:
-      enabled: true
-      serviceMonitor:
-        metricRelabelings:
-          # Drop high cardinality labels
-          - action: labeldrop
-            regex: (uid)
-          - action: labeldrop
-            regex: (id|name)
-          - action: drop
-            sourceLabels: ["__name__"]
-            regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
-
-    kubeApiServer:
-      enabled: true
-      serviceMonitor:
-        metricRelabelings:
-          # Drop high cardinality labels
-          - action: drop
-            sourceLabels: ["__name__"]
-            regex: (apiserver|etcd|rest_client)_request(|_sli|_slo)_duration_seconds_bucket
-          - action: drop
-            sourceLabels: ["__name__"]
-            regex: (apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket)
-
-    kubeControllerManager:
-      enabled: true
-      endpoints: &cp
-        - 192.168.20.170
-        - 192.168.20.239
-        - 192.168.20.122
-
     kubeEtcd:
-      enabled: true
-      endpoints: *cp
-
-    kubeScheduler:
-      enabled: true
-      endpoints: *cp
-
+      service:
+        selector:
+          component: kube-apiserver # etcd runs on control plane nodes
     kubeProxy:
       enabled: false
-
     prometheus:
-      ingress:
-        enabled: true
-        ingressClassName: ingress-traefik
-        pathType: Prefix
-        hosts:
-          - &host prometheus.techvomit.xyz
-        tls:
-          - hosts:
-              - *host
+      route:
+        main:
+          enabled: true
+          hostnames:
+            - prometheus.techvomit.xyz
+          parentRefs:
+            - name: internal
+              namespace: kube-system
+              sectionName: https
       prometheusSpec:
-        replicas: 1
-        replicaExternalLabelName: __replica__
-        scrapeInterval: 1m
-        ruleNamespaceSelector:
-          any: true
-        ruleSelector: {}
-        ruleSelectorNilUsesHelmValues: false
-        serviceMonitorSelectorNilUsesHelmValues: false
-        serviceMonitorNamespaceSelector:
-          any: true
-        serviceMonitorSelector: {}
-        podMonitorNamespaceSelector:
-          any: true
-        podMonitorSelector: {}
+        image:
+          registry: docker.io
+          repository: prompp/prompp
+          tag: 2.53.2-0.4.0
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 64535
+          runAsGroup: 64535
+          fsGroup: 64535
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
-        enableAdminAPI: true
-        walCompression: true
-        enableFeatures:
-          - auto-gomaxprocs
-          - memory-snapshot-on-shutdown
-          - new-service-discovery-manager
+        serviceMonitorSelectorNilUsesHelmValues: false
         retention: 14d
         retentionSize: 50GB
         resources:
@@ -181,11 +86,7 @@ spec:
               storageClassName: nfs-client
               resources:
                 requests:
-                  storage: 100Gi
-
-    nodeExporter:
-      enabled: true
-
+                  storage: 50Gi
     prometheus-node-exporter:
       fullnameOverride: node-exporter
       prometheus:
@@ -198,10 +99,6 @@ spec:
               sourceLabels:
                 - __meta_kubernetes_pod_node_name
               targetLabel: kubernetes_node
-
-    kubeStateMetrics:
-      enabled: true
-
     kube-state-metrics:
       fullnameOverride: kube-state-metrics
       metricLabelsAllowlist:
@@ -218,91 +115,27 @@ spec:
               sourceLabels:
                 - __meta_kubernetes_pod_node_name
               targetLabel: kubernetes_node
-
     grafana:
-      enabled: true
-      ingress:
-        enabled: true
-        pathType: Prefix
-        ingressClassName: ingress-traefik
-        hosts:
-          - &grafanaHost grafana.techvomit.xyz
-        tls:
-          - hosts:
-              - *grafanaHost
-      fullnameOverride: grafana
-      forceDeployDatasources: false
-      forceDeployDashboards: false
-      defaultDashboardsEnabled: true
-      defaultDashboardsTimezone: utc
-      serviceMonitor:
-        enabled: true
-      admin:
-        existingSecret: grafana-admin-secret
-        userKey: GRAFANA_ADMIN_USER
-        passwordKey: GRAFANA_ADMIN_PW
-      additionalDataSources:
-        - name: Loki
-          type: loki
-          uid: loki
-          url: http://loki.observability.svc.cluster.local:3100
-          access: proxy
-          jsonData:
-            maxLines: 1000
-            timeout: 30
-            derivedFields:
-              - datasourceUid: prometheus
-                matcherRegex: "traceID=(\\w+)"
-                name: TraceID
-                url: "$${__value.raw}"
-          secureJsonData: {}
-          version: 1
-          editable: true
-      dashboards:
-        unifi:
-          unifi-network-sites:
-            gnetId: 11311
-            revision: 1
-            datasource: Prometheus
-            folder: UniFi
-          unifi-client-insights:
-            gnetId: 11315
-            revision: 1
-            datasource: Prometheus
-            folder: UniFi
-          unifi-uap-insights:
-            gnetId: 11312
-            revision: 1
-            datasource: Prometheus
-            folder: UniFi
-          unifi-usw-insights:
-            gnetId: 11314
-            revision: 1
-            datasource: Prometheus
-            folder: UniFi
-          unifi-usg-insights:
-            gnetId: 11313
-            revision: 1
-            datasource: Prometheus
-            folder: UniFi
-          unifi-client-dpi:
-            gnetId: 11310
-            revision: 1
-            datasource: Prometheus
-            folder: UniFi
-
-  postRenderers:
-    - kustomize:
-        patches:
-          - target:
-              version: v1
-              kind: ConfigMap
-              labelSelector: grafana_dashboard in (1)
-            patch: |-
-              apiVersion: v1
-              kind: ConfigMap
-              metadata:
-                name: not-used
-                namespace: not-used
+      enabled: false
+      forceDeployDashboards: true
+    additionalPrometheusRulesMap:
+      dockerhub-rules:
+        groups:
+          - name: dockerhub
+            rules:
+              - alert: DockerhubRateLimitRisk
                 annotations:
-                  grafana_folder: Kubernetes
+                  summary: Kubernetes cluster Dockerhub rate limit risk
+                expr: count(time() - container_last_seen{image=~"(docker.io).*",container!=""} < 30) > 100
+                labels:
+                  severity: critical
+      oom-rules:
+        groups:
+          - name: oom
+            rules:
+              - alert: OomKilled
+                annotations:
+                  summary: Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes.
+                expr: (kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1
+                labels:
+                  severity: critical

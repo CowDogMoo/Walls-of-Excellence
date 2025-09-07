@@ -8,7 +8,7 @@ metadata:
 spec:
   interval: 30m
   ref:
-    branch: main
+    branch: overhaul-observability
   url: https://github.com/CowDogMoo/walls-of-excellence.git
   ignore: |
     # exclude all
