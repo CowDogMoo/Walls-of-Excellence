@@ -140,6 +140,15 @@ spec:
           hostNetwork: true
           # When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet
           dnsPolicy: ClusterFirstWithHostNet
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: NotIn
+                        values:
+                          - k8s6
           topologySpreadConstraints:
             - maxSkew: 1
               topologyKey: kubernetes.io/hostname
