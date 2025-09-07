@@ -4,10 +4,28 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
   name: &name onepassword-connect
+  namespace: observability
 spec:
   staticConfigs:
     - targets:
-        - onepassword-connect.external-secrets.svc.cluster.local:8080
+        - onepassword-connect.external-secrets.svc.cluster.local:80
+  metricsPath: /metrics
+  relabelings:
+    - action: replace
+      targetLabel: job
+      replacement: *name
+
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/scrapeconfig_v1alpha1.json
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: &name external-dns
+  namespace: observability
+spec:
+  staticConfigs:
+    - targets:
+        - external-dns.networking.svc.cluster.local:7979
   metricsPath: /metrics
   relabelings:
     - action: replace

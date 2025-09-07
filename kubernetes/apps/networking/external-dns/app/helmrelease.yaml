@@ -61,5 +61,3 @@ spec:
     txtPrefix: k8s.
     txtOwnerId: default
     domainFilters: ["techvomit.xyz"]
-    serviceMonitor:
-      enabled: true
