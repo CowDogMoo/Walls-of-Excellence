@@ -67,7 +67,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(failed|fatal|error|unreachable)\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (FAILED|FATAL|ERROR|UNREACHABLE) - \"",
               "refId": "A"
             }
           ],
@@ -117,7 +117,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(failed|fatal|error|unreachable)\" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (FAILED|FATAL|ERROR|UNREACHABLE) - \" [1h]))",
               "refId": "A"
             }
           ],
