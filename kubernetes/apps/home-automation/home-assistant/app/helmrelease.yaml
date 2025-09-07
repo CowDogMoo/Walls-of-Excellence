@@ -146,9 +146,9 @@ spec:
                 nodeSelectorTerms:
                   - matchExpressions:
                       - key: kubernetes.io/hostname
-                        operator: NotIn
+                        operator: In
                         values:
-                          - k8s6
+                          - k8s7
           topologySpreadConstraints:
             - maxSkew: 1
               topologyKey: kubernetes.io/hostname
