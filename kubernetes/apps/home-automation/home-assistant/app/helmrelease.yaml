@@ -45,6 +45,7 @@ spec:
                 if [ -x /config/ts ] && [ ! -f /config/.ts/config.yaml ]; then
                   echo "$(date): Initial config creation"
                   HOME=/config /config/ts room list
+                  chmod 666 /config/.ts/config.yaml || true
                 fi
         containers:
           app:
@@ -67,6 +68,10 @@ spec:
               limits:
                 memory: 2Gi
           ts-config-monitor:
+            securityContext:
+              runAsUser: 65534
+              runAsGroup: 65534
+              allowPrivilegeEscalation: false
             image:
               repository: alpine
               tag: latest
@@ -108,6 +113,7 @@ spec:
                     # Regenerate config
                     echo "$(date): Regenerating config..."
                     if /config/ts room list; then
+                      chmod 666 /config/.ts/config.yaml || true
                       echo "$(date): Config regenerated successfully"
                     else
                       echo "$(date): Regen failed; will retry in 60s"
