@@ -5,6 +5,7 @@ logs
 *cloudflare*
 # *auth*
 *secret.yaml
+!externalsecret.yaml
 
 *login*
 

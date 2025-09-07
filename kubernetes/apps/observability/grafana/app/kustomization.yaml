@@ -2,10 +2,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: observability
 resources:
-  - ./alertmanagerconfig.yaml
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./ocirepository.yaml
-  - ./scrapeconfig.yaml
+  - ./dashboards/ansible-logs-dashboard.yaml
+  - ./dashboards/home-assistant-dashboard.yaml
