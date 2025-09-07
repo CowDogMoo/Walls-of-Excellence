@@ -39,14 +39,12 @@ spec:
               - sh
               - -c
               - |
-                # Remove any existing .ts directory and create symlink to shared location on NFS
-                rm -rf ~/.ts
-                ln -sfn /config/.ts ~/.ts
+                mkdir -p /config/.ts
+                chmod 777 /config/.ts || true
 
-                # Only initialize if config doesn't exist
-                if [ ! -f /config/.ts/config.yaml ]; then
+                if [ -x /config/ts ] && [ ! -f /config/.ts/config.yaml ]; then
                   echo "$(date): Initial config creation"
-                  /config/ts room list
+                  HOME=/config /config/ts room list
                 fi
         containers:
           app:
@@ -56,16 +54,6 @@ spec:
             env:
               # -- Set the container timezone
               TZ: "America/Denver"
-            # Add startup command to ensure symlink exists for main container
-            lifecycle:
-              postStart:
-                exec:
-                  command:
-                    - sh
-                    - -c
-                    - |
-                      rm -rf ~/.ts
-                      ln -sfn /config/.ts ~/.ts
             probes:
               liveness:
                 enabled: false
@@ -82,16 +70,15 @@ spec:
             image:
               repository: alpine
               tag: latest
+            env:
+              HOME: /config
             command:
               - sh
               - -c
               - |
-                # Setup symlink to shared config location
-                rm -rf ~/.ts
-                ln -sfn /config/.ts ~/.ts
-
                 echo "$(date): Starting throwingshade config monitor"
                 echo "$(date): Monitoring /config/.ts/config.yaml"
+                CFG=/config/.ts/config.yaml
 
                 # Monitor loop
                 while true; do
@@ -102,22 +89,29 @@ spec:
                     continue
                   fi
 
-                  # Run ts room list and check for config errors
-                  OUTPUT=$(/config/ts room list 2>&1)
+                  # If config.yaml is a broken/looped symlink, remove it
+                  if [ -L "$CFG" ] && ! readlink -f "$CFG" >/dev/null 2>&1; then
+                    echo "$(date): Detected broken symlink at $CFG; fixing..."
+                    rm -f "$CFG"
+                  fi
 
-                  if echo "$OUTPUT" | grep -q "Failed to load configuration"; then
+                  # Run ts; capture output and exit code
+                  OUTPUT=$(/config/ts room list 2>&1); STATUS=$?
+                  if echo "$OUTPUT" | grep -qi "Failed to load configuration" || { [ "$STATUS" -ne 0 ] && [ ! -f "$CFG" ]; }; then
                     echo "$(date): Config corruption detected!"
                     echo "$(date): Error output: $OUTPUT"
 
                     # Remove corrupted config
                     echo "$(date): Removing corrupted config..."
-                    rm -f /config/.ts/config.yaml
+                    rm -f "$CFG"
 
                     # Regenerate config
                     echo "$(date): Regenerating config..."
-                    /config/ts room list
-
-                    echo "$(date): Config regenerated successfully"
+                    if /config/ts room list; then
+                      echo "$(date): Config regenerated successfully"
+                    else
+                      echo "$(date): Regen failed; will retry in 60s"
+                    fi
                   else
                     # Only log periodically to avoid spam
                     if [ $(($(date +%s) % 300)) -lt 60 ]; then
