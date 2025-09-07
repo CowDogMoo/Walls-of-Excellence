@@ -393,11 +393,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": >
-                100 * (sum(count_over_time({application="ansible",host=~"$host",environment="$environment"} |= " - OK - " [1h])) or vector(0)) /
-                ((sum(count_over_time({application="ansible",host=~"$host",environment="$environment"} |= " - OK - " [1h])) or vector(0)) +
-                (sum(count_over_time({application="ansible",host=~"$host",environment="$environment"} |~ "(?i)(failed|fatal|error|unreachable)" [1h])) or vector(0)) +
-                (sum(count_over_time({application="ansible",host=~"$host",environment="$environment"} |= " - CHANGED - " [1h])) or vector(0)))
+              "expr": "100 * (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - OK - \" [1h])) or vector(0)) / ((sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - OK - \" [1h])) or vector(0)) + (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(failed|fatal|error|unreachable)\" [1h])) or vector(0)) + (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - CHANGED - \" [1h])) or vector(0)))",
               "refId": "A"
             }
           ],
