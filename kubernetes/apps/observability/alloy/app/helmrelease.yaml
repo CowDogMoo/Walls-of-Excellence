@@ -76,7 +76,37 @@ spec:
                 device = "udmpro",
               }
             }
+            forward_to = [loki.process.cef_parser.receiver]
+          }
+
+          // Process CEF messages
+          loki.process "cef_parser" {
             forward_to = [loki.write.loki.receiver]
+
+            stage.regex {
+              expression = "CEF:(?P<cef_version>\\d+)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<device_version>[^|]*)\\|(?P<event_id>[^|]*)\\|(?P<name>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<extensions>.*)"
+            }
+
+            stage.labels {
+              values = {
+                cef_vendor = "vendor",
+                cef_product = "product",
+                cef_severity = "severity",
+                event_name = "name",
+              }
+            }
+
+            // Parse CEF extensions
+            stage.regex {
+              source = "extensions"
+              expression = "UNIFIcategory=(?P<unifi_category>\\S+)"
+            }
+
+            stage.labels {
+              values = {
+                unifi_category = "unifi_category",
+              }
+            }
           }
 
           // Write logs to Loki
