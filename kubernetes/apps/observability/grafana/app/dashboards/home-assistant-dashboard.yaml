@@ -260,26 +260,6 @@ data:
             "sortOrder": "Descending"
           },
           "gridPos": { "h": 10, "w": 24, "x": 0, "y": 36 }
-        },
-        {
-          "id": 9,
-          "title": "File Descriptor Issues",
-          "type": "logs",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\"} |= \"too many open files\"",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "showTime": true,
-            "wrapLogMessage": true,
-            "enableLogDetails": true,
-            "dedupStrategy": "none",
-            "sortOrder": "Descending"
-          },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 46 }
         }
       ]
     }
