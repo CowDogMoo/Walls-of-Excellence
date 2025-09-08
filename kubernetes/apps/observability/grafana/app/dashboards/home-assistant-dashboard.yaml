@@ -260,6 +260,6 @@ data:
             "sortOrder": "Descending"
           },
           "gridPos": { "h": 10, "w": 24, "x": 0, "y": 36 }
-        }
+        },
       ]
     }
