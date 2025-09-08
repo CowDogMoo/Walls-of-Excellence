@@ -12,7 +12,7 @@ data:
   udmpro.json: |
     {
       "uid": "udmpro-logs",
-      "title": "UDM Pro Network Logs",
+      "title": "UDM Pro Network Analytics",
       "tags": ["network", "firewall", "udmpro"],
       "timezone": "browser",
       "schemaVersion": 39,
@@ -21,25 +21,41 @@ data:
       "panels": [
         {
           "id": 1,
-          "title": "Firewall Events",
-          "type": "logs",
+          "title": "WiFi Client Satisfaction",
+          "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{device=\"udmpro\"} |~ \"(BLOCK|DROP|REJECT|FW)\"",
+              "expr": "avg_over_time({device=\"udmpro\"} |~ \"satisfaction_now\" | regexp \"satisfaction_now=(?P<satisfaction>\\\\d+)\" | unwrap satisfaction | __error__=\"\" [5m])",
+              "legendFormat": "Average Satisfaction",
               "refId": "A"
             }
           ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "yellow", "value": 50 },
+                  { "color": "green", "value": 80 }
+                ]
+              },
+              "unit": "percent",
+              "min": 0,
+              "max": 100
+            }
+          },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
         },
         {
           "id": 2,
-          "title": "DHCP Activity",
-          "type": "logs",
+          "title": "WiFi Anomalies by Type",
+          "type": "piechart",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{device=\"udmpro\"} |~ \"DHCP\"",
+              "expr": "sum by (anomaly) (count_over_time({device=\"udmpro\"} |~ \"anomalies=\" | regexp \"anomalies=(?P<anomaly>\\\\w+)\" | __error__=\"\" [5m]))",
               "refId": "A"
             }
           ],
@@ -47,41 +63,93 @@ data:
         },
         {
           "id": 3,
-          "title": "WiFi Events",
-          "type": "logs",
+          "title": "Active WiFi Clients",
+          "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{device=\"udmpro\"} |~ \"(ra[0-9]:|rai[0-9]:|STA-)\"",
+              "expr": "count(count by (sta) (rate({device=\"udmpro\"} |~ \"STA-\" | regexp \"STA-(?P<sta>[0-9a-f:]+)\" [5m])))",
               "refId": "A"
             }
           ],
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
         },
         {
           "id": 4,
-          "title": "Service Errors",
-          "type": "logs",
+          "title": "WebSocket Connection Failures",
+          "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{device=\"udmpro\"} |~ \"(error|fail|refused)\"",
+              "expr": "sum by (error_type) (rate({device=\"udmpro\"} |~ \"blebrd.*error\" | regexp \"error: (?P<error_type>[^\\\"]+)\" [5m]))",
+              "legendFormat": "{{error_type}}",
               "refId": "A"
             }
           ],
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+          "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
         },
         {
           "id": 5,
-          "title": "All Logs",
+          "title": "DHCP Events",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "count_over_time({device=\"udmpro\"} |~ \"DHCP-SM\" [5m])",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 }
+        },
+        {
+          "id": 6,
+          "title": "Top Problematic Clients",
+          "type": "table",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (sta) (count_over_time({device=\"udmpro\"} |~ \"sta=\" | regexp \"sta=(?P<sta>[0-9a-f:]+)\" [1h])))",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
+        },
+        {
+          "id": 7,
+          "title": "Network Errors Timeline",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({device=\"udmpro\"} |~ \"(error|fail|refused|timeout)\" [5m]))",
+              "legendFormat": "Errors/sec",
+              "refId": "A"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
+        },
+        {
+          "id": 8,
+          "title": "Filtered Important Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{device=\"udmpro\"}",
+              "expr": "{device=\"udmpro\"} |~ \"(anomalies=\\\\w+|satisfaction_now=[0-6]\\\\d|BLOCK|DROP|authentication|deauth)\" != \"blebrd\" != \"DHCP-SM\" != \"Send NULL\"",
               "refId": "A"
             }
           ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "numbers",
+            "sortOrder": "Descending"
+          },
           "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 }
         }
       ]
