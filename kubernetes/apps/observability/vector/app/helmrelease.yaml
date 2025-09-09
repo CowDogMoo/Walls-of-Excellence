@@ -54,112 +54,256 @@ spec:
             # Ensure message is a string using to_string with a fallback
             .message = to_string(.message) ?? ""
 
-            # Extract the CEF message from the syslog wrapper if present
-            if starts_with(.message, "<") {
+            # Initialize default values for required labels
+            .event_type = "raw_syslog"
+            .unifi_category = "unknown"
+            .unifi_subcategory = "unknown"
+            .unifi_host = "unknown"
+            .severity = "unknown"
+
+            # Store the original message for processing
+            working_message = .message
+
+            # Check if this is a syslog-wrapped message
+            if starts_with(working_message, "<") {
               # Parse syslog wrapper first
-              parsed_syslog = parse_syslog!(.message)
-              .message = parsed_syslog.message
-              .syslog_timestamp = parsed_syslog.timestamp
-              .syslog_hostname = parsed_syslog.hostname
-              .syslog_facility = parsed_syslog.facility
-              .syslog_severity = parsed_syslog.severity
+              parsed_syslog, err = parse_syslog(working_message)
+              if err == null {
+                working_message = to_string(parsed_syslog.message)
+                .syslog_timestamp = parsed_syslog.timestamp
+                .syslog_hostname = parsed_syslog.hostname
+                .syslog_facility = parsed_syslog.facility
+                .syslog_severity = parsed_syslog.severity
+              }
             }
 
-            # Parse the CEF message
-            if starts_with(.message, "CEF:") {
-              parsed_cef = parse_cef!(.message)
+            # Check if the message contains CEF data
+            if contains(working_message, "CEF:") {
+              # Extract the CEF portion from the message
+              # Handle cases like "Sep 09 00:02:00 UDMPRO CEF:0|..."
+              parts = split(working_message, "CEF:", limit: 2)
 
-              # Map CEF standard fields
-              .cef_version = parsed_cef.cefVersion
-              .device_vendor = parsed_cef.deviceVendor
-              .device_product = parsed_cef.deviceProduct
-              .device_version = parsed_cef.deviceVersion
-              .device_event_class_id = parsed_cef.deviceEventClassId
-              .name = parsed_cef.name
-              .severity = if is_null(parsed_cef.severity) {
-                "unknown"
-              } else {
-                to_string(parsed_cef.severity)
+              if length(parts) > 1 {
+                cef_content = to_string(parts[1])
+
+                # Manual CEF parsing - split the header fields (first 6 pipes)
+                cef_parts = split(cef_content, "|", limit: 7)
+
+                if length(cef_parts) >= 6 {
+                  # Parse CEF header fields
+                  .cef_version = to_string(cef_parts[0])
+                  .device_vendor = to_string(cef_parts[1])
+                  .device_product = to_string(cef_parts[2])
+                  .device_version = to_string(cef_parts[3])
+                  .device_event_class_id = to_string(cef_parts[4])
+                  .name = to_string(cef_parts[5])
+
+                  # Parse extensions (everything after the 6th pipe)
+                  if length(cef_parts) > 6 {
+                    extension = to_string(cef_parts[6])
+
+                    # Check if extension starts with a number (severity)
+                    first_char = slice(extension, 0, 1) ?? ""
+                    if contains("0123456789", first_char) {
+                      # Extract severity from the beginning
+                      sev_parts = split(extension, "|", limit: 2)
+                      .severity = to_string(sev_parts[0])
+                      if length(sev_parts) > 1 {
+                        extension = to_string(sev_parts[1])
+                      } else {
+                        extension = ""
+                      }
+                    } else {
+                      .severity = "0"
+                    }
+
+                    # Parse extension fields - handle msg field specially since it can contain spaces
+                    if contains(extension, "msg=") {
+                      msg_parts = split(extension, "msg=", limit: 2)
+                      if length(msg_parts) > 1 {
+                        msg_str = to_string(msg_parts[1])
+                        # msg field goes to the end or until we hit another known field
+                        # Check for other fields that might follow
+                        if contains(msg_str, " UNIFI") {
+                          msg_end = split(msg_str, " UNIFI", limit: 2)
+                          .msg = to_string(msg_end[0])
+                          # Reconstruct the rest for further parsing
+                          if length(msg_end) > 1 {
+                            extension = "UNIFI" + to_string(msg_end[1])
+                          }
+                        } else if contains(msg_str, " src=") {
+                          msg_end = split(msg_str, " src=", limit: 2)
+                          .msg = to_string(msg_end[0])
+                          if length(msg_end) > 1 {
+                            extension = "src=" + to_string(msg_end[1])
+                          }
+                        } else if contains(msg_str, " dst=") {
+                          msg_end = split(msg_str, " dst=", limit: 2)
+                          .msg = to_string(msg_end[0])
+                          if length(msg_end) > 1 {
+                            extension = "dst=" + to_string(msg_end[1])
+                          }
+                        } else {
+                          # msg is the last field
+                          .msg = msg_str
+                          extension = ""
+                        }
+                      }
+                    }
+
+                    # Parse other standard CEF fields
+                    if contains(extension, "src=") {
+                      src_parts = split(extension, "src=", limit: 2)
+                      if length(src_parts) > 1 {
+                        src_str = to_string(src_parts[1])
+                        src_value = split(src_str, " ", limit: 2)
+                        .source_ip = to_string(src_value[0])
+                      }
+                    }
+
+                    if contains(extension, "dst=") {
+                      dst_parts = split(extension, "dst=", limit: 2)
+                      if length(dst_parts) > 1 {
+                        dst_str = to_string(dst_parts[1])
+                        dst_value = split(dst_str, " ", limit: 2)
+                        .destination_ip = to_string(dst_value[0])
+                      }
+                    }
+
+                    if contains(extension, "spt=") {
+                      spt_parts = split(extension, "spt=", limit: 2)
+                      if length(spt_parts) > 1 {
+                        spt_str = to_string(spt_parts[1])
+                        spt_value = split(spt_str, " ", limit: 2)
+                        .source_port = to_string(spt_value[0])
+                      }
+                    }
+
+                    if contains(extension, "dpt=") {
+                      dpt_parts = split(extension, "dpt=", limit: 2)
+                      if length(dpt_parts) > 1 {
+                        dpt_str = to_string(dpt_parts[1])
+                        dpt_value = split(dpt_str, " ", limit: 2)
+                        .destination_port = to_string(dpt_value[0])
+                      }
+                    }
+
+                    # Parse UniFi specific fields
+                    if contains(extension, "UNIFIhost=") {
+                      host_parts = split(extension, "UNIFIhost=", limit: 2)
+                      if length(host_parts) > 1 {
+                        host_str = to_string(host_parts[1])
+                        host_value = split(host_str, " ", limit: 2)
+                        .unifi_host = to_string(host_value[0])
+                      }
+                    }
+
+                    if contains(extension, "UNIFIcategory=") {
+                      cat_parts = split(extension, "UNIFIcategory=", limit: 2)
+                      if length(cat_parts) > 1 {
+                        cat_str = to_string(cat_parts[1])
+                        cat_value = split(cat_str, " ", limit: 2)
+                        .unifi_category = to_string(cat_value[0])
+                      }
+                    }
+
+                    if contains(extension, "UNIFIsubCategory=") {
+                      subcat_parts = split(extension, "UNIFIsubCategory=", limit: 2)
+                      if length(subcat_parts) > 1 {
+                        subcat_str = to_string(subcat_parts[1])
+                        subcat_value = split(subcat_str, " ", limit: 2)
+                        .unifi_subcategory = to_string(subcat_value[0])
+                      }
+                    }
+
+                    if contains(extension, "UNIFIadmin=") {
+                      admin_parts = split(extension, "UNIFIadmin=", limit: 2)
+                      if length(admin_parts) > 1 {
+                        admin_str = to_string(admin_parts[1])
+                        admin_value = split(admin_str, " ", limit: 2)
+                        .unifi_admin = to_string(admin_value[0])
+                      }
+                    }
+
+                    if contains(extension, "UNIFIaccessMethod=") {
+                      method_parts = split(extension, "UNIFIaccessMethod=", limit: 2)
+                      if length(method_parts) > 1 {
+                        method_str = to_string(method_parts[1])
+                        method_value = split(method_str, " ", limit: 2)
+                        .unifi_access_method = to_string(method_value[0])
+                      }
+                    }
+
+                    # Client fields
+                    if contains(extension, "UNIFIclientIp=") {
+                      cip_parts = split(extension, "UNIFIclientIp=", limit: 2)
+                      if length(cip_parts) > 1 {
+                        cip_str = to_string(cip_parts[1])
+                        cip_value = split(cip_str, " ", limit: 2)
+                        .unifi_client_ip = to_string(cip_value[0])
+                      }
+                    } else if contains(extension, "UNIFIclientIP=") {
+                      cip_parts = split(extension, "UNIFIclientIP=", limit: 2)
+                      if length(cip_parts) > 1 {
+                        cip_str = to_string(cip_parts[1])
+                        cip_value = split(cip_str, " ", limit: 2)
+                        .unifi_client_ip = to_string(cip_value[0])
+                      }
+                    }
+
+                    if contains(extension, "UNIFIclientMac=") {
+                      mac_parts = split(extension, "UNIFIclientMac=", limit: 2)
+                      if length(mac_parts) > 1 {
+                        mac_str = to_string(mac_parts[1])
+                        mac_value = split(mac_str, " ", limit: 2)
+                        .unifi_client_mac = to_string(mac_value[0])
+                      }
+                    }
+
+                    # Device fields
+                    if contains(extension, "UNIFIdeviceName=") {
+                      dname_parts = split(extension, "UNIFIdeviceName=", limit: 2)
+                      if length(dname_parts) > 1 {
+                        dname_str = to_string(dname_parts[1])
+                        dname_value = split(dname_str, " ", limit: 2)
+                        .unifi_device_name = to_string(dname_value[0])
+                      }
+                    }
+
+                    # WiFi fields
+                    if contains(extension, "UNIFIwifiName=") {
+                      wifi_parts = split(extension, "UNIFIwifiName=", limit: 2)
+                      if length(wifi_parts) > 1 {
+                        wifi_str = to_string(wifi_parts[1])
+                        wifi_value = split(wifi_str, " ", limit: 2)
+                        .unifi_wifi_name = to_string(wifi_value[0])
+                      }
+                    }
+                  }
+
+                  # Set event type based on device_event_class_id
+                  device_id = .device_event_class_id
+                  .event_type = if device_id == "544" {
+                    "admin_access"
+                  } else if device_id == "401" {
+                    "wifi_disconnect"
+                  } else if device_id == "400" {
+                    "wifi_connect"
+                  } else if device_id == "system" {
+                    "system_event"
+                  } else if device_id == "admins" {
+                    "admin_login"
+                  } else {
+                    "unifi_event"
+                  }
+
+                  # Clean up the original message field
+                  del(.message)
+                } else {
+                  .event_type = "cef_parse_failed"
+                  .parse_error = "Not enough CEF fields"
+                }
               }
-
-              # Extract UniFi-specific fields with defaults for labels
-              .unifi_category = if is_null(parsed_cef.UNIFIcategory) {
-                "unknown"
-              } else {
-                to_string(parsed_cef.UNIFIcategory)
-              }
-              .unifi_subcategory = if is_null(parsed_cef.UNIFIsubCategory) {
-                "unknown"
-              } else {
-                to_string(parsed_cef.UNIFIsubCategory)
-              }
-              .unifi_host = if is_null(parsed_cef.UNIFIhost) {
-                "unknown"
-              } else {
-                to_string(parsed_cef.UNIFIhost)
-              }
-              .unifi_admin = parsed_cef.UNIFIadmin
-              .unifi_access_method = parsed_cef.UNIFIaccessMethod
-              .unifi_client_alias = parsed_cef.UNIFIclientAlias
-              .unifi_client_hostname = parsed_cef.UNIFIclientHostname
-
-              # Handle alternate field names for client IP
-              .unifi_client_ip = parsed_cef.UNIFIclientIp
-              if is_null(.unifi_client_ip) {
-                .unifi_client_ip = parsed_cef.UNIFIclientIP
-              }
-
-              .unifi_client_mac = parsed_cef.UNIFIclientMac
-              .unifi_device_name = parsed_cef.UNIFIdeviceName
-              .unifi_device_model = parsed_cef.UNIFIdeviceModel
-              .unifi_device_mac = parsed_cef.UNIFIdeviceMac
-              .unifi_device_ip = parsed_cef.UNIFIdeviceIp
-              .unifi_wifi_name = parsed_cef.UNIFIwifiName
-              .unifi_wifi_band = parsed_cef.UNIFIwifiBand
-              .unifi_wifi_channel = parsed_cef.UNIFIwifiChannel
-
-              # Handle alternate field names for WiFi RSSI
-              .unifi_wifi_rssi = parsed_cef.UNIFIWiFiRssi
-              if is_null(.unifi_wifi_rssi) {
-                .unifi_wifi_rssi = parsed_cef.UNIFIlastConnectedToWiFiRssi
-              }
-
-              .unifi_network_name = parsed_cef.UNIFInetworkName
-              .unifi_network_subnet = parsed_cef.UNIFInetworkSubnet
-              .unifi_network_vlan = parsed_cef.UNIFInetworkVlan
-              .unifi_duration = parsed_cef.UNIFIduration
-              .unifi_usage_up = parsed_cef.UNIFIusageUp
-              .unifi_usage_down = parsed_cef.UNIFIusageDown
-
-              # Extract standard CEF extension fields
-              .source_ip = parsed_cef.src
-              .destination_ip = parsed_cef.dst
-              .source_port = parsed_cef.spt
-              .destination_port = parsed_cef.dpt
-              .msg = parsed_cef.msg
-              .reason = parsed_cef.reason
-              .count = parsed_cef.cnt
-
-              # Set event type based on device_event_class_id
-              .event_type = if to_string(parsed_cef.deviceEventClassId) == "544" {
-                "admin_access"
-              } else if to_string(parsed_cef.deviceEventClassId) == "401" {
-                "wifi_disconnect"
-              } else if to_string(parsed_cef.deviceEventClassId) == "400" {
-                "wifi_connect"
-              } else {
-                "unifi_event"
-              }
-
-              # Clean up the original message field
-              del(.message)
-            } else {
-              # Not a CEF message, keep as is
-              .event_type = "raw_syslog"
-              .unifi_category = "unknown"
-              .unifi_subcategory = "unknown"
-              .unifi_host = "unknown"
-              .severity = "unknown"
             }
 
             # Add metadata
