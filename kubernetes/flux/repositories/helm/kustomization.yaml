@@ -16,4 +16,5 @@ resources:
   - prometheus-community.yaml
   - stakater.yaml
   - unpoller.yaml
+  - vector.yaml
   - weaveworks.yaml

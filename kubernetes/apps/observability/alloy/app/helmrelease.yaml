@@ -64,39 +64,51 @@ spec:
             forward_to = [loki.write.loki.receiver]
           }
 
-          // Syslog receiver for UDM Pro logs
+          // Syslog listener for UniFi devices
           loki.source.syslog "external" {
             listener {
               address = "0.0.0.0:1514"
               protocol = "udp"
-              syslog_format = "rfc3164"
+              syslog_format = "rfc5424"
               labels = {
                 job = "syslog",
-                source = "external",
+                source = "unifi",
                 device = "udmpro",
               }
             }
-            forward_to = [loki.process.cef_parser.receiver]
+            forward_to = [loki.process.unifi_parser.receiver]
           }
 
-          // Process CEF messages
-          loki.process "cef_parser" {
+          loki.process "unifi_parser" {
             forward_to = [loki.write.loki.receiver]
 
+            // Extract UniFi-specific fields from the message
+            stage.regex {
+              expression = "(?P<event_type>\\w+):\\s*(?P<details>.*)"
+            }
+
+            // Parse CEF format if present
             stage.regex {
               expression = "CEF:(?P<cef_version>\\d+)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<device_version>[^|]*)\\|(?P<event_id>[^|]*)\\|(?P<name>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<extensions>.*)"
             }
 
+            // Extract common UniFi patterns
+            stage.regex {
+              expression = "(?P<mac>[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})"
+            }
+
+            // Label extraction
             stage.labels {
               values = {
+                event_type = "event_type",
                 cef_vendor = "vendor",
                 cef_product = "product",
-                cef_severity = "severity",
-                event_name = "name",
+                severity = "severity",
+                mac_address = "mac",
               }
             }
 
-            // Parse CEF extensions
+            // Extract UniFi category if present
             stage.regex {
               source = "extensions"
               expression = "UNIFIcategory=(?P<unifi_category>\\S+)"
@@ -106,6 +118,11 @@ spec:
               values = {
                 unifi_category = "unifi_category",
               }
+            }
+
+            // Drop noisy messages if needed
+            stage.drop {
+              expression = "(DHCP-SM.*Send NULL|blebrd.*heartbeat)"
             }
           }
 

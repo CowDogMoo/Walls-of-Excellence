@@ -1,0 +1,68 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vector-syslog
+  namespace: observability
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: vector
+      version: 0.36.1
+      sourceRef:
+        kind: HelmRepository
+        name: vector
+        namespace: flux-system
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    role: Stateless-Aggregator
+    service:
+      type: LoadBalancer
+      ports:
+        - name: syslog-udp
+          port: 514
+          protocol: UDP
+          targetPort: 514
+    customConfig:
+      data_dir: /vector-data-dir
+      api:
+        enabled: false
+      sources:
+        unifi_syslog:
+          type: syslog
+          address: "0.0.0.0:514"
+          mode: udp
+      transforms:
+        parse_unifi:
+          type: remap
+          inputs: ["unifi_syslog"]
+          source: |
+            # Keep the original message
+            .unifi_message = .message
+
+            # Add labels for Loki
+            .labels.source = "unifi"
+            .labels.device = "udmpro"
+            .labels.host = .host ?? "unknown"
+            .labels.severity = to_string(.severity ?? "info")
+            .labels.facility = to_string(.facility ?? "unknown")
+      sinks:
+        to_loki:
+          type: loki
+          inputs: ["parse_unifi"]
+          endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
+          encoding:
+            codec: json
+          labels:
+            source: "unifi"
+            device: "udmpro"
+            host: "{{ host }}"
+            severity: "{{ severity }}"
+            facility: "{{ facility }}"
