@@ -374,7 +374,7 @@ spec:
         kubernetes_to_loki:
           type: loki
           inputs: ["kubernetes_metadata"]
-          endpoint: "http://loki.observability.svc.cluster.local:3100"
+          endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
           path: "/loki/api/v1/push"
           encoding:
             codec: json
