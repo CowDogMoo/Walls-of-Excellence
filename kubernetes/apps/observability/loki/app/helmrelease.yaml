@@ -71,6 +71,28 @@ spec:
       enabled: true
       replicas: 1
       verboseLogging: true
+      nginxConfig:
+        httpSnippet: |
+          upstream loki {
+            server loki:3100;
+            keepalive 15;
+          }
+        serverSnippet: |
+          client_body_buffer_size 100M;
+          client_max_body_size 100M;
+
+          location = /ready {
+            proxy_pass http://loki/ready;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_connect_timeout 1s;
+          }
+
+          location / {
+            proxy_pass http://loki$request_uri;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+          }
       ingress:
         enabled: true
         ingressClassName: ingress-traefik
