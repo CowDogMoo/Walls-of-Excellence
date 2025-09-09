@@ -8,8 +8,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Assistant"
-    dashboard-version: "1.0.2"
-    last-modified: "2025-09-05"
+    dashboard-version: "1.0.3"
+    last-modified: "2025-09-09"
 data:
   home-assistant.json: |
     {
@@ -31,7 +31,7 @@ data:
             "name": "pod",
             "type": "query",
             "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", source_type=\"kubernetes\"}, pod)",
+            "query": "label_values({namespace=\"home-automation\", app=\"home-assistant\"}, pod)",
             "regex": "home-assistant.*",
             "multi": true,
             "includeAll": true,
@@ -45,7 +45,7 @@ data:
             "name": "container",
             "type": "query",
             "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", source_type=\"kubernetes\"}, container)",
+            "query": "label_values({namespace=\"home-automation\", app=\"home-assistant\"}, container)",
             "multi": true,
             "includeAll": true,
             "current": {
@@ -64,7 +64,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", source_type=\"kubernetes\"} |~ \"(?i)error\"",
+              "expr": "{namespace=\"home-automation\", app=\"home-assistant\"} |~ \"(?i)error\"",
               "refId": "A"
             }
           ],
@@ -86,7 +86,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (pod) (rate({namespace=\"home-automation\", source_type=\"kubernetes\"} |~ \"(?i)error\" [5m]))",
+              "expr": "sum by (pod) (rate({namespace=\"home-automation\", app=\"home-assistant\"} |~ \"(?i)error\" [5m]))",
               "refId": "A",
               "legendFormat": "{{pod}}"
             }
@@ -118,7 +118,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", source_type=\"kubernetes\"} |~ \"(?i)error\" [1h]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"home-assistant\"} |~ \"(?i)error\" [1h]))",
               "refId": "A"
             }
           ],
@@ -147,7 +147,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", source_type=\"kubernetes\"} |~ \"(?i)warning\" [1h]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"home-assistant\"} |~ \"(?i)warning\" [1h]))",
               "refId": "A"
             }
           ],
@@ -176,7 +176,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", source_type=\"kubernetes\"} |~ \"(?i)warning\"",
+              "expr": "{namespace=\"home-automation\", app=\"home-assistant\"} |~ \"(?i)warning\"",
               "refId": "A"
             }
           ],
@@ -197,7 +197,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", source_type=\"kubernetes\"} |= \"custom_components\"",
+              "expr": "{namespace=\"home-automation\", app=\"home-assistant\"} |= \"custom_components\"",
               "refId": "A"
             }
           ],
@@ -217,7 +217,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({namespace=\"home-automation\", source_type=\"kubernetes\"} [5m]))",
+              "expr": "sum(rate({namespace=\"home-automation\", app=\"home-assistant\"} [5m]))",
               "refId": "A",
               "legendFormat": "Total logs/sec"
             }
@@ -248,7 +248,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", source_type=\"kubernetes\"}",
+              "expr": "{namespace=\"home-automation\", app=\"home-assistant\"}",
               "refId": "A"
             }
           ],
