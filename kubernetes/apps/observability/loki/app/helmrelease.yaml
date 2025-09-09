@@ -60,6 +60,7 @@ spec:
             local:
               directory: /rules
           rule_path: /rules/fake
+
     singleBinary:
       replicas: 1
       persistence:
@@ -104,6 +105,23 @@ spec:
         tls:
           - hosts:
               - *host
+
+    # Enable ServiceMonitor for metrics collection
+    monitoring:
+      serviceMonitor:
+        enabled: true
+        labels:
+          prometheus.io/service-monitor: "true"
+        annotations: {}
+        interval: 30s
+        scrapeTimeout: 10s
+        relabelings: []
+        metricRelabelings: []
+        scheme: http
+        tlsConfig: {}
+        namespaceSelector: {}
+        targetLabels: []
+        path: /metrics
 
     backend:
       replicas: 0
