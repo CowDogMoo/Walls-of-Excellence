@@ -199,6 +199,7 @@ tasks:
     deps: ["ansible:check-ansible", "check-inventory"]
     vars:
       GROUP: '{{.GROUP | default "all"}}'
+      ANSIBLE_CFG: '{{.ANSIBLE_CFG | default "~/.ansible.cfg"}}'
     cmds:
       - |
         if [ "{{.GROUP}}" != "master" ] && [ "{{.GROUP}}" != "node" ] && [ "{{.GROUP}}" != "all" ]; then
@@ -206,6 +207,11 @@ tasks:
           exit 1
         fi
         echo "Provisioning k3s cluster on {{.GROUP}} nodes..."
+
+        # Always export ANSIBLE_CONFIG - either home config or custom
+        export ANSIBLE_CONFIG="{{.ANSIBLE_CFG}}"
+        echo "Using Ansible config: {{.ANSIBLE_CFG}}"
+
         ansible-playbook "{{.K3S_ANSIBLE_DIR}}/site.yml" \
           -i "{{.INVENTORY}}" \
           --limit {{.GROUP}}
