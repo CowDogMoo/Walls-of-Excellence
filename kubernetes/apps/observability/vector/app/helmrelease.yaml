@@ -30,39 +30,34 @@ spec:
           port: 514
           protocol: UDP
           targetPort: 514
+    env:
+      - name: VECTOR_LOG
+        value: "debug"
     customConfig:
       data_dir: /vector-data-dir
       api:
-        enabled: false
+        enabled: true
+        address: "0.0.0.0:8686"
       sources:
-        unifi_syslog:
-          type: syslog
+        unifi_raw:
+          type: socket
           address: "0.0.0.0:514"
           mode: udp
-      transforms:
-        parse_unifi:
-          type: remap
-          inputs: ["unifi_syslog"]
-          source: |
-            # Keep the original message
-            .unifi_message = .message
-
-            # Add labels for Loki
-            .labels.source = "unifi"
-            .labels.device = "udmpro"
-            .labels.host = .host ?? "unknown"
-            .labels.severity = to_string(.severity ?? "info")
-            .labels.facility = to_string(.facility ?? "unknown")
+          decoding:
+            codec: bytes
       sinks:
-        to_loki:
-          type: loki
-          inputs: ["parse_unifi"]
-          endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
+        console_debug:
+          type: console
+          inputs: ["unifi_raw"]
           encoding:
             codec: json
+        to_loki:
+          type: loki
+          inputs: ["unifi_raw"]
+          endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
+          encoding:
+            codec: text
           labels:
             source: "unifi"
             device: "udmpro"
-            host: "{{ host }}"
-            severity: "{{ severity }}"
-            facility: "{{ facility }}"
+            job: "syslog"
