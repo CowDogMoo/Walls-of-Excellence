@@ -387,6 +387,9 @@ spec:
             job: "{{`{{ job }}`}}"
             source_type: "{{`{{ source_type }}`}}"
           out_of_order_action: "accept"
+          batch:
+            timeout_secs: 1
+            max_bytes: 1048576
 
         # Send UniFi logs to Loki
         unifi_to_loki:
@@ -404,6 +407,9 @@ spec:
             subcategory: "{{`{{ unifi_subcategory }}`}}"
             severity: "{{`{{ severity }}`}}"
           out_of_order_action: "accept"
+          batch:
+            timeout_secs: 1
+            max_bytes: 1048576
 
         console_debug:
           type: console
