@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -32,7 +33,7 @@ spec:
           targetPort: 514
     env:
       - name: VECTOR_LOG
-        value: "debug"
+        value: "info"
     customConfig:
       data_dir: /vector-data-dir
       api:
@@ -45,19 +46,143 @@ spec:
           mode: udp
           decoding:
             codec: bytes
+      transforms:
+        parse_unifi_cef:
+          type: remap
+          inputs: ["unifi_raw"]
+          source: |
+            # Ensure message is a string using to_string with a fallback
+            .message = to_string(.message) ?? ""
+
+            # Extract the CEF message from the syslog wrapper if present
+            if starts_with(.message, "<") {
+              # Parse syslog wrapper first
+              parsed_syslog = parse_syslog!(.message)
+              .message = parsed_syslog.message
+              .syslog_timestamp = parsed_syslog.timestamp
+              .syslog_hostname = parsed_syslog.hostname
+              .syslog_facility = parsed_syslog.facility
+              .syslog_severity = parsed_syslog.severity
+            }
+
+            # Parse the CEF message
+            if starts_with(.message, "CEF:") {
+              parsed_cef = parse_cef!(.message)
+
+              # Map CEF standard fields
+              .cef_version = parsed_cef.cefVersion
+              .device_vendor = parsed_cef.deviceVendor
+              .device_product = parsed_cef.deviceProduct
+              .device_version = parsed_cef.deviceVersion
+              .device_event_class_id = parsed_cef.deviceEventClassId
+              .name = parsed_cef.name
+              .severity = if is_null(parsed_cef.severity) {
+                "unknown"
+              } else {
+                to_string(parsed_cef.severity)
+              }
+
+              # Extract UniFi-specific fields with defaults for labels
+              .unifi_category = if is_null(parsed_cef.UNIFIcategory) {
+                "unknown"
+              } else {
+                to_string(parsed_cef.UNIFIcategory)
+              }
+              .unifi_subcategory = if is_null(parsed_cef.UNIFIsubCategory) {
+                "unknown"
+              } else {
+                to_string(parsed_cef.UNIFIsubCategory)
+              }
+              .unifi_host = if is_null(parsed_cef.UNIFIhost) {
+                "unknown"
+              } else {
+                to_string(parsed_cef.UNIFIhost)
+              }
+              .unifi_admin = parsed_cef.UNIFIadmin
+              .unifi_access_method = parsed_cef.UNIFIaccessMethod
+              .unifi_client_alias = parsed_cef.UNIFIclientAlias
+              .unifi_client_hostname = parsed_cef.UNIFIclientHostname
+
+              # Handle alternate field names for client IP
+              .unifi_client_ip = parsed_cef.UNIFIclientIp
+              if is_null(.unifi_client_ip) {
+                .unifi_client_ip = parsed_cef.UNIFIclientIP
+              }
+
+              .unifi_client_mac = parsed_cef.UNIFIclientMac
+              .unifi_device_name = parsed_cef.UNIFIdeviceName
+              .unifi_device_model = parsed_cef.UNIFIdeviceModel
+              .unifi_device_mac = parsed_cef.UNIFIdeviceMac
+              .unifi_device_ip = parsed_cef.UNIFIdeviceIp
+              .unifi_wifi_name = parsed_cef.UNIFIwifiName
+              .unifi_wifi_band = parsed_cef.UNIFIwifiBand
+              .unifi_wifi_channel = parsed_cef.UNIFIwifiChannel
+
+              # Handle alternate field names for WiFi RSSI
+              .unifi_wifi_rssi = parsed_cef.UNIFIWiFiRssi
+              if is_null(.unifi_wifi_rssi) {
+                .unifi_wifi_rssi = parsed_cef.UNIFIlastConnectedToWiFiRssi
+              }
+
+              .unifi_network_name = parsed_cef.UNIFInetworkName
+              .unifi_network_subnet = parsed_cef.UNIFInetworkSubnet
+              .unifi_network_vlan = parsed_cef.UNIFInetworkVlan
+              .unifi_duration = parsed_cef.UNIFIduration
+              .unifi_usage_up = parsed_cef.UNIFIusageUp
+              .unifi_usage_down = parsed_cef.UNIFIusageDown
+
+              # Extract standard CEF extension fields
+              .source_ip = parsed_cef.src
+              .destination_ip = parsed_cef.dst
+              .source_port = parsed_cef.spt
+              .destination_port = parsed_cef.dpt
+              .msg = parsed_cef.msg
+              .reason = parsed_cef.reason
+              .count = parsed_cef.cnt
+
+              # Set event type based on device_event_class_id
+              .event_type = if to_string(parsed_cef.deviceEventClassId) == "544" {
+                "admin_access"
+              } else if to_string(parsed_cef.deviceEventClassId) == "401" {
+                "wifi_disconnect"
+              } else if to_string(parsed_cef.deviceEventClassId) == "400" {
+                "wifi_connect"
+              } else {
+                "unifi_event"
+              }
+
+              # Clean up the original message field
+              del(.message)
+            } else {
+              # Not a CEF message, keep as is
+              .event_type = "raw_syslog"
+              .unifi_category = "unknown"
+              .unifi_subcategory = "unknown"
+              .unifi_host = "unknown"
+              .severity = "unknown"
+            }
+
+            # Add metadata
+            .source_type = "unifi"
+            .processed_at = now()
       sinks:
         console_debug:
           type: console
-          inputs: ["unifi_raw"]
+          inputs: ["parse_unifi_cef"]
           encoding:
             codec: json
         to_loki:
           type: loki
-          inputs: ["unifi_raw"]
+          inputs: ["parse_unifi_cef"]
           endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
           encoding:
-            codec: text
+            codec: json
           labels:
             source: "unifi"
-            device: "udmpro"
+            device: "{{`{{ unifi_host }}`}}"
             job: "syslog"
+            event_type: "{{`{{ event_type }}`}}"
+            category: "{{`{{ unifi_category }}`}}"
+            subcategory: "{{`{{ unifi_subcategory }}`}}"
+            severity: "{{`{{ severity }}`}}"
+          out_of_order_action: "accept"
