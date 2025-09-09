@@ -39,12 +39,11 @@ spec:
         org_role: Viewer
       news:
         news_feed_enabled: false
-    # Add the probe configuration here, under values
     readinessProbe:
       httpGet:
         path: /api/health
         port: 3000
-      initialDelaySeconds: 30 # Give Grafana 30 seconds to start
+      initialDelaySeconds: 30
       timeoutSeconds: 5
       periodSeconds: 10
       failureThreshold: 3
@@ -52,7 +51,7 @@ spec:
       httpGet:
         path: /api/health
         port: 3000
-      initialDelaySeconds: 60 # Give even more time for liveness
+      initialDelaySeconds: 60
       timeoutSeconds: 30
       periodSeconds: 10
       failureThreshold: 10
