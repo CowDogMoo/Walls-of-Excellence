@@ -3,10 +3,11 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: vector-syslog
+  name: vector
   namespace: observability
 spec:
-  interval: 1h
+  interval: 5m
+  timeout: 10m
   chart:
     spec:
       chart: vector
@@ -17,13 +18,21 @@ spec:
         namespace: flux-system
   install:
     remediation:
-      retries: -1
+      retries: 3
   upgrade:
     cleanupOnFail: true
     remediation:
       retries: 3
   values:
-    role: Stateless-Aggregator
+    role: Agent # DaemonSet to collect logs from all nodes
+
+    rbac:
+      create: true
+
+    serviceAccount:
+      create: true
+
+    # Expose syslog port via LoadBalancer
     service:
       type: LoadBalancer
       ports:
@@ -31,22 +40,72 @@ spec:
           port: 514
           protocol: UDP
           targetPort: 514
+
+    tolerations:
+      - operator: Exists # Run on all nodes
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
     env:
       - name: VECTOR_LOG
         value: "info"
+
     customConfig:
       data_dir: /vector-data-dir
       api:
         enabled: true
         address: "0.0.0.0:8686"
+
       sources:
+        # Kubernetes pod logs collection
+        kubernetes_logs:
+          type: kubernetes_logs
+          extra_label_selector: ""
+          extra_namespace_label_selector: ""
+
+        # UniFi syslog receiver
         unifi_raw:
           type: socket
           address: "0.0.0.0:514"
           mode: udp
           decoding:
             codec: bytes
+
       transforms:
+        # Process Kubernetes logs
+        kubernetes_metadata:
+          type: remap
+          inputs: ["kubernetes_logs"]
+          source: |
+            .namespace = .kubernetes.pod_namespace
+            .pod = .kubernetes.pod_name
+            .container = .kubernetes.container_name
+            .node = .kubernetes.pod_node_name
+
+            if exists(.kubernetes.pod_labels.app) {
+              .app = .kubernetes.pod_labels.app
+            } else if exists(.kubernetes.pod_labels."app.kubernetes.io/name") {
+              .app = .kubernetes.pod_labels."app.kubernetes.io/name"
+            } else {
+              .app = "unknown"
+            }
+
+            .source_type = "kubernetes"
+            .job = "kubernetes-pods"
+
+            if exists(.message) {
+              .message = string!(.message)
+            }
+
+            del(.kubernetes)
+
+        # Process UniFi CEF logs (your existing transform)
         parse_unifi_cef:
           type: remap
           inputs: ["unifi_raw"]
@@ -309,13 +368,28 @@ spec:
             # Add metadata
             .source_type = "unifi"
             .processed_at = now()
+
       sinks:
-        console_debug:
-          type: console
-          inputs: ["parse_unifi_cef"]
+        # Send Kubernetes logs to Loki
+        kubernetes_to_loki:
+          type: loki
+          inputs: ["kubernetes_metadata"]
+          endpoint: "http://loki.observability.svc.cluster.local:3100"
+          path: "/loki/api/v1/push"
           encoding:
             codec: json
-        to_loki:
+          labels:
+            namespace: "{{`{{ namespace }}`}}"
+            pod: "{{`{{ pod }}`}}"
+            container: "{{`{{ container }}`}}"
+            app: "{{`{{ app }}`}}"
+            node: "{{`{{ node }}`}}"
+            job: "{{`{{ job }}`}}"
+            source_type: "{{`{{ source_type }}`}}"
+          out_of_order_action: "accept"
+
+        # Send UniFi logs to Loki
+        unifi_to_loki:
           type: loki
           inputs: ["parse_unifi_cef"]
           endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
@@ -324,9 +398,18 @@ spec:
           labels:
             source: "unifi"
             device: "{{`{{ unifi_host }}`}}"
-            job: "syslog"
+            job: "{{`{{ job }}`}}"
             event_type: "{{`{{ event_type }}`}}"
             category: "{{`{{ unifi_category }}`}}"
             subcategory: "{{`{{ unifi_subcategory }}`}}"
             severity: "{{`{{ severity }}`}}"
           out_of_order_action: "accept"
+
+        console_debug:
+          type: console
+          inputs: ["parse_unifi_cef", "kubernetes_metadata"]
+          encoding:
+            codec: json
+
+    serviceMonitor:
+      enabled: true
