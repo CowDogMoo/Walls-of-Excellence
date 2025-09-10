@@ -95,6 +95,14 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/default
+          - name: network
+            orgId: 1
+            folder: "Network"
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/network
     dashboards:
       default:
         cert-manager:
@@ -142,6 +150,7 @@ spec:
           gnetId: 19105
           revision: 7
           datasource: Prometheus
+      network:
         unifi-insights:
           # renovate: depName="UniFi-Poller: Client Insights - Prometheus"
           gnetId: 11315

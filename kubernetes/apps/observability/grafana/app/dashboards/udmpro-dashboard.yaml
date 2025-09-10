@@ -11,16 +11,127 @@ metadata:
 data:
   unifi-firewall.json: |
     {
-      "uid": "unifi-firewall-analytics",
-      "title": "UniFi Network Analytics",
-      "tags": ["network", "firewall", "unifi", "wifi"],
+      "uid": "cowdogmoo-network-analytics",
+      "title": "CowDogMoo Network Analytics",
+      "tags": ["network", "firewall", "unifi", "wifi", "multicast"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "30s",
       "panels": [
         {
           "id": 1,
+          "title": "🔄 SSDP Multicast Relay Status",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[SSDP]\" [5m])) * 60",
+              "legendFormat": "SSDP Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "green", "value": 5 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1,
+              "mappings": [
+                {
+                  "type": "special",
+                  "options": {
+                    "match": "null",
+                    "result": { "text": "No Activity", "color": "red" }
+                  }
+                }
+              ]
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+        },
+        {
+          "id": 2,
+          "title": "🚫 Firewall Blocks",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" [5m])) * 60",
+              "legendFormat": "Blocks/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 10 },
+                  { "color": "red", "value": 50 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+        },
+        {
+          "id": 3,
+          "title": "📡 mDNS Relay Status",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[mDNS]\" [5m])) * 60",
+              "legendFormat": "mDNS Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "green", "value": 5 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+        },
+        {
+          "id": 4,
           "title": "📡 Total Log Events",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -45,10 +156,10 @@ data:
               "decimals": 1
             }
           },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
         },
         {
-          "id": 2,
+          "id": 5,
           "title": "⚠️ Error Events",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -73,10 +184,10 @@ data:
               "decimals": 2
             }
           },
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 }
         },
         {
-          "id": 3,
+          "id": 6,
           "title": "📶 WiFi Events",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -101,10 +212,10 @@ data:
               "decimals": 2
             }
           },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 4 }
         },
         {
-          "id": 4,
+          "id": 7,
           "title": "🏠 Active Access Points",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -129,10 +240,97 @@ data:
               "decimals": 0
             }
           },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 }
         },
         {
-          "id": 5,
+          "id": 8,
+          "title": "Multicast Relay Activity",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[SSDP]\" [1m]))",
+              "legendFormat": "SSDP Relay",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[mDNS]\" [1m]))",
+              "legendFormat": "mDNS Relay",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "unit": "ops",
+              "decimals": 3
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": ["lastNotNull", "mean"]
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+        },
+        {
+          "id": 9,
+          "title": "Firewall Blocks by Target",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (dst) (rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `DST=(?P<dst>[0-9.]+)` [1m]))",
+              "legendFormat": "{{dst}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "unit": "ops",
+              "decimals": 3
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": ["lastNotNull", "sum"]
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+        },
+        {
+          "id": 10,
           "title": "Events by Severity",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -170,10 +368,10 @@ data:
               "calcs": ["lastNotNull", "mean"]
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
         },
         {
-          "id": 6,
+          "id": 11,
           "title": "Events by Access Point",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -210,10 +408,82 @@ data:
               "placement": "bottom"
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
         },
         {
-          "id": 7,
+          "id": 12,
+          "title": "Top Blocked Sources",
+          "type": "piechart",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (src) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+)` [1h])))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "pieType": "donut",
+            "displayLabels": ["name", "percent"],
+            "legendDisplayMode": "table",
+            "legendPlacement": "right",
+            "legendValues": ["value", "percent"]
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 }
+        },
+        {
+          "id": 13,
+          "title": "Top Blocked Destinations",
+          "type": "piechart",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (dst) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `DST=(?P<dst>[0-9.]+)` [1h])))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "pieType": "donut",
+            "displayLabels": ["name", "percent"],
+            "legendDisplayMode": "table",
+            "legendPlacement": "right",
+            "legendValues": ["value", "percent"]
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 }
+        },
+        {
+          "id": 14,
+          "title": "Blocked Protocols",
+          "type": "bargauge",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (proto) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `PROTO=(?P<proto>\\w+)` [1h]))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 100 },
+                  { "color": "orange", "value": 500 },
+                  { "color": "red", "value": 1000 }
+                ]
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 }
+        },
+        {
+          "id": 15,
           "title": "Top Event Types",
           "type": "piechart",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -230,10 +500,10 @@ data:
             "legendPlacement": "right",
             "legendValues": ["value", "percent"]
           },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 }
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 }
         },
         {
-          "id": 8,
+          "id": 16,
           "title": "Events by Host IP",
           "type": "piechart",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -250,10 +520,10 @@ data:
             "legendPlacement": "right",
             "legendValues": ["value", "percent"]
           },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 }
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 }
         },
         {
-          "id": 9,
+          "id": 17,
           "title": "Syslog Facilities",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -291,10 +561,122 @@ data:
               }
             }
           ],
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 12 }
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 }
         },
         {
-          "id": 10,
+          "id": 18,
+          "title": "Multicast Relay Details",
+          "type": "table",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (relay_type, src_interface, dst_interface) (count_over_time({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" | regexp `\\[(?P<relay_type>\\w+)\\] Relayed .* on (?P<src_interface>\\w+) .* via (?P<dst_interface>\\w+)` [1h]))",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "renameByName": {
+                  "relay_type": "Type",
+                  "src_interface": "Source",
+                  "dst_interface": "Destination",
+                  "Value": "Count (1h)"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Count (1h)",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm"
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
+        },
+        {
+          "id": 19,
+          "title": "Firewall Block Summary",
+          "type": "table",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (src, dst, dpt, proto) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+) DST=(?P<dst>[0-9.]+) .* PROTO=(?P<proto>\\w+) .* DPT=(?P<dpt>\\d+)` [1h]))",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "renameByName": {
+                  "src": "Source IP",
+                  "dst": "Destination IP",
+                  "dpt": "Port",
+                  "proto": "Protocol",
+                  "Value": "Blocks (1h)"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Blocks (1h)",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Port" },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      { "type": "value", "options": { "53": { "text": "53 (DNS)" } } },
+                      { "type": "value", "options": { "123": { "text": "123 (NTP)" } } },
+                      { "type": "value", "options": { "443": { "text": "443 (HTTPS)" } } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
+        },
+        {
+          "id": 20,
           "title": "DHCP Activity by Device",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -332,52 +714,10 @@ data:
               }
             }
           ],
-          "options": {
-            "showHeader": true,
-            "cellHeight": "sm"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "align": "auto",
-                "displayMode": "auto"
-              },
-              "mappings": [
-                {
-                  "type": "value",
-                  "options": {
-                    "c6:96:85:1b:ff:37": {
-                      "text": "c6:96:85:1b:ff:37 (Device 1)"
-                    }
-                  }
-                }
-              ]
-            },
-            "overrides": [
-              {
-                "matcher": { "id": "byName", "options": "Device MAC" },
-                "properties": [
-                  {
-                    "id": "custom.width",
-                    "value": 200
-                  }
-                ]
-              },
-              {
-                "matcher": { "id": "byName", "options": "DHCP Events (1h)" },
-                "properties": [
-                  {
-                    "id": "custom.width",
-                    "value": 120
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 }
         },
         {
-          "id": 11,
+          "id": 21,
           "title": "Error Messages by Type",
           "type": "bargauge",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -406,10 +746,10 @@ data:
             "displayMode": "gradient",
             "showUnfilled": true
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 }
         },
         {
-          "id": 12,
+          "id": 22,
           "title": "WiFi Events (Connect/Disconnect)",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -437,16 +777,16 @@ data:
               "unit": "ops"
             }
           },
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 28 }
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 56 }
         },
         {
-          "id": 13,
+          "id": 23,
           "title": "Station Events",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "count by (syslog_hostname) (count_over_time({source=\"unifi\"} |~ \"STA.*JOIN|STA.*LEAVE\" [24h]))",
+              "expr": "sum by (sta_mac, syslog_hostname) (count_over_time({source=\"unifi\"} |~ \"Send NULL to STA-\" | regexp `Send NULL to STA-(?P<sta_mac>[0-9a-fA-F:]+)` [24h]))",
               "format": "table",
               "refId": "A"
             }
@@ -459,8 +799,9 @@ data:
                   "Time": true
                 },
                 "renameByName": {
+                  "sta_mac": "Station MAC",
                   "syslog_hostname": "Access Point",
-                  "Value": "Station Events (24h)"
+                  "Value": "NULL Sends (24h)"
                 }
               }
             },
@@ -470,17 +811,67 @@ data:
                 "fields": {},
                 "sort": [
                   {
-                    "field": "Station Events (24h)",
+                    "field": "NULL Sends (24h)",
                     "desc": true
                   }
                 ]
               }
             }
           ],
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 28 }
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm"
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 56 }
         },
         {
-          "id": 14,
+          "id": 24,
+          "title": "Recent Multicast Relay Events",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "numbers",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 62 }
+        },
+        {
+          "id": 25,
+          "title": "Recent Firewall Blocks",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+) DST=(?P<dst>[0-9.]+) .* PROTO=(?P<proto>\\w+) .* DPT=(?P<dpt>\\d+)` | line_format `[{{.proto}}] {{.src}} → {{.dst}}:{{.dpt}} BLOCKED`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 70 }
+        },
+        {
+          "id": 26,
           "title": "Recent System Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -500,10 +891,10 @@ data:
             "dedupStrategy": "numbers",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 34 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 78 }
         },
         {
-          "id": 15,
+          "id": 27,
           "title": "All Network Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -523,7 +914,7 @@ data:
             "dedupStrategy": "numbers",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 42 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 86 }
         }
       ]
     }
