@@ -8,7 +8,7 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Ansible"
-    dashboard-version: "4.0.0"
+    dashboard-version: "5.0.0"
     last-modified: "2024-01-10"
 data:
   ansible-logs.json: |
@@ -19,7 +19,7 @@ data:
       "tags": ["ansible", "automation", "logs", "playbooks", "multi-host"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 8,
+      "version": 10,
       "refresh": "10s",
       "time": {
         "from": "now-3h",
@@ -486,7 +486,7 @@ data:
         },
         {
           "id": 9,
-          "title": "Task Execution by Module",
+          "title": "Task Execution by Module and Host",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
@@ -547,13 +547,13 @@ data:
               {
                 "matcher": { "id": "byName", "options": "host" },
                 "properties": [
-                  { "id": "custom.width", "value": 100 }
+                  { "id": "custom.width", "value": 150 }
                 ]
               },
               {
                 "matcher": { "id": "byName", "options": "module" },
                 "properties": [
-                  { "id": "custom.width", "value": 200 }
+                  { "id": "custom.width", "value": 250 }
                 ]
               },
               {
