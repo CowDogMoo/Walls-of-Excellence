@@ -12,8 +12,8 @@ data:
   unifi-firewall.json: |
     {
       "uid": "unifi-firewall-analytics",
-      "title": "UniFi Firewall & Network Analytics",
-      "tags": ["network", "firewall", "unifi", "mdns", "ssdp"],
+      "title": "UniFi Network Analytics",
+      "tags": ["network", "firewall", "unifi", "wifi"],
       "timezone": "browser",
       "schemaVersion": 39,
       "version": 1,
@@ -21,13 +21,41 @@ data:
       "panels": [
         {
           "id": 1,
-          "title": "🚫 Firewall Blocks (Total)",
+          "title": "📡 Total Log Events",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | name =~ \".*(Block|DROP|REJECT).*\" [5m])) * 60",
-              "legendFormat": "Blocks/min",
+              "expr": "sum(rate({source=\"unifi\"} [5m])) * 60",
+              "legendFormat": "Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 100 },
+                  { "color": "red", "value": 500 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+        },
+        {
+          "id": 2,
+          "title": "⚠️ Error Events",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} | json | syslog_severity=\"err\" or syslog_severity=\"warning\" [5m])) * 60",
+              "legendFormat": "Errors/min",
               "refId": "A"
             }
           ],
@@ -42,34 +70,6 @@ data:
                 ]
               },
               "unit": "short",
-              "decimals": 1
-            }
-          },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
-        },
-        {
-          "id": 2,
-          "title": "🔍 mDNS Traffic Issues",
-          "type": "stat",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "sum(rate({source=\"unifi\"} | json | destination_port = \"5353\" or msg =~ \".*mDNS.*\" | name =~ \".*(Block|DROP).*\" [5m])) * 60",
-              "legendFormat": "mDNS Blocks/min",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": 0 },
-                  { "color": "yellow", "value": 1 },
-                  { "color": "red", "value": 5 }
-                ]
-              },
-              "unit": "short",
               "decimals": 2
             }
           },
@@ -77,13 +77,13 @@ data:
         },
         {
           "id": 3,
-          "title": "📡 SSDP/UPnP Issues",
+          "title": "📶 WiFi Events",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | destination_port = \"1900\" or msg =~ \".*SSDP.*\" | name =~ \".*(Block|DROP).*\" [5m])) * 60",
-              "legendFormat": "SSDP Blocks/min",
+              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id=~\"40[0-1]\" [5m])) * 60",
+              "legendFormat": "WiFi Events/min",
               "refId": "A"
             }
           ],
@@ -93,8 +93,8 @@ data:
                 "mode": "absolute",
                 "steps": [
                   { "color": "green", "value": 0 },
-                  { "color": "yellow", "value": 1 },
-                  { "color": "red", "value": 5 }
+                  { "color": "yellow", "value": 5 },
+                  { "color": "red", "value": 20 }
                 ]
               },
               "unit": "short",
@@ -105,13 +105,13 @@ data:
         },
         {
           "id": 4,
-          "title": "🎵 Sonos Device Blocks",
+          "title": "🏠 Active Access Points",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | source_ip =~ \"192\\\\.168\\\\.30\\\\.(10[0-9]|11[0-1]|250)\" or destination_ip =~ \"192\\\\.168\\\\.30\\\\.(10[0-9]|11[0-1]|250)\" | name =~ \".*(Block|DROP).*\" [5m])) * 60",
-              "legendFormat": "Sonos Blocks/min",
+              "expr": "count(count by (syslog_hostname) (rate({source=\"unifi\"} | json | syslog_hostname != \"\" [5m])))",
+              "legendFormat": "Access Points",
               "refId": "A"
             }
           ],
@@ -120,26 +120,26 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": 0 },
-                  { "color": "yellow", "value": 0.1 },
-                  { "color": "red", "value": 1 }
+                  { "color": "red", "value": 0 },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "green", "value": 2 }
                 ]
               },
               "unit": "short",
-              "decimals": 2
+              "decimals": 0
             }
           },
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
         },
         {
           "id": 5,
-          "title": "Firewall Blocks by Rule Name",
+          "title": "Events by Severity",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (name) (rate({source=\"unifi\"} | json | name != \"\" | name =~ \".*(Block|DROP|REJECT).*\" [5m]))",
-              "legendFormat": "{{name}}",
+              "expr": "sum by (syslog_severity) (rate({source=\"unifi\"} | json | syslog_severity != \"\" [5m]))",
+              "legendFormat": "{{syslog_severity}}",
               "refId": "A"
             }
           ],
@@ -174,24 +174,14 @@ data:
         },
         {
           "id": 6,
-          "title": "Discovery Protocol Events",
+          "title": "Events by Access Point",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | destination_port = \"5353\" [5m]))",
-              "legendFormat": "mDNS (5353)",
+              "expr": "sum by (syslog_hostname) (rate({source=\"unifi\"} | json | syslog_hostname != \"\" [5m]))",
+              "legendFormat": "{{syslog_hostname}}",
               "refId": "A"
-            },
-            {
-              "expr": "sum(rate({source=\"unifi\"} | json | destination_port = \"1900\" [5m]))",
-              "legendFormat": "SSDP (1900)",
-              "refId": "B"
-            },
-            {
-              "expr": "sum(rate({source=\"unifi\"} | json | destination_ip =~ \"224\\\\.0\\\\.0\\\\..*\" [5m]))",
-              "legendFormat": "Multicast Traffic",
-              "refId": "C"
             }
           ],
           "fieldConfig": {
@@ -224,12 +214,12 @@ data:
         },
         {
           "id": 7,
-          "title": "Top Blocked Source IPs",
+          "title": "Top Event Types",
           "type": "piechart",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (source_ip) (count_over_time({source=\"unifi\"} | json | source_ip != \"\" | name =~ \".*(Block|DROP).*\" [1h])))",
+              "expr": "topk(10, sum by (event_type) (count_over_time({source=\"unifi\"} | json | event_type != \"\" [1h])))",
               "refId": "A"
             }
           ],
@@ -244,12 +234,12 @@ data:
         },
         {
           "id": 8,
-          "title": "Top Blocked Destination IPs",
+          "title": "Events by Host IP",
           "type": "piechart",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (destination_ip) (count_over_time({source=\"unifi\"} | json | destination_ip != \"\" | name =~ \".*(Block|DROP).*\" [1h])))",
+              "expr": "topk(10, sum by (host) (count_over_time({source=\"unifi\"} | json | host != \"\" [1h])))",
               "refId": "A"
             }
           ],
@@ -264,12 +254,12 @@ data:
         },
         {
           "id": 9,
-          "title": "Inter-VLAN Block Matrix",
+          "title": "Syslog Facilities",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (source_ip, destination_ip) (count_over_time({source=\"unifi\"} | json | name =~ \".*(Block|DROP).*\" | source_ip =~ \"192\\\\.168\\\\..*\" | destination_ip =~ \"192\\\\.168\\\\..*\" [1h]))",
+              "expr": "sum by (syslog_facility, syslog_severity) (count_over_time({source=\"unifi\"} | json | syslog_facility != \"\" [1h]))",
               "format": "table",
               "refId": "A"
             }
@@ -282,9 +272,9 @@ data:
                   "Time": true
                 },
                 "renameByName": {
-                  "source_ip": "Source IP",
-                  "destination_ip": "Destination IP",
-                  "Value": "Blocks (1h)"
+                  "syslog_facility": "Facility",
+                  "syslog_severity": "Severity",
+                  "Value": "Count (1h)"
                 }
               }
             },
@@ -294,7 +284,7 @@ data:
                 "fields": {},
                 "sort": [
                   {
-                    "field": "Blocks (1h)",
+                    "field": "Count (1h)",
                     "desc": true
                   }
                 ]
@@ -305,12 +295,12 @@ data:
         },
         {
           "id": 10,
-          "title": "IoT Device Communication Blocks",
+          "title": "DHCP Activity by Device",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (source_ip, destination_ip, name) (count_over_time({source=\"unifi\"} | json | name =~ \".*(Block|DROP).*\" | source_ip =~ \"192\\\\.168\\\\.(30|40)\\\\..*\" or destination_ip =~ \"192\\\\.168\\\\.(30|40)\\\\..*\" [1h]))",
+              "expr": "sum by (mac, syslog_hostname) (count_over_time({source=\"unifi\"} |= \"[DHCP-SM]\" | json | regexp `\\[DHCP-SM\\] (?P<mac>[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})` [1h]))",
               "format": "table",
               "refId": "A"
             }
@@ -323,10 +313,9 @@ data:
                   "Time": true
                 },
                 "renameByName": {
-                  "source_ip": "Source IP",
-                  "destination_ip": "Destination IP",
-                  "name": "Firewall Rule",
-                  "Value": "Blocks (1h)"
+                  "mac": "Device MAC",
+                  "syslog_hostname": "Access Point",
+                  "Value": "DHCP Events (1h)"
                 }
               }
             },
@@ -336,7 +325,7 @@ data:
                 "fields": {},
                 "sort": [
                   {
-                    "field": "Blocks (1h)",
+                    "field": "DHCP Events (1h)",
                     "desc": true
                   }
                 ]
@@ -344,18 +333,57 @@ data:
             }
           ],
           "options": {
-            "showHeader": true
+            "showHeader": true,
+            "cellHeight": "sm"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "c6:96:85:1b:ff:37": {
+                      "text": "c6:96:85:1b:ff:37 (Device 1)"
+                    }
+                  }
+                }
+              ]
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Device MAC" },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 200
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "DHCP Events (1h)" },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 }
         },
         {
           "id": 11,
-          "title": "Service Port Block Analysis",
+          "title": "Error Messages by Type",
           "type": "bargauge",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (destination_port) (count_over_time({source=\"unifi\"} | json | destination_port != \"\" | name =~ \".*(Block|DROP).*\" [1h]))",
+              "expr": "sum by (syslog_hostname) (count_over_time({source=\"unifi\"} | json | syslog_severity=~\"err|warning\" [1h]))",
               "refId": "A"
             }
           ],
@@ -370,17 +398,7 @@ data:
                   { "color": "red", "value": 100 }
                 ]
               },
-              "unit": "short",
-              "mappings": [
-                { "type": "value", "options": { "5353": { "text": "mDNS (5353)" } } },
-                { "type": "value", "options": { "1900": { "text": "SSDP (1900)" } } },
-                { "type": "value", "options": { "1400": { "text": "Sonos (1400)" } } },
-                { "type": "value", "options": { "80": { "text": "HTTP (80)" } } },
-                { "type": "value", "options": { "443": { "text": "HTTPS (443)" } } },
-                { "type": "value", "options": { "22": { "text": "SSH (22)" } } },
-                { "type": "value", "options": { "53": { "text": "DNS (53)" } } },
-                { "type": "value", "options": { "2100": { "text": "Hue Ent (2100)" } } }
-              ]
+              "unit": "short"
             }
           },
           "options": {
@@ -397,12 +415,12 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id = \"400\" [5m]))",
+              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id=\"400\" [5m]))",
               "legendFormat": "WiFi Connects",
               "refId": "A"
             },
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id = \"401\" [5m]))",
+              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id=\"401\" [5m]))",
               "legendFormat": "WiFi Disconnects",
               "refId": "B"
             }
@@ -423,12 +441,12 @@ data:
         },
         {
           "id": 13,
-          "title": "Admin Access Events",
+          "title": "Station Events",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (unifi_admin, unifi_access_method, source_ip, processed_at) (count_over_time({source=\"unifi\"} | json | device_event_class_id = \"544\" [24h]))",
+              "expr": "count by (syslog_hostname) (count_over_time({source=\"unifi\"} |~ \"STA.*JOIN|STA.*LEAVE\" [24h]))",
               "format": "table",
               "refId": "A"
             }
@@ -441,11 +459,8 @@ data:
                   "Time": true
                 },
                 "renameByName": {
-                  "unifi_admin": "Admin",
-                  "unifi_access_method": "Method",
-                  "source_ip": "Source IP",
-                  "processed_at": "Time",
-                  "Value": "Count"
+                  "syslog_hostname": "Access Point",
+                  "Value": "Station Events (24h)"
                 }
               }
             },
@@ -455,7 +470,7 @@ data:
                 "fields": {},
                 "sort": [
                   {
-                    "field": "Time",
+                    "field": "Station Events (24h)",
                     "desc": true
                   }
                 ]
@@ -466,12 +481,12 @@ data:
         },
         {
           "id": 14,
-          "title": "Recent Firewall Block Events (Detailed)",
+          "title": "Recent System Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{source=\"unifi\"} | json | name =~ \".*(Block|DROP|REJECT).*\" | line_format `[{{.severity}}] {{.name}}: {{.source_ip}} → {{.destination_ip}}:{{.destination_port}} {{if .msg}}({{.msg}}){{end}}`",
+              "expr": "{source=\"unifi\"} | json | syslog_severity=~\"err|warning\" | line_format `[{{.syslog_severity}}] {{.syslog_hostname}}: {{.message}}`",
               "refId": "A"
             }
           ],
@@ -489,12 +504,12 @@ data:
         },
         {
           "id": 15,
-          "title": "mDNS/SSDP Discovery Events (Detailed)",
+          "title": "All Network Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{source=\"unifi\"} | json | destination_port =~ \"(5353|1900)\" or destination_ip =~ \"224\\\\.0\\\\.0\\\\..*\" | line_format `[{{.event_type}}] {{.name}}: {{.source_ip}} → {{.destination_ip}}:{{.destination_port}} {{if .unifi_client_hostname}}Client: {{.unifi_client_hostname}}{{end}}`",
+              "expr": "{source=\"unifi\"} | json | line_format `[{{.event_type}}] {{.syslog_hostname}}: {{.message}}`",
               "refId": "A"
             }
           ],
