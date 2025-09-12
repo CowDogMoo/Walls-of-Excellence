@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: unifi-firewall-dashboard
+  name: cowdogmoo-network-analytics
   namespace: observability
   labels:
     grafana_dashboard: "1"
