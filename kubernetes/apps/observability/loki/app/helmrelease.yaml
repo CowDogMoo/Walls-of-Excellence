@@ -33,12 +33,24 @@ spec:
         retention_enabled: true
       ingester:
         chunk_encoding: snappy
+        chunk_idle_period: 1h
+        chunk_target_size: 2621440
+        max_chunk_age: 1h
       limits_config:
         retention_period: 14d
+        # Performance optimizations
+        max_query_parallelism: 32
+        split_queries_by_interval: 15m
+        max_cache_freshness_per_query: 10m
+        max_entries_limit_per_query: 5000
+        query_timeout: 5m
+        max_concurrent_tail_requests: 10
       server:
         grpc_server_max_recv_msg_size: 10485760 # 10 MiB
         grpc_server_max_send_msg_size: 10485760 # 10 MiB
         log_level: info
+        http_server_read_timeout: 5m
+        http_server_write_timeout: 5m
       storage:
         type: filesystem
       schemaConfig:
@@ -51,6 +63,18 @@ spec:
               prefix: loki_index_
               period: 24h
       structuredConfig:
+        query_range:
+          align_queries_with_step: true
+          max_retries: 5
+          parallelise_shardable_queries: true
+          cache_results: true
+        frontend:
+          log_queries_longer_than: 5s
+          compress_responses: true
+          max_outstanding_per_tenant: 2048
+        querier:
+          max_concurrent: 20
+          query_ingesters_within: 3h
         ruler:
           enable_api: true
           enable_alertmanager_v2: true
@@ -66,6 +90,16 @@ spec:
         enabled: true
         storageClass: nfs-client
         size: 50Gi
+      resources:
+        requests:
+          cpu: 1
+          memory: 2Gi
+        limits:
+          cpu: 2
+          memory: 4Gi
+      extraEnv:
+        - name: GOGC
+          value: "80"
 
     gateway:
       enabled: true
@@ -80,6 +114,9 @@ spec:
         serverSnippet: |
           client_body_buffer_size 100M;
           client_max_body_size 100M;
+          proxy_read_timeout 300s;
+          proxy_connect_timeout 300s;
+          proxy_send_timeout 300s;
 
           location = /ready {
             proxy_pass http://loki/ready;
@@ -92,6 +129,8 @@ spec:
             proxy_pass http://loki$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
+            proxy_read_timeout 300s;
+            proxy_send_timeout 300s;
           }
       ingress:
         enabled: true

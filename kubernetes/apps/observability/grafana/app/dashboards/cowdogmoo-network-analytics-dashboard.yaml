@@ -9,7 +9,7 @@ metadata:
   annotations:
     grafana_folder: "Network"
 data:
-  unifi-firewall.json: |
+  cowdogmoo-network-analytics.json: |
     {
       "uid": "cowdogmoo-network-analytics",
       "title": "CowDogMoo Network Analytics",

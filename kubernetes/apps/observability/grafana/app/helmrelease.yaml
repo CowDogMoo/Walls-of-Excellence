@@ -32,6 +32,15 @@ spec:
         check_for_updates: false
         check_for_plugin_updates: false
         reporting_enabled: false
+      caching:
+        enabled: true
+      "caching.memory":
+        enabled: true
+        ttl: 60s
+        max_size_mb: 50
+      dataproxy:
+        timeout: 300
+        keep_alive_seconds: 30
       auth.anonymous:
         enabled: true
         org_id: 1
@@ -83,6 +92,20 @@ spec:
             url: http://alertmanager-operated.observability.svc.cluster.local:9093
             jsonData:
               implementation: prometheus
+              maxLines: 250
+              timeout: 300
+              queryTimeout: 300
+              derivedFields:
+                - datasourceUid: loki
+                  matcherRegex: "traceID=(\\w+)"
+                  name: TraceID
+                  url: "$${__value.raw}"
+              httpHeaderName1: "X-Scope-OrgID"
+            secureJsonData:
+              httpHeaderValue1: "fake"
+            httpMethod: POST
+            # Query caching
+            cacheTimeout: 60
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
