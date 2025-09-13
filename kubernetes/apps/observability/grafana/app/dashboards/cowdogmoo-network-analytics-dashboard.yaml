@@ -565,47 +565,58 @@ data:
         },
         {
           "id": 18,
-          "title": "Multicast Relay Details",
-          "type": "table",
+          "title": "🔍 mDNS/UPnP Discovery Status - Ports 5353, 1900, 10001",
+          "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (relay_type, src_interface, dst_interface) (count_over_time({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" | regexp `\\[(?P<relay_type>\\w+)\\] Relayed .* on (?P<src_interface>\\w+) .* via (?P<dst_interface>\\w+)` [1h]))",
-              "format": "table",
+              "expr": "sum(rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" |~ \"DPT=(5353|1900|10001)\" [5m])) * 60",
+              "legendFormat": "Discovery Ports Blocked/min",
               "refId": "A"
             }
           ],
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "renameByName": {
-                  "relay_type": "Type",
-                  "src_interface": "Source",
-                  "dst_interface": "Destination",
-                  "Value": "Count (1h)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "Count (1h)",
-                    "desc": true
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 0,
+                    "to": 0.001,
+                    "result": {
+                      "text": "✅ DISCOVERY WORKING",
+                      "color": "green",
+                      "index": 0
+                    }
                   }
-                ]
-              }
+                },
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 0.001,
+                    "to": null,
+                    "result": {
+                      "text": "🚫 FIREWALL BLOCKING DISCOVERY",
+                      "color": "red",
+                      "index": 1
+                    }
+                  }
+                }
+              ],
+              "unit": "none",
+              "noValue": "✅ DISCOVERY WORKING"
             }
-          ],
+          },
           "options": {
-            "showHeader": true,
-            "cellHeight": "sm"
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "value",
+            "reduceOptions": {
+              "values": false,
+              "fields": "",
+              "calcs": ["lastNotNull"]
+            }
           },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
         },
