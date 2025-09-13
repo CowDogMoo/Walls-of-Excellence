@@ -418,15 +418,27 @@ data:
           "targets": [
             {
               "expr": "topk(10, sum by (src) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+)` [1h])))",
+              "legendFormat": "{{src}}",
               "refId": "A"
             }
           ],
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.src}",
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
           "options": {
             "pieType": "donut",
             "displayLabels": ["name", "percent"],
             "legendDisplayMode": "table",
             "legendPlacement": "right",
-            "legendValues": ["value", "percent"]
+            "legendValues": ["value", "percent"],
+            "tooltip": {
+              "displayMode": "single"
+            }
           },
           "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 }
         },
@@ -438,15 +450,27 @@ data:
           "targets": [
             {
               "expr": "topk(10, sum by (dst) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `DST=(?P<dst>[0-9.]+)` [1h])))",
+              "legendFormat": "{{dst}}",
               "refId": "A"
             }
           ],
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.dst}",
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
           "options": {
             "pieType": "donut",
             "displayLabels": ["name", "percent"],
             "legendDisplayMode": "table",
             "legendPlacement": "right",
-            "legendValues": ["value", "percent"]
+            "legendValues": ["value", "percent"],
+            "tooltip": {
+              "displayMode": "single"
+            }
           },
           "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 }
         },
@@ -458,6 +482,7 @@ data:
           "targets": [
             {
               "expr": "sum by (proto) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `PROTO=(?P<proto>\\w+)` [1h]))",
+              "legendFormat": "{{proto}}",
               "refId": "A"
             }
           ],
@@ -472,58 +497,56 @@ data:
                   { "color": "red", "value": 1000 }
                 ]
               },
-              "unit": "short"
-            }
+              "unit": "short",
+              "displayName": "${__field.labels.proto}"
+            },
+            "overrides": []
           },
           "options": {
             "orientation": "horizontal",
             "displayMode": "gradient",
-            "showUnfilled": true
+            "showUnfilled": true,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            }
           },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 }
         },
         {
           "id": 15,
-          "title": "Top Event Types",
-          "type": "piechart",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "topk(10, sum by (event_type) (count_over_time({source=\"unifi\"} | json | event_type != \"\" [1h])))",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "pieType": "donut",
-            "displayLabels": ["name", "percent"],
-            "legendDisplayMode": "table",
-            "legendPlacement": "right",
-            "legendValues": ["value", "percent"]
-          },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 }
-        },
-        {
-          "id": 16,
           "title": "Events by Host IP",
           "type": "piechart",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
               "expr": "topk(10, sum by (host) (count_over_time({source=\"unifi\"} | json | host != \"\" [1h])))",
+              "legendFormat": "{{host}}",
               "refId": "A"
             }
           ],
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.host}",
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
           "options": {
             "pieType": "donut",
             "displayLabels": ["name", "percent"],
             "legendDisplayMode": "table",
             "legendPlacement": "right",
-            "legendValues": ["value", "percent"]
+            "legendValues": ["value", "percent"],
+            "tooltip": {
+              "displayMode": "single"
+            }
           },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 }
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 }
         },
         {
-          "id": 17,
+          "id": 16,
           "title": "🔍 mDNS/UPnP Discovery Status - Ports 5353, 1900, 10001",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -577,16 +600,17 @@ data:
               "calcs": ["lastNotNull"]
             }
           },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 }
+          "gridPos": { "h": 8, "w": 16, "x": 8, "y": 32 }
         },
         {
-          "id": 18,
+          "id": 17,
           "title": "Error Messages by Type",
           "type": "bargauge",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
               "expr": "sum by (syslog_hostname) (count_over_time({source=\"unifi\"} | json | syslog_severity=~\"err|warning\" [1h]))",
+              "legendFormat": "{{syslog_hostname}}",
               "refId": "A"
             }
           ],
@@ -601,18 +625,24 @@ data:
                   { "color": "red", "value": 100 }
                 ]
               },
-              "unit": "short"
-            }
+              "unit": "short",
+              "displayName": "${__field.labels.syslog_hostname}"
+            },
+            "overrides": []
           },
           "options": {
             "orientation": "horizontal",
             "displayMode": "gradient",
-            "showUnfilled": true
+            "showUnfilled": true,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            }
           },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
         },
         {
-          "id": 19,
+          "id": 18,
           "title": "WiFi Events (Connect/Disconnect)",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -643,7 +673,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
         },
         {
-          "id": 20,
+          "id": 19,
           "title": "Recent Multicast Relay Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -666,7 +696,7 @@ data:
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 }
         },
         {
-          "id": 21,
+          "id": 20,
           "title": "Recent Firewall Blocks",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -712,7 +742,7 @@ data:
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
         },
         {
-          "id": 23,
+          "id": 21,
           "title": "All Network Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
