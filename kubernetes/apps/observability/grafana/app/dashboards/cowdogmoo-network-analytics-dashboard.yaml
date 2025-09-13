@@ -524,47 +524,6 @@ data:
         },
         {
           "id": 17,
-          "title": "Syslog Facilities",
-          "type": "table",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "sum by (syslog_facility, syslog_severity) (count_over_time({source=\"unifi\"} | json | syslog_facility != \"\" [1h]))",
-              "format": "table",
-              "refId": "A"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "renameByName": {
-                  "syslog_facility": "Facility",
-                  "syslog_severity": "Severity",
-                  "Value": "Count (1h)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "Count (1h)",
-                    "desc": true
-                  }
-                ]
-              }
-            }
-          ],
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 }
-        },
-        {
-          "id": 18,
           "title": "🔍 mDNS/UPnP Discovery Status - Ports 5353, 1900, 10001",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -618,117 +577,10 @@ data:
               "calcs": ["lastNotNull"]
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 }
         },
         {
-          "id": 19,
-          "title": "Firewall Block Summary",
-          "type": "table",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "sum by (src, dst, dpt, proto) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+) DST=(?P<dst>[0-9.]+) .* PROTO=(?P<proto>\\w+) .* DPT=(?P<dpt>\\d+)` [1h]))",
-              "format": "table",
-              "refId": "A"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "renameByName": {
-                  "src": "Source IP",
-                  "dst": "Destination IP",
-                  "dpt": "Port",
-                  "proto": "Protocol",
-                  "Value": "Blocks (1h)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "Blocks (1h)",
-                    "desc": true
-                  }
-                ]
-              }
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "align": "auto",
-                "displayMode": "auto"
-              }
-            },
-            "overrides": [
-              {
-                "matcher": { "id": "byName", "options": "Port" },
-                "properties": [
-                  {
-                    "id": "mappings",
-                    "value": [
-                      { "type": "value", "options": { "53": { "text": "53 (DNS)" } } },
-                      { "type": "value", "options": { "123": { "text": "123 (NTP)" } } },
-                      { "type": "value", "options": { "443": { "text": "443 (HTTPS)" } } }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
-        },
-        {
-          "id": 20,
-          "title": "DHCP Activity by Device",
-          "type": "table",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "sum by (mac, syslog_hostname) (count_over_time({source=\"unifi\"} |= \"[DHCP-SM]\" | json | regexp `\\[DHCP-SM\\] (?P<mac>[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})` [1h]))",
-              "format": "table",
-              "refId": "A"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "renameByName": {
-                  "mac": "Device MAC",
-                  "syslog_hostname": "Access Point",
-                  "Value": "DHCP Events (1h)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "DHCP Events (1h)",
-                    "desc": true
-                  }
-                ]
-              }
-            }
-          ],
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 }
-        },
-        {
-          "id": 21,
+          "id": 18,
           "title": "Error Messages by Type",
           "type": "bargauge",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -757,10 +609,10 @@ data:
             "displayMode": "gradient",
             "showUnfilled": true
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
         },
         {
-          "id": 22,
+          "id": 19,
           "title": "WiFi Events (Connect/Disconnect)",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -788,55 +640,10 @@ data:
               "unit": "ops"
             }
           },
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 56 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
         },
         {
-          "id": 23,
-          "title": "Station Events",
-          "type": "table",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "sum by (sta_mac, syslog_hostname) (count_over_time({source=\"unifi\"} |~ \"Send NULL to STA-\" | regexp `Send NULL to STA-(?P<sta_mac>[0-9a-fA-F:]+)` [24h]))",
-              "format": "table",
-              "refId": "A"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "renameByName": {
-                  "sta_mac": "Station MAC",
-                  "syslog_hostname": "Access Point",
-                  "Value": "NULL Sends (24h)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "NULL Sends (24h)",
-                    "desc": true
-                  }
-                ]
-              }
-            }
-          ],
-          "options": {
-            "showHeader": true,
-            "cellHeight": "sm"
-          },
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 56 }
-        },
-        {
-          "id": 24,
+          "id": 20,
           "title": "Recent Multicast Relay Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -856,10 +663,10 @@ data:
             "dedupStrategy": "numbers",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 62 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 }
         },
         {
-          "id": 25,
+          "id": 21,
           "title": "Recent Firewall Blocks",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -879,10 +686,10 @@ data:
             "dedupStrategy": "none",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 70 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 }
         },
         {
-          "id": 26,
+          "id": 22,
           "title": "Recent System Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -902,10 +709,10 @@ data:
             "dedupStrategy": "numbers",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 78 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
         },
         {
-          "id": 27,
+          "id": 23,
           "title": "All Network Events",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -925,7 +732,7 @@ data:
             "dedupStrategy": "numbers",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 86 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
         }
       ]
     }
