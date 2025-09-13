@@ -8,8 +8,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Ansible"
-    dashboard-version: "5.0.0"
-    last-modified: "2024-01-10"
+    dashboard-version: "6.0.0"
+    last-modified: "2025-01-13"
 data:
   ansible-logs.json: |
     {
@@ -19,7 +19,7 @@ data:
       "tags": ["ansible", "automation", "logs", "playbooks", "multi-host"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 10,
+      "version": 11,
       "refresh": "10s",
       "time": {
         "from": "now-3h",
@@ -70,7 +70,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (FAILED|FATAL|ERROR|UNREACHABLE) - \"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\"",
               "refId": "A"
             }
           ],
@@ -128,7 +128,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (host) (count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (FAILED|FATAL|ERROR|UNREACHABLE) - \" [1h]))",
+              "expr": "sum by (host) (count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\" [1h]))",
               "refId": "A",
               "legendFormat": "{{host}}"
             }
@@ -169,7 +169,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} | pattern `<_> - <_> - <_> - <_> - <status> - <_>` [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (OK|CHANGED|FAILED|SKIPPED|UNREACHABLE) - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -197,7 +197,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (FAILED|FATAL|ERROR|UNREACHABLE) - \" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\" [1h]))",
               "refId": "A"
             }
           ],
@@ -227,7 +227,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \"CHANGED\" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - CHANGED - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -257,7 +257,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - OK - \" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - OK - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -280,7 +280,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \"SKIPPED\" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - SKIPPED - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -303,7 +303,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "100 * (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - OK - \" [1h])) or vector(0)) / ((sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - OK - \" [1h])) or vector(0)) + (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(?i)(failed|fatal|error|unreachable)\" [1h])) or vector(0)) + (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - CHANGED - \" [1h])) or vector(0)))",
+              "expr": "100 * (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - OK - \" [1h])) or vector(0)) / ((sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (OK|CHANGED|FAILED|UNREACHABLE) - \" [1h])) or vector(0)))",
               "refId": "A"
             }
           ],
@@ -372,22 +372,22 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - FAILED - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - FAILED - \" [5m]))",
               "refId": "A",
               "legendFormat": "Failed - {{host}}"
             },
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - CHANGED - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - CHANGED - \" [5m]))",
               "refId": "B",
               "legendFormat": "Changed - {{host}}"
             },
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - OK - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - OK - \" [5m]))",
               "refId": "C",
               "legendFormat": "OK - {{host}}"
             },
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \" - SKIPPED - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - SKIPPED - \" [5m]))",
               "refId": "D",
               "legendFormat": "Skipped - {{host}}"
             }
@@ -449,7 +449,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \"CHANGED\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - CHANGED - \"",
               "refId": "A"
             }
           ],
@@ -470,7 +470,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |= \"SKIPPED\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - SKIPPED - \"",
               "refId": "A"
             }
           ],
@@ -486,12 +486,12 @@ data:
         },
         {
           "id": 9,
-          "title": "Task Execution by Module and Host",
+          "title": "Task Execution Summary",
           "type": "table",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} | pattern `<_> - <_> - <task> - <module> - <status> - <_>`",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} | pattern `<_> <_> <_> <_> - <playbook> - <task> - <module> - <status> - <_>` | __error__=\"\"",
               "refId": "A",
               "format": "table"
             }
@@ -500,39 +500,24 @@ data:
             {
               "id": "extractFields",
               "options": {
-                "source": "labels"
+                "source": "labels",
+                "format": "json"
               }
             },
             {
-              "id": "groupBy",
+              "id": "organize",
               "options": {
-                "fields": {
-                  "module": {
-                    "operation": "groupby"
-                  },
-                  "status": {
-                    "operation": "groupby"
-                  },
-                  "host": {
-                    "operation": "groupby"
-                  },
-                  "Time": {
-                    "operation": "count",
-                    "alias": "Count"
-                  }
+                "excludeByName": {
+                  "id": true,
+                  "tsNs": true,
+                  "line": true
+                },
+                "renameByName": {
+                  "task": "Task",
+                  "module": "Module",
+                  "status": "Status",
+                  "host": "Host"
                 }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "Count",
-                    "desc": true
-                  }
-                ]
               }
             }
           ],
@@ -545,21 +530,41 @@ data:
             },
             "overrides": [
               {
-                "matcher": { "id": "byName", "options": "host" },
+                "matcher": { "id": "byName", "options": "Status" },
                 "properties": [
-                  { "id": "custom.width", "value": 150 }
-                ]
-              },
-              {
-                "matcher": { "id": "byName", "options": "module" },
-                "properties": [
-                  { "id": "custom.width", "value": 250 }
-                ]
-              },
-              {
-                "matcher": { "id": "byName", "options": "status" },
-                "properties": [
-                  { "id": "custom.width", "value": 100 }
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "OK": {
+                            "color": "green",
+                            "index": 0
+                          },
+                          "CHANGED": {
+                            "color": "yellow",
+                            "index": 1
+                          },
+                          "FAILED": {
+                            "color": "red",
+                            "index": 2
+                          },
+                          "SKIPPED": {
+                            "color": "blue",
+                            "index": 3
+                          }
+                        }
+                      }
+                    ]
+                  }
                 ]
               }
             ]
@@ -567,12 +572,11 @@ data:
           "options": {
             "showHeader": true,
             "cellHeight": "sm",
-            "sortBy": [
-              {
-                "field": "Count",
-                "desc": true
-              }
-            ]
+            "footer": {
+              "show": false,
+              "reducer": ["sum"],
+              "countRows": false
+            }
           },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 39 }
         },
