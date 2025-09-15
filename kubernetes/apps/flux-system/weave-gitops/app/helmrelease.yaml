@@ -13,6 +13,7 @@ spec:
   chartRef:
     kind: OCIRepository
     name: weave-gitops
+    namespace: flux-system
   maxHistory: 3
   install:
     timeout: 10m
