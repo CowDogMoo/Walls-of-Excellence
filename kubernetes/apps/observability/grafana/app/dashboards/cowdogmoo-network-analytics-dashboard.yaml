@@ -521,8 +521,8 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (host) (count_over_time({source=\"unifi\"} | json | host != \"\" [1h])))",
-              "legendFormat": "{{host}}",
+              "expr": "topk(10, sum by (src_ip) (count_over_time({source=\"unifi\"} | json | regexp `SRC=(?P<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)` | src_ip != \"\" [1h])))",
+              "legendFormat": "{{src_ip}}",
               "refId": "A"
             }
           ],
