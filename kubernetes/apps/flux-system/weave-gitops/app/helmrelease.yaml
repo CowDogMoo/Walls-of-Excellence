@@ -10,14 +10,9 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  chart:
-    spec:
-      chart: weave-gitops
-      version: 4.0.36
-      sourceRef:
-        kind: HelmRepository
-        name: weave-gitops
-        namespace: flux-system
+  chartRef:
+    kind: OCIRepository
+    name: weave-gitops
   maxHistory: 3
   install:
     timeout: 10m
@@ -43,14 +38,11 @@ spec:
       tag: "0.38.0"
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
-
     adminUser:
       create: true
       username: admin
-
     ingress:
       annotations:
-        # External DNS Annotation
         external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
       enabled: true
       className: ingress-traefik
@@ -63,18 +55,12 @@ spec:
         - hosts:
             - *host
           secretName: techvomit-xyz-production-tls
-
     networkPolicy:
       create: true
-
-    # metrics:
-    #   enabled: true
-
     rbac:
       create: true
       impersonationResourceNames:
         - admin
-
   valuesFrom:
     - kind: Secret
       name: weave-gitops-secret

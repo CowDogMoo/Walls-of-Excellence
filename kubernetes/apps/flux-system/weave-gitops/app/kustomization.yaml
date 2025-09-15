@@ -6,3 +6,4 @@ namespace: flux-system
 resources:
   - helmrelease.yaml
   - externalsecret.yaml
+  - ocirepository.yaml
