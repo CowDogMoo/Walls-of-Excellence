@@ -9,3 +9,5 @@ spec:
   interval: 1m0s
   type: oci
   url: oci://ghcr.io/weaveworks/charts
+  secretRef:
+    name: ghcr-auth
