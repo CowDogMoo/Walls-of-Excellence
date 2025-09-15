@@ -1,14 +1,6 @@
 # Generated artifacts
 logs
 
-# Secrets
-*cloudflare*
-# *auth*
-*secret.yaml
-!externalsecret.yaml
-
-*login*
-
 # Terragrunt
 .terraform
 .terragrunt-cache
@@ -21,7 +13,6 @@ deprecated
 
 # AGE
 keys.txt
-*.secret.yaml
 
 # taskfiles
 .task/
