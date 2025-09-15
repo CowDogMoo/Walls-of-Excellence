@@ -46,6 +46,7 @@ spec:
             image:
               repository: ghcr.io/l50/sliver
               tag: latest
+              pullPolicy: Always
             command:
               - /bin/bash
               - -ec
