@@ -72,7 +72,6 @@ spec:
               - name: api@internal
                 kind: TraefikService
 
-    # Create the custom middlewares used by the IngressRoute dashboard (can also be created in another way).
     extraObjects:
       - apiVersion: traefik.io/v1alpha1
         kind: Middleware
@@ -87,6 +86,7 @@ spec:
         kind: Middleware
         metadata:
           name: traefik-dashboard-auth
+          namespace: networking
         spec:
           basicAuth:
             secret: traefik-dashboard-auth-secret

@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: networking
 resources:
   - ./helmrelease.yaml
+  - ./externalsecret.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: traefik
