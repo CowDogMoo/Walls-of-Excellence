@@ -521,7 +521,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (src_ip) (count_over_time({source=\"unifi\"} | json | regexp `SRC=(?P<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)` | src_ip != \"\" [1h])))",
+              "expr": "topk(10, sum by (src_ip) (count_over_time({source=\"unifi\"} | json | line_format \"{{.message}}\" |= \"SRC=\" | pattern `<_>SRC=<src_ip> DST=<_>` | src_ip != \"\" [1h])))",
               "legendFormat": "{{src_ip}}",
               "refId": "A"
             }
