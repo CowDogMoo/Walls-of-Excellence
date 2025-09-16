@@ -17,4 +17,3 @@ resources:
   - stakater.yaml
   - unpoller.yaml
   - vector.yaml
-  - weaveworks.yaml
