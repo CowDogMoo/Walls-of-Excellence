@@ -148,7 +148,7 @@ spec:
                       - key: kubernetes.io/hostname
                         operator: In
                         values:
-                          - k8s7
+                          - k8s6
           topologySpreadConstraints:
             - maxSkew: 1
               topologyKey: kubernetes.io/hostname
