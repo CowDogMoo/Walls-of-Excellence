@@ -155,51 +155,73 @@ data:
           "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 }
         },
         {
-          "id": 5,
-          "title": "Shade Movement Timeline",
-          "type": "timeseries",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "sum by (operation) (rate({namespace=\"home-automation\"} |~ \"Shade.*moving\" | regexp \"Shade (?P<shade>[A-Z-]+) in room (?P<room>[A-Z]+) moving\" | __error__=\"\" [5m]))",
-              "refId": "A",
-              "legendFormat": "Moving"
-            },
-            {
-              "expr": "sum(rate({namespace=\"home-automation\"} |~ \"Adjusting shade\" [5m]))",
-              "refId": "B",
-              "legendFormat": "Adjusting"
-            },
-            {
-              "expr": "sum(rate({namespace=\"home-automation\"} |~ \"shade.*reached.*position\" [5m]))",
-              "refId": "C",
-              "legendFormat": "Completed"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "axisPlacement": "auto",
-                "drawStyle": "line",
-                "fillOpacity": 20,
-                "lineInterpolation": "smooth",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": { "type": "linear" },
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "mode": "none",
-                  "group": "A"
-                }
-              },
-              "unit": "ops",
-              "displayName": "Operations/sec"
-            }
+        "id": 5,
+        "title": "Shade Movement Timeline",
+        "type": "timeseries",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "count_over_time({namespace=\"home-automation\"} |~ \"position changed\" [5m])",
+            "refId": "A",
+            "legendFormat": "Position Changes"
           },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 }
+          {
+            "expr": "count_over_time({namespace=\"home-automation\"} |~ \"Executing step\" [5m])",
+            "refId": "B",
+            "legendFormat": "Commands"
+          },
+          {
+            "expr": "count_over_time({namespace=\"home-automation\"} |~ \"Failed to get position\" [5m])",
+            "refId": "C",
+            "legendFormat": "Failures"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": { "type": "linear" },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "mode": "none",
+                "group": "A"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
         },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 }
+      },
         {
           "id": 6,
           "title": "Room Activity by Code",
