@@ -8,4 +8,5 @@ resources:
   - ./ocirepository.yaml
   - ./dashboards/ansible-logs-dashboard.yaml
   - ./dashboards/home-assistant-dashboard.yaml
+  - ./dashboards/home-assistant-shades-dashboard.yaml
   - ./dashboards/cowdogmoo-network-analytics-dashboard.yaml
