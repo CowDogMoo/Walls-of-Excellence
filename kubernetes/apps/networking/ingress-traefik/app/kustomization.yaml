@@ -6,6 +6,7 @@ namespace: networking
 resources:
   - ./helmrelease.yaml
   - ./externalsecret.yaml
+  - ./authentik-middleware.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: traefik

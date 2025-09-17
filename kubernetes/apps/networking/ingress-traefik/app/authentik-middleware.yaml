@@ -6,7 +6,7 @@ metadata:
   namespace: networking
 spec:
   forwardAuth:
-    address: http://authentik-server.security.svc.cluster.local:9000/outpost.goauthentik.io/auth/traefik
+    address: http://authentik-server.identity.svc.cluster.local/outpost.goauthentik.io/auth/traefik
     trustForwardHeader: true
     authResponseHeaders:
       - X-authentik-username
@@ -14,9 +14,3 @@ spec:
       - X-authentik-email
       - X-authentik-name
       - X-authentik-uid
-      - X-authentik-jwt
-      - X-authentik-meta-jwks
-      - X-authentik-meta-outpost
-      - X-authentik-meta-provider
-      - X-authentik-meta-app
-      - X-authentik-meta-version

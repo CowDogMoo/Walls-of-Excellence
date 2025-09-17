@@ -52,11 +52,16 @@ spec:
       dataproxy:
         timeout: 300
         keep_alive_seconds: 30
-      auth.anonymous:
+      auth.proxy:
         enabled: true
-        org_id: 1
-        org_name: Main Org.
-        org_role: Viewer
+        header_name: X-authentik-username
+        header_property: username
+        auto_sign_up: true
+        headers: "Name:X-authentik-name Email:X-authentik-email"
+      users:
+        allow_sign_up: false
+        auto_assign_org: true
+        auto_assign_org_role: Admin
       news:
         news_feed_enabled: false
     readinessProbe:
@@ -252,6 +257,9 @@ spec:
       tls:
         - hosts:
             - *host
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: *host
+        traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
 
     persistence:
       enabled: true
