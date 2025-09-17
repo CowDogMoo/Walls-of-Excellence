@@ -3,7 +3,7 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: authentik
-  namespace: networking
+  namespace: identity
 spec:
   forwardAuth:
     address: http://authentik-server.security.svc.cluster.local/outpost.goauthentik.io/auth/traefik
