@@ -333,7 +333,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\"} |~ \"shade\" |~ \"(moving|Adjusting|stop|command|operation)\" |~ \"(?i)shade\"",
+              "expr": "{namespace=\"home-automation\"} |~ \"(?i)shade\" |~ \"(?i)(cover|position|executing|command|failed)\"",
               "refId": "A"
             }
           ],
