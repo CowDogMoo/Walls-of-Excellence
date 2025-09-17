@@ -5,8 +5,8 @@ kind: Kustomization
 namespace: identity
 resources:
   - externalsecret.yaml
+  - oauth-blueprint.yaml
   - helmrelease.yaml
-  - middleware.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: authentik

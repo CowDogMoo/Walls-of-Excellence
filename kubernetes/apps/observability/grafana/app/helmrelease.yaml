@@ -32,12 +32,39 @@ spec:
       type: Recreate
     admin:
       existingSecret: grafana-admin-secret
+
     env:
+      # General Grafana settings
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: natel-discrete-panel,pr0ps-trackmap-panel,panodata-map-panel
       GF_SECURITY_ANGULAR_SUPPORT_ENABLED: true
       GF_SERVER_ROOT_URL: https://grafana.techvomit.xyz
+      # OAuth Configuration via env vars (takes precedence over grafana.ini)
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: "Authentik"
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "grafana"
+      GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email"
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://auth.techvomit.xyz/application/o/authorize/"
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "http://authentik-server.identity.svc.cluster.local:9000/application/o/token/"
+      GF_AUTH_GENERIC_OAUTH_API_URL: "http://authentik-server.identity.svc.cluster.local:9000/application/o/userinfo/"
+      GF_AUTH_GENERIC_OAUTH_SIGNOUT_REDIRECT_URL: "https://auth.techvomit.xyz/application/o/grafana/end-session/"
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(groups, 'Grafana Admins') && 'Admin' || contains(groups, 'Grafana Editors') && 'Editor' || 'Viewer'"
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "false"
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+      GF_AUTH_GENERIC_OAUTH_AUTO_LOGIN: "true"
+      GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN: "true"
+      # Debug logging
+      GF_LOG_LEVEL: "debug"
+      GF_LOG_MODE: "console"
+
+    # Pull secret from the reflected secret
+    envValueFrom:
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+        secretKeyRef:
+          name: authentik-secrets
+          key: GRAFANA_CLIENT_SECRET
+
     grafana.ini:
       analytics:
         check_for_updates: false
@@ -52,18 +79,23 @@ spec:
       dataproxy:
         timeout: 300
         keep_alive_seconds: 30
+      # Disable proxy auth completely
       auth.proxy:
-        enabled: true
-        header_name: X-authentik-username
-        header_property: username
-        auto_sign_up: true
-        headers: "Name:X-authentik-name Email:X-authentik-email"
+        enabled: false
+      # Basic auth settings
+      auth:
+        oauth_auto_login: true
+        disable_login_form: false
+        disable_signout_menu: false
       users:
         allow_sign_up: false
         auto_assign_org: true
-        auto_assign_org_role: Admin
+        auto_assign_org_role: Viewer # Default role if not mapped via OAuth
+      server:
+        root_url: https://grafana.techvomit.xyz
       news:
         news_feed_enabled: false
+
     readinessProbe:
       httpGet:
         path: /api/health
@@ -72,6 +104,7 @@ spec:
       timeoutSeconds: 5
       periodSeconds: 10
       failureThreshold: 3
+
     livenessProbe:
       httpGet:
         path: /api/health
@@ -80,6 +113,7 @@ spec:
       timeoutSeconds: 30
       periodSeconds: 10
       failureThreshold: 10
+
     datasources:
       datasources.yaml:
         apiVersion: 1
@@ -120,8 +154,8 @@ spec:
             secureJsonData:
               httpHeaderValue1: "fake"
             httpMethod: POST
-            # Query caching
             cacheTimeout: 60
+
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
@@ -142,6 +176,7 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/network
+
     dashboards:
       default:
         cert-manager:
@@ -245,6 +280,7 @@ spec:
       - natel-discrete-panel
       - pr0ps-trackmap-panel
       - vonage-status-panel
+
     serviceMonitor:
       enabled: true
 
@@ -259,7 +295,6 @@ spec:
             - *host
       annotations:
         external-dns.alpha.kubernetes.io/hostname: *host
-        traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
 
     persistence:
       enabled: true

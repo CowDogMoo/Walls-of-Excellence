@@ -63,10 +63,30 @@ spec:
         name: "authentik"
         user: "authentik"
 
+    blueprints:
+      # ConfigMaps containing blueprints
+      configMaps:
+        - authentik-oauth-blueprint
+
     # Server configuration
     server:
       # Number of server replicas
       replicas: 1
+
+      # Environment variables for blueprint secrets
+      envFrom:
+        - secretRef:
+            name: authentik-secrets
+
+      # Blueprints volume mount
+      volumes:
+        - name: blueprints
+          configMap:
+            name: authentik-oauth-blueprint
+      volumeMounts:
+        - name: blueprints
+          mountPath: /blueprints/custom
+          readOnly: true
 
       # Resources
       resources:

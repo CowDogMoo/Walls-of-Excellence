@@ -1,0 +1,55 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-oauth-blueprint
+  namespace: identity
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+data:
+  oauth-providers.yaml: |
+    version: 1
+    metadata:
+      name: OAuth Providers Configuration
+      labels:
+        blueprints.goauthentik.io/instantiate: "true"
+    entries:
+      # Groups for role mapping
+      - model: authentik_core.group
+        id: grafana-admins
+        state: present
+        attrs:
+          name: Grafana Admins
+
+      - model: authentik_core.group
+        id: grafana-editors
+        state: present
+        attrs:
+          name: Grafana Editors
+
+      # OAuth2 Provider for Grafana
+      - model: authentik_providers_oauth2.oauth2provider
+        id: grafana-provider
+        state: present
+        attrs:
+          name: Grafana
+          client_id: grafana
+          client_type: confidential
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          redirect_uris: "https://grafana.techvomit.xyz/login/generic_oauth"
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+          sub_mode: hashed_user_id
+          refresh_token_validity: "days=30"
+
+      # Application for Grafana
+      - model: authentik_core.application
+        id: grafana-app
+        state: present
+        attrs:
+          name: Grafana
+          slug: grafana
+          provider: !KeyOf grafana-provider
+          meta_launch_url: "https://grafana.techvomit.xyz"
