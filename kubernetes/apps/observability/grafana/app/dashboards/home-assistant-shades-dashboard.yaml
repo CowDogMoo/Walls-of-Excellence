@@ -202,49 +202,6 @@ data:
         },
         {
           "id": 6,
-          "title": "Shade Positions",
-          "type": "logs",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\"} |~ \"Position:.*%\"",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "showTime": true,
-            "showLabels": false,
-            "wrapLogMessage": false,
-            "enableLogDetails": true,
-            "dedupStrategy": "none",
-            "sortOrder": "Descending",
-            "prettifyLogMessage": false
-          },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 4 }
-        },
-        {
-          "id": 7,
-          "title": "Shade Errors & Failures",
-          "type": "logs",
-          "datasource": { "type": "loki", "uid": "loki" },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\"} |~ \"shade\" |~ \"(?i)(error|failed|attempt)\"",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "showTime": true,
-            "showLabels": false,
-            "wrapLogMessage": true,
-            "enableLogDetails": true,
-            "dedupStrategy": "none",
-            "sortOrder": "Descending"
-          },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 }
-        },
-        {
-          "id": 8,
           "title": "Room Activity by Code",
           "type": "barchart",
           "datasource": { "type": "loki", "uid": "loki" },
@@ -303,7 +260,50 @@ data:
               "valueSize": 12
             }
           },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 4 }
+        },
+        {
+          "id": 7,
+          "title": "Shade Positions",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\"} |~ \"Position:.*%\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "prettifyLogMessage": false
+          },
           "gridPos": { "h": 8, "w": 8, "x": 8, "y": 4 }
+        },
+        {
+          "id": 8,
+          "title": "Shade Errors & Failures",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\"} |~ \"shade\" |~ \"(?i)(error|failed|attempt)\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 }
         },
         {
           "id": 9,
@@ -324,7 +324,7 @@ data:
             "dedupStrategy": "signature",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 22 }
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 20 }
         },
         {
           "id": 10,
@@ -345,7 +345,7 @@ data:
             "dedupStrategy": "none",
             "sortOrder": "Descending"
           },
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 22 }
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 20 }
         },
         {
           "id": 11,
@@ -367,7 +367,7 @@ data:
             "sortOrder": "Descending",
             "prettifyLogMessage": false
           },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 28 }
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 }
         }
       ]
     }
