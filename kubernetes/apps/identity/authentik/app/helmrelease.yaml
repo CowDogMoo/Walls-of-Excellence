@@ -34,10 +34,6 @@ spec:
       name: authentik-secrets
       valuesKey: AUTHENTIK_POSTGRESQL_PASSWORD
       targetPath: authentik.postgresql.password
-    - kind: Secret
-      name: authentik-secrets
-      valuesKey: AUTHENTIK_POSTGRESQL_PASSWORD
-      targetPath: postgresql.auth.postgresPassword
   values:
     # Global configuration
     global:
