@@ -1,0 +1,173 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-passkeys-blueprint
+  namespace: identity
+data:
+  enroll-passkey.yaml: |
+    # yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+    version: 1
+    metadata:
+      name: passkeys-complete
+    entries:
+      # === Shared Prompts ===
+      - model: authentik_stages_prompt.prompt
+        identifiers:
+          field_key: username
+        attrs:
+          label: Username
+          type: username
+          required: true
+
+      - model: authentik_stages_prompt.prompt
+        identifiers:
+          field_key: email
+        attrs:
+          label: Email
+          type: email
+          required: true
+
+      - model: authentik_stages_prompt.prompt
+        identifiers:
+          field_key: name
+        attrs:
+          label: Name
+          type: text
+          required: false
+
+      # === WebAuthn Configuration Stage ===
+      - id: webauthn-stage
+        model: authentik_stages_authenticator_webauthn.authenticatorwebauthnstage
+        identifiers:
+          name: default-authenticator-webauthn
+        attrs:
+          user_verification: required
+          resident_key_requirement: preferred
+          authenticator_attachment: cross-platform
+
+      # === Setup Flow (Stage Configuration) ===
+      - id: webauthn-setup-flow
+        model: authentik_flows.flow
+        identifiers:
+          slug: default-authenticator-webauthn-setup
+        attrs:
+          name: Default authenticator - WebAuthn setup
+          title: Setup your security key
+          designation: stage_configuration
+          authentication: none
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf webauthn-setup-flow
+          stage: !KeyOf webauthn-stage
+          order: 10
+
+      # === Passwordless Authentication Flow ===
+      - id: pl-flow
+        model: authentik_flows.flow
+        identifiers:
+          slug: passwordless-webauthn
+        attrs:
+          designation: authentication
+          name: "Passwordless (WebAuthn)"
+          title: "Sign in with your passkey"
+          authentication: none
+
+      - id: pl-validate
+        model: authentik_stages_authenticator_validate.authenticatorvalidatestage
+        identifiers:
+          name: passkey-validation
+        attrs:
+          device_classes:
+            - webauthn
+          not_configured_action: deny
+
+      - id: pl-login
+        model: authentik_stages_user_login.userloginstage
+        identifiers:
+          name: passwordless-webauthn-login
+        attrs:
+          session_duration: seconds=0
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf pl-flow
+          stage: !KeyOf pl-validate
+          order: 10
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf pl-flow
+          stage: !KeyOf pl-login
+          order: 20
+
+      # === Enrollment Flow with Passkey ===
+      - id: enroll-flow
+        model: authentik_flows.flow
+        identifiers:
+          slug: enroll-with-passkey
+        attrs:
+          designation: enrollment
+          name: "Create account (with passkey)"
+          title: "Create your account with a passkey"
+
+      - id: prompt-basic
+        model: authentik_stages_prompt.promptstage
+        identifiers:
+          name: enroll-passkey-prompt
+        attrs:
+          fields:
+            - !Find [authentik_stages_prompt.prompt, [field_key, username]]
+            - !Find [authentik_stages_prompt.prompt, [field_key, email]]
+            - !Find [authentik_stages_prompt.prompt, [field_key, name]]
+
+      - id: write-user
+        model: authentik_stages_user_write.userwritestage
+        identifiers:
+          name: enroll-passkey-user-write
+        attrs:
+          create_users_as_inactive: false
+          user_creation_mode: always_create
+
+      - id: enroll-login
+        model: authentik_stages_user_login.userloginstage
+        identifiers:
+          name: enroll-passkey-login
+        attrs:
+          session_duration: seconds=0
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf enroll-flow
+          stage: !KeyOf prompt-basic
+          order: 10
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf enroll-flow
+          stage: !KeyOf write-user
+          order: 20
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf enroll-flow
+          stage: !KeyOf webauthn-stage
+          order: 30
+
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf enroll-flow
+          stage: !KeyOf enroll-login
+          order: 40
+
+      # === Update Default Identification Stage ===
+      - model: authentik_stages_identification.identificationstage
+        identifiers:
+          name: default-authentication-identification
+        attrs:
+          user_fields:
+            - username
+            - email
+          passwordless_flow: !KeyOf pl-flow
+          enrollment_flow: !KeyOf enroll-flow

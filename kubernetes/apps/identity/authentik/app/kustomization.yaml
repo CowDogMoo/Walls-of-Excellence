@@ -5,7 +5,8 @@ kind: Kustomization
 namespace: identity
 resources:
   - externalsecret.yaml
-  - oauth-blueprint.yaml
+  - authentik-oauth-blueprint.yaml
+  - authentik-passkeys-blueprint.yaml
   - helmrelease.yaml
 labels:
   - pairs:

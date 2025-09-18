@@ -35,10 +35,8 @@ spec:
       valuesKey: AUTHENTIK_POSTGRESQL_PASSWORD
       targetPath: authentik.postgresql.password
   values:
-    # Global configuration
     global:
       storageClass: nfs-client
-      # Global environment variables
       env:
         - name: AUTHENTIK_LISTEN__HTTP
           value: "0.0.0.0:9000"
@@ -49,46 +47,27 @@ spec:
         - name: dshm
           emptyDir: {}
 
-    # Authentik specific configuration
     authentik:
       log_level: info
 
-      # Error reporting
       error_reporting:
         enabled: false
 
-      # PostgreSQL configuration
       postgresql:
-        host: "authentik-postgresql"
-        name: "authentik"
-        user: "authentik"
+        host: authentik-postgresql
+        name: authentik
+        user: authentik
 
     blueprints:
-      # ConfigMaps containing blueprints
       configMaps:
         - authentik-oauth-blueprint
+        - authentik-passkeys-blueprint
 
-    # Server configuration
     server:
-      # Number of server replicas
       replicas: 1
-
-      # Environment variables for blueprint secrets
       envFrom:
         - secretRef:
             name: authentik-secrets
-
-      # Blueprints volume mount
-      volumes:
-        - name: blueprints
-          configMap:
-            name: authentik-oauth-blueprint
-      volumeMounts:
-        - name: blueprints
-          mountPath: /blueprints/custom
-          readOnly: true
-
-      # Resources
       resources:
         requests:
           memory: 256Mi
@@ -97,7 +76,6 @@ spec:
           memory: 1Gi
           cpu: 1000m
 
-      # Probes with appropriate timeouts for authentik startup
       startupProbe:
         httpGet:
           path: /-/health/live/
@@ -125,7 +103,6 @@ spec:
         timeoutSeconds: 10
         failureThreshold: 3
 
-      # Ingress configuration
       ingress:
         enabled: true
         ingressClassName: ingress-traefik
@@ -139,21 +116,18 @@ spec:
               - *host
             secretName: techvomit-xyz-production-tls
 
-      # Metrics
       metrics:
         enabled: true
         serviceMonitor:
           enabled: true
 
-    # Worker configuration
     worker:
-      # Enable worker
       enabled: true
-
-      # Number of worker replicas
       replicas: 1
+      envFrom:
+        - secretRef:
+            name: authentik-secrets
 
-      # Resources
       resources:
         requests:
           memory: 512Mi
@@ -162,16 +136,14 @@ spec:
           memory: 1Gi
           cpu: 500m
 
-    # PostgreSQL subchart configuration
     postgresql:
       enabled: true
 
       image:
         registry: docker.io
-        repository: postgres # Official postgres works!
+        repository: postgres
         tag: "17-alpine"
 
-      # Authentication
       auth:
         username: authentik
         database: authentik
@@ -180,14 +152,12 @@ spec:
           adminPasswordKey: AUTHENTIK_POSTGRESQL_PASSWORD
           userPasswordKey: AUTHENTIK_POSTGRESQL_PASSWORD
 
-      # Primary instance configuration
       primary:
         persistence:
           enabled: true
           storageClass: nfs-client
           size: 8Gi
 
-        # Resources for PostgreSQL
         resources:
           requests:
             memory: 256Mi
@@ -196,7 +166,6 @@ spec:
             memory: 512Mi
             cpu: 500m
 
-    # Redis subchart configuration
     redis:
       enabled: true
 
@@ -216,7 +185,6 @@ spec:
           storageClass: nfs-client
           size: 1Gi
 
-        # Resources for Redis
         resources:
           requests:
             memory: 128Mi
