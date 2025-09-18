@@ -27,6 +27,12 @@ data:
         attrs:
           name: Grafana Editors
 
+      - model: authentik_core.group
+        id: traefik-admins
+        state: present
+        attrs:
+          name: Traefik Admins
+
       # OAuth2 Provider for Grafana
       - model: authentik_providers_oauth2.oauth2provider
         id: grafana-provider
@@ -44,6 +50,20 @@ data:
           sub_mode: hashed_user_id
           refresh_token_validity: "days=30"
 
+      # Proxy Provider for Traefik Dashboard (Forward Auth)
+      - model: authentik_providers_proxy.proxyprovider
+        id: traefik-provider
+        state: present
+        attrs:
+          name: Traefik Dashboard
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          mode: forward_single
+          external_host: "https://traefik.techvomit.xyz"
+          cookie_domain: "techvomit.xyz"
+          skip_path_regex: ""
+          basic_auth_enabled: false
+          intercept_header_auth: true
+
       # Application for Grafana
       - model: authentik_core.application
         id: grafana-app
@@ -53,3 +73,40 @@ data:
           slug: grafana
           provider: !KeyOf grafana-provider
           meta_launch_url: "https://grafana.techvomit.xyz"
+
+      # Application for Traefik Dashboard
+      - model: authentik_core.application
+        id: traefik-app
+        state: present
+        attrs:
+          name: Traefik Dashboard
+          slug: traefik-dashboard
+          provider: !KeyOf traefik-provider
+          meta_launch_url: "https://traefik.techvomit.xyz"
+          meta_description: "Traefik Ingress Controller Dashboard"
+          policy_engine_mode: any
+
+      - model: authentik_outposts.outpost
+        id: traefik-outpost
+        state: present
+        attrs:
+          name: Traefik Outpost
+          type: proxy
+          providers:
+            - !KeyOf traefik-provider
+          config:
+            authentik_host: https://auth.techvomit.xyz
+            docker_network: null
+            docker_map_ports: true
+            kubernetes_replicas: 1
+            kubernetes_namespace: identity
+            kubernetes_ingress_annotations: {}
+            kubernetes_service_type: ClusterIP
+
+      - model: authentik_policies.policybinding
+        state: present
+        attrs:
+          policy: !Find [authentik_policies_expression.expressionpolicy, [name, "default-provider-authorization-flow"]]
+          target: !KeyOf traefik-app
+          group: !KeyOf traefik-admins
+          order: 0

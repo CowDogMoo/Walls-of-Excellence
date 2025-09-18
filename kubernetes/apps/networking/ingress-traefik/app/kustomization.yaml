@@ -7,6 +7,7 @@ resources:
   - ./helmrelease.yaml
   - ./externalsecret.yaml
   - ./authentik-middleware.yaml
+  - ./ingressroute.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: traefik

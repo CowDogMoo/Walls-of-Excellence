@@ -1,0 +1,20 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: networking
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.techvomit.xyz`)
+      kind: Rule
+      middlewares:
+        - name: authentik
+          namespace: networking
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: techvomit-xyz-production-tls
