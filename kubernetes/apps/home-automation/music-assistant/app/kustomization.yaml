@@ -6,6 +6,7 @@ labels:
   - pairs:
       app.kubernetes.io/name: music-assistant
       app.kubernetes.io/instance: music-assistant
+namespace: home-automation
 resources:
-  - ./helmrelease.yaml
   - ./ocirepository.yaml
+  - ./helmrelease.yaml

@@ -2,17 +2,18 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: mosquitto
+      app.kubernetes.io/instance: mosquitto
 namespace: home-automation
 resources:
-  - externalsecret.yaml
-  - helmrelease.yaml
+  - ./externalsecret.yaml
+  - ./ocirepository.yaml
+  - ./helmrelease.yaml
 configMapGenerator:
   - name: mosquitto-configmap
     files:
       - mosquitto.conf=./config/mosquitto.conf
 generatorOptions:
   disableNameSuffixHash: true
-labels:
-  - pairs:
-      app.kubernetes.io/name: mosquitto
-      app.kubernetes.io/instance: mosquitto

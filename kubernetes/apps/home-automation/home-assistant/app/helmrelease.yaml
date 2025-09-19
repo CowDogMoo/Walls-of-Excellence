@@ -9,7 +9,7 @@ spec:
   interval: 30m
   chartRef:
     kind: OCIRepository
-    name: music-assistant
+    name: home-assistant
   install:
     remediation:
       retries: 3
