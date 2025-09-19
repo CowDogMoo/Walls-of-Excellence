@@ -24,8 +24,6 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: ingress-traefik
-        # annotations:
-        #   traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - &host alert-manager.techvomit.xyz
         tls:
@@ -67,8 +65,6 @@ spec:
         enabled: true
         ingressClassName: ingress-traefik
         pathType: Prefix
-        # annotations:
-        #   traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - &host prometheus.techvomit.xyz
         tls:
