@@ -11,6 +11,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: nfs-subdir-external-provisioner
+    - name: mosquitto
   interval: 30m
   path: ./kubernetes/apps/home-automation/home-assistant/app
   prune: true
@@ -19,4 +20,5 @@ spec:
     kind: GitRepository
     name: *namespace
   targetNamespace: home-automation
-  timeout: 3m
+  timeout: 5m
+  wait: false
