@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: authentik
-      version: 2024.10.2
+      version: 2025.8.3
       sourceRef:
         kind: HelmRepository
         name: authentik
@@ -36,23 +36,19 @@ spec:
       targetPath: authentik.postgresql.password
   values:
     global:
-      storageClass: nfs-client
       env:
         - name: AUTHENTIK_LISTEN__HTTP
           value: "0.0.0.0:9000"
         - name: AUTHENTIK_LISTEN__METRICS
           value: "0.0.0.0:9300"
-      # Shared memory volume configuration
       volumes:
         - name: dshm
           emptyDir: {}
 
     authentik:
       log_level: info
-
       error_reporting:
         enabled: false
-
       postgresql:
         host: authentik-postgresql
         name: authentik
@@ -79,7 +75,7 @@ spec:
       startupProbe:
         httpGet:
           path: /-/health/live/
-          port: 9000
+          port: http
         initialDelaySeconds: 90
         periodSeconds: 10
         timeoutSeconds: 10
@@ -88,7 +84,7 @@ spec:
       livenessProbe:
         httpGet:
           path: /-/health/live/
-          port: 9000
+          port: http
         initialDelaySeconds: 60
         periodSeconds: 30
         timeoutSeconds: 10
@@ -97,7 +93,7 @@ spec:
       readinessProbe:
         httpGet:
           path: /-/health/ready/
-          port: 9000
+          port: http
         initialDelaySeconds: 30
         periodSeconds: 10
         timeoutSeconds: 10
@@ -127,7 +123,6 @@ spec:
       envFrom:
         - secretRef:
             name: authentik-secrets
-
       resources:
         requests:
           memory: 512Mi
@@ -136,13 +131,17 @@ spec:
           memory: 1Gi
           cpu: 500m
 
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+
     postgresql:
       enabled: true
-
       image:
         registry: docker.io
-        repository: postgres
-        tag: "17-alpine"
+        repository: library/postgres
+        tag: "17.6-bookworm"
 
       auth:
         username: authentik
@@ -157,7 +156,6 @@ spec:
           enabled: true
           storageClass: nfs-client
           size: 8Gi
-
         resources:
           requests:
             memory: 256Mi
@@ -168,14 +166,12 @@ spec:
 
     redis:
       enabled: true
-
       image:
         registry: docker.io
-        repository: bitnamilegacy/redis
-        tag: "7.2"
+        repository: library/redis
+        tag: "8.2.1"
 
       architecture: standalone
-
       auth:
         enabled: false
 
@@ -184,7 +180,6 @@ spec:
           enabled: true
           storageClass: nfs-client
           size: 1Gi
-
         resources:
           requests:
             memory: 128Mi
