@@ -3,14 +3,18 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: ttpforge
-  namespace: flux-system
+  name: &app ttpforge
+  namespace: &namespace flux-system
 spec:
-  path: ./kubernetes/apps/attack-simulation/ttpforge/app
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
   interval: 5m
-  retryInterval: 1m
-  timeout: 10m
+  path: ./kubernetes/apps/attack-simulation/ttpforge/app
   prune: true
+  retryInterval: 1m
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: *namespace
+  targetNamespace: attack-simulation
+  timeout: 10m

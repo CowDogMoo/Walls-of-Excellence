@@ -2,10 +2,11 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: attack-simulation
-resources:
-  - helmrelease.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: ttpforge
       app.kubernetes.io/instance: ttpforge
+namespace: attack-simulation
+resources:
+  - ./ocirepository.yaml
+  - ./helmrelease.yaml

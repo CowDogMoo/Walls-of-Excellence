@@ -8,5 +8,5 @@ labels:
       app.kubernetes.io/instance: sliver
 namespace: c2
 resources:
-  - ./helmrelease.yaml
   - ./ocirepository.yaml
+  - ./helmrelease.yaml

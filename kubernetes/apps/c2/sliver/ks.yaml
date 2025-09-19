@@ -16,4 +16,5 @@ spec:
   sourceRef:
     kind: GitRepository
     name: *namespace
+  targetNamespace: c2
   timeout: 10m
