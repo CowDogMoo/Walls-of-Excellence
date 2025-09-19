@@ -34,6 +34,14 @@ spec:
       name: authentik-secrets
       valuesKey: AUTHENTIK_POSTGRESQL_PASSWORD
       targetPath: authentik.postgresql.password
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: GRAFANA_CLIENT_SECRET
+      targetPath: blueprints.context.grafana_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: TRAEFIK_CLIENT_SECRET
+      targetPath: blueprints.context.traefik_client_secret
   values:
     global:
       env:
