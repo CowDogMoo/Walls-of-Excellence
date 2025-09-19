@@ -13,16 +13,15 @@ spec:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
       name: *app
-      namespace: *namespace
+      namespace: system-upgrade
   interval: 1h
   path: ./kubernetes/apps/system-upgrade/system-upgrade-controller/app
   prune: true
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  targetNamespace: flux-system
+    name: *namespace
+  targetNamespace: system-upgrade
   timeout: 5m
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -43,8 +42,7 @@ spec:
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  targetNamespace: *namespace
+    name: *namespace
+  targetNamespace: system-upgrade
   timeout: 5m
   wait: false
