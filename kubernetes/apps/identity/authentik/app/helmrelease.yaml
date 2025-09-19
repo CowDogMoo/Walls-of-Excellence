@@ -51,7 +51,7 @@ spec:
         - name: dshm
           emptyDir:
             medium: Memory
-            sizeLimit: 1Gi
+            sizeLimit: 256Mi
       volumeMounts:
         - name: dshm
           mountPath: /dev/shm
@@ -107,6 +107,7 @@ spec:
       envFrom:
         - secretRef:
             name: authentik-secrets
+
       resources:
         requests:
           memory: 256Mi
@@ -114,6 +115,34 @@ spec:
         limits:
           memory: 512Mi
           cpu: 500m
+
+      startupProbe:
+        httpGet:
+          path: /-/health/live/
+          port: 9000
+        initialDelaySeconds: 90
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 60
+
+      livenessProbe:
+        httpGet:
+        exec:
+          path: /-/health/live/
+          port: 9000
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 30
+        failureThreshold: 3
+
+      readinessProbe:
+        httpGet:
+          path: /-/health/ready/
+          port: 9000
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 3
 
       metrics:
         enabled: true
