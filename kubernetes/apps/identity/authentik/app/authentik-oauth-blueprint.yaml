@@ -124,7 +124,7 @@ data:
         attrs:
           name: traefik-admin-policy
           expression: |
-            return ak_is_group_member(request.user, "Traefik Admins")
+            return ak_is_group_member(request.user, name="Traefik Admins")
 
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
@@ -136,3 +136,11 @@ data:
         attrs:
           enabled: true
           order: 0
+
+      # Assign provider to embedded outpost
+      - model: authentik_outposts.outpost
+        identifiers:
+          name: authentik Embedded Outpost
+        attrs:
+          providers:
+            - !KeyOf traefik-provider
