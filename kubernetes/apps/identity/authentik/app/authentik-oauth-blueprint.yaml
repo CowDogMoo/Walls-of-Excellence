@@ -115,26 +115,6 @@ data:
           meta_description: "Traefik Ingress Controller Dashboard"
           policy_engine_mode: any
 
-      # Outpost for Traefik
-      - model: authentik_outposts.outpost
-        id: traefik-outpost
-        identifiers:
-          name: Traefik Outpost
-        state: present
-        attrs:
-          name: Traefik Outpost
-          type: proxy
-          providers:
-            - !KeyOf traefik-provider
-          config:
-            authentik_host: https://auth.techvomit.xyz
-            docker_network: null
-            docker_map_ports: true
-            kubernetes_replicas: 1
-            kubernetes_namespace: identity
-            kubernetes_ingress_annotations: {}
-            kubernetes_service_type: ClusterIP
-
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
