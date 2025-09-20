@@ -53,6 +53,7 @@ data:
           client_id: grafana
           client_secret: !Context grafana_client_secret
           client_type: confidential
+          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
           redirect_uris:
