@@ -137,11 +137,44 @@ spec:
 
       resources:
         requests:
-          memory: 256Mi
+          memory: 512Mi
           cpu: 100m
         limits:
-          memory: 512Mi
-          cpu: 500m
+          memory: 1Gi
+          cpu: 1000m
+
+      startupProbe:
+        exec:
+          command:
+            - ak
+            - healthcheck
+        initialDelaySeconds: 90
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 60
+        successThreshold: 1
+
+      livenessProbe:
+        exec:
+          command:
+            - ak
+            - healthcheck
+        initialDelaySeconds: 60
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 3
+        successThreshold: 1
+
+      readinessProbe:
+        exec:
+          command:
+            - ak
+            - healthcheck
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 3
+        successThreshold: 1
 
       metrics:
         enabled: true
@@ -150,10 +183,6 @@ spec:
 
     postgresql:
       enabled: true
-      image:
-        registry: docker.io
-        repository: library/postgres
-        tag: "17.6-bookworm"
 
       auth:
         username: authentik
@@ -164,16 +193,6 @@ spec:
           userPasswordKey: AUTHENTIK_POSTGRESQL_PASSWORD
 
       primary:
-        podSecurityContext:
-          fsGroup: 999
-          runAsUser: 999
-          runAsGroup: 999
-
-        containerSecurityContext:
-          runAsUser: 999
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-
         persistence:
           enabled: true
           storageClass: nfs-client
