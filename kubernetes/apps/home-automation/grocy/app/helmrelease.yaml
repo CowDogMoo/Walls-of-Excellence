@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: linuxserver/grocy
-              tag: 4.0.3
+              tag: 4.2.0
               pullPolicy: IfNotPresent
             env:
               TZ: "America/Denver"
@@ -37,6 +37,17 @@ spec:
               GROCY_MODE: production
               PUID: "1000"
               PGID: "1000"
+              # PHP Performance optimizations
+              PHP_MEMORY_LIMIT: "512M"
+              PHP_MAX_EXECUTION_TIME: "60"
+              PHP_OPCACHE_ENABLE: "1"
+              PHP_OPCACHE_MEMORY_CONSUMPTION: "128"
+              PHP_OPCACHE_MAX_ACCELERATED_FILES: "10000"
+              PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
+              # SQLite optimizations
+              GROCY_DATABASE_PRAGMA_JOURNAL_MODE: "WAL"
+              GROCY_DATABASE_PRAGMA_SYNCHRONOUS: "NORMAL"
+              GROCY_DATABASE_PRAGMA_CACHE_SIZE: "-64000"
             probes:
               liveness:
                 enabled: true
@@ -46,10 +57,11 @@ spec:
                 enabled: true
             resources:
               requests:
-                cpu: 50m
-                memory: 256Mi
-              limits:
+                cpu: 200m
                 memory: 512Mi
+              limits:
+                cpu: 1000m
+                memory: 1Gi
     service:
       app:
         controller: grocy
@@ -72,21 +84,26 @@ spec:
           - hosts:
               - *host
             secretName: techvomit-xyz-production-tls
-    logs:
-      general:
-        format: json
-        level: DEBUG
     persistence:
       config:
         enabled: true
         type: persistentVolumeClaim
         accessMode: ReadWriteOnce
-        size: 2Gi
+        size: 5Gi
         storageClass: nfs-client
         globalMounts:
           - path: /config
       viewcache:
         enabled: true
         type: emptyDir
+        medium: Memory
+        sizeLimit: 256Mi
         globalMounts:
           - path: /config/data/viewcache
+      tmp:
+        enabled: true
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 128Mi
+        globalMounts:
+          - path: /tmp
