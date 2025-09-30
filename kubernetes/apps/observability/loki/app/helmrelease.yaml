@@ -40,7 +40,7 @@ spec:
         retention_period: 14d
         reject_old_samples: true
         reject_old_samples_max_age: 336h # 14 days - match retention
-        out_of_order_time_window: 30m # Allow 30min out-of-order
+        unordered_writes: true
         # Performance optimizations
         max_query_parallelism: 32
         split_queries_by_interval: 15m
