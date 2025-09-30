@@ -71,6 +71,16 @@ spec:
           - hosts:
               - *host
       prometheusSpec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: In
+                      values:
+                        - k8s6
+                        - k8s7
         image:
           registry: docker.io
           repository: prompp/prompp
