@@ -7,23 +7,13 @@ helmDefaults:
   waitForJobs: true
 
 releases:
-  # Install external-secrets first (needed for 1Password integration)
+  # Install external-secrets first
   - name: external-secrets
     namespace: external-secrets
     chart: oci://ghcr.io/external-secrets/charts/external-secrets
     version: 0.20.1
     values:
       - ./templates/values.yaml.gotmpl
-
-  # Install 1Password Connect
-  - name: onepassword-connect
-    namespace: external-secrets
-    chart: oci://ghcr.io/1password/charts/connect
-    version: 1.15.1
-    values:
-      - ./templates/values.yaml.gotmpl
-    needs:
-      - external-secrets/external-secrets
 
   # Install cert-manager
   - name: cert-manager
@@ -33,7 +23,7 @@ releases:
     values:
       - ./templates/values.yaml.gotmpl
     needs:
-      - external-secrets/onepassword-connect
+      - external-secrets/external-secrets
 
   # Reflector (for secret replication)
   - name: reflector

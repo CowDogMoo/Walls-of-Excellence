@@ -20,12 +20,6 @@ releases:
     chart: oci://ghcr.io/external-secrets/charts/external-secrets
     version: 0.20.1
 
-  # Cert Manager CRDs
-  - name: cert-manager
-    namespace: cert-manager
-    chart: oci://quay.io/jetstack/charts/cert-manager
-    version: v1.18.2
-
   # Prometheus Stack CRDs
   - name: kube-prometheus-stack
     namespace: observability
