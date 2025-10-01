@@ -1,0 +1,32 @@
+---
+# 1Password Connect Secret for External Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: onepassword-connect-secret
+  namespace: external-secrets
+stringData:
+  1password-credentials.json: op://kubernetes/1password/OP_CREDENTIALS_JSON
+  token: op://kubernetes/1password/OP_CONNECT_TOKEN
+---
+# SOPS Age Secret for Flux
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sops-age
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+stringData:
+  age.agekey: op://kubernetes/sops/SOPS_AGE_KEY
+---
+# Cluster Settings ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-settings
+  namespace: flux-system
+data:
+  CLUSTER_NAME: woe
+  TIMEZONE: America/Denver

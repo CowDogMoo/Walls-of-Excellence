@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/helmfile
+
+# This helmfile extracts CRDs from Helm charts before installing the apps.
+# It uses yq to filter only CustomResourceDefinition resources.
+
+helmDefaults:
+  args:
+    - --include-crds
+    - --no-hooks
+  postRenderer: bash
+  postRendererArgs:
+    - -c
+    - yq ea -e 'select(.kind == "CustomResourceDefinition")'
+
+releases:
+  # External Secrets CRDs
+  - name: external-secrets
+    namespace: external-secrets
+    chart: oci://ghcr.io/external-secrets/charts/external-secrets
+    version: 0.20.1
+
+  # Cert Manager CRDs
+  - name: cert-manager
+    namespace: cert-manager
+    chart: oci://quay.io/jetstack/charts/cert-manager
+    version: v1.18.2
+
+  # Prometheus Stack CRDs
+  - name: kube-prometheus-stack
+    namespace: observability
+    chart: oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack
+    version: 77.12.0

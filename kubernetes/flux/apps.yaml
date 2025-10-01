@@ -21,6 +21,27 @@ spec:
       - kind: ConfigMap
         name: cluster-settings
   patches:
+    # Add default HelmRelease configuration to all apps
+    - patch: |-
+        apiVersion: helm.toolkit.fluxcd.io/v2
+        kind: HelmRelease
+        metadata:
+          name: not-used
+        spec:
+          install:
+            crds: CreateReplace
+            remediation:
+              retries: 3
+          upgrade:
+            crds: CreateReplace
+            remediation:
+              retries: 3
+              strategy: rollback
+      target:
+        group: helm.toolkit.fluxcd.io
+        kind: HelmRelease
+
+    # Inherit SOPS and substitution for child Kustomizations
     - patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
         kind: Kustomization
