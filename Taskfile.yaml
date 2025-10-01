@@ -17,6 +17,132 @@ vars:
   K8S_NODES: "k8s1 k8s2 k8s3 k8s4 k8s5 k8s6 k8s7"
 
 tasks:
+  bootstrap:
+    desc: Bootstrap Flux CD on the cluster
+    summary: |
+      Bootstraps Flux CD using helmfile and 1Password secrets.
+
+      This task:
+      1. Auto-discovers and creates namespaces from kubernetes/apps/ structure
+      2. Injects secrets from 1Password
+      3. Installs CRDs via helmfile
+      4. Installs core apps (external-secrets, cert-manager, reflector, flux-operator, flux-instance)
+
+      Prerequisites:
+      - kubectl configured and connected to cluster
+      - 1Password CLI (op) installed and authenticated
+      - helmfile installed
+
+      Examples:
+        task bootstrap
+    deps: ["k8s:check-kubectl"]
+    cmds:
+      - |
+        echo "Starting Flux CD bootstrap..."
+
+        # Check for required tools
+        if ! command -v op &> /dev/null; then
+          echo "Error: 1Password CLI (op) not found. Please install it first."
+          exit 1
+        fi
+
+        if ! command -v helmfile &> /dev/null; then
+          echo "Error: helmfile not found. Please install it first."
+          exit 1
+        fi
+
+        # Auto-discover and create namespaces from kubernetes/apps structure
+        echo "Creating namespaces..."
+        find kubernetes/apps -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+          ns=$(basename "$dir")
+          echo "  Creating namespace: $ns"
+          kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply --server-side --field-manager flux-client-side-apply -f - || {
+            echo "Error creating namespace: $ns"
+            exit 1
+          }
+        done
+
+        # Inject and apply secrets from 1Password
+        echo "Injecting secrets from 1Password..."
+        op inject -i bootstrap/resources.yaml.j2 -o bootstrap/resources.yaml --force || {
+          echo "Error injecting secrets from 1Password"
+          exit 1
+        }
+
+        kubectl apply --server-side --field-manager flux-client-side-apply --force-conflicts -f bootstrap/resources.yaml || {
+          echo "Error applying bootstrap resources"
+          exit 1
+        }
+
+        # Clean up the generated file (contains secrets)
+        rm -f bootstrap/resources.yaml
+
+        # Install CRDs via helmfile
+        echo "Installing CRDs via helmfile..."
+        helmfile -f bootstrap/helmfile.d/00-crds.yaml template -q | kubectl apply --server-side --field-manager flux-client-side-apply -f - || {
+          echo "Error installing CRDs"
+          exit 1
+        }
+
+        # Install apps via helmfile
+        echo "Installing applications via helmfile..."
+        helmfile -f bootstrap/helmfile.d/01-apps.yaml sync --hide-notes || {
+          echo "Error installing applications"
+          exit 1
+        }
+
+        # Wait for Flux instance to be ready
+        echo "Waiting for Flux instance to be ready..."
+        kubectl -n flux-system wait fluxinstance/flux-instance --for=condition=Ready --timeout=5m || {
+          echo "Warning: Flux instance did not become ready in time"
+          echo "Check status with: kubectl -n flux-system get fluxinstance flux-instance"
+        }
+
+        echo ""
+        echo "✅ Bootstrap complete!"
+        echo ""
+        echo "Next steps:"
+          echo "  1. Check Flux status: kubectl -n flux-system get fluxinstance"
+        echo "  2. View GitRepository: kubectl -n flux-system get gitrepositories"
+        echo "  3. View Kustomizations: kubectl -n flux-system get kustomizations"
+        echo "  4. View all pods: kubectl get pods -A"
+    silent: true
+
+  bootstrap-status:
+    desc: Check the status of the Flux bootstrap
+    summary: |
+      Shows the status of Flux components and resources
+    deps: ["k8s:check-kubectl"]
+    cmds:
+      - |
+        echo "Flux Bootstrap Status"
+        echo "===================="
+        echo ""
+
+        echo "Flux Instance:"
+        kubectl -n flux-system get fluxinstance flux-instance -o wide 2>/dev/null || echo "  Not found"
+        echo ""
+
+        echo "Flux Operator:"
+        kubectl -n flux-system get pods -l app.kubernetes.io/name=flux-operator 2>/dev/null || echo "  Not found"
+        echo ""
+
+        echo "Flux Controllers:"
+        kubectl -n flux-system get pods -l app.kubernetes.io/part-of=flux 2>/dev/null || echo "  Not found"
+        echo ""
+
+        echo "GitRepositories:"
+        kubectl -n flux-system get gitrepositories 2>/dev/null || echo "  Not found"
+        echo ""
+
+        echo "Kustomizations:"
+        kubectl -n flux-system get kustomizations 2>/dev/null || echo "  Not found"
+        echo ""
+
+        echo "HelmReleases:"
+        kubectl get helmreleases -A 2>/dev/null || echo "  Not found"
+    silent: true
+
   default:
     desc: Default task that performs a comprehensive setup check for k3s deployment
     cmds:
