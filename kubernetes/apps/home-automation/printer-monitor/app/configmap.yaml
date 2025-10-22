@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: printer-monitor-config
+  namespace: home-automation
+data:
+  CHECK_INTERVAL: "300" # 5 minutes
+  TIMEOUT: "10"
+  MAX_RETRIES: "3"
+  RUN_MODE: "cronjob"

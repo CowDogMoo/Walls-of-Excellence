@@ -9,3 +9,4 @@ resources:
   - ./home-assistant/ks.yaml
   - ./mosquitto/ks.yaml
   - ./music-assistant/ks.yaml
+  - ./printer-monitor/ks.yaml

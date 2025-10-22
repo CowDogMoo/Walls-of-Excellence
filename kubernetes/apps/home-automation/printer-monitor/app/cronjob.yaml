@@ -1,0 +1,44 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: printer-monitor
+  namespace: home-automation
+spec:
+  # Run every 5 minutes
+  schedule: "*/5 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: printer-monitor
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: monitor
+              image: ghcr.io/cowdogmoo/printer-monitor:latest
+              imagePullPolicy: Always
+              envFrom:
+                - configMapRef:
+                    name: printer-monitor-config
+                - secretRef:
+                    name: printer-monitor-secret
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
