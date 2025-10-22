@@ -103,6 +103,13 @@ spec:
       extraEnv:
         - name: GOGC
           value: "80"
+      extraVolumes:
+        - name: sidecar-tmp
+          emptyDir:
+            sizeLimit: 1Gi
+      extraVolumeMounts:
+        - name: sidecar-tmp
+          mountPath: /tmp
 
     gateway:
       enabled: true
