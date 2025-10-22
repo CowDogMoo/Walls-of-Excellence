@@ -199,7 +199,7 @@ tasks:
     deps: ["ansible:check-ansible", "check-inventory"]
     vars:
       GROUP: '{{.GROUP | default "all"}}'
-      ANSIBLE_CFG: '{{.ANSIBLE_CFG | default "~/.ansible.cfg"}}'
+      ANSIBLE_CFG: '{{.ANSIBLE_CFG | default "k3s-ansible/ansible.cfg"}}'
     cmds:
       - |
         if [ "{{.GROUP}}" != "master" ] && [ "{{.GROUP}}" != "node" ] && [ "{{.GROUP}}" != "all" ]; then
