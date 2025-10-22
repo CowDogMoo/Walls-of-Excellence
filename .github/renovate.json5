@@ -61,4 +61,15 @@
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
   ],
+  packageRules: [
+    {
+      description: 'Block k8s-sidecar 1.30.11 due to Python multiprocessing bug',
+      matchDatasources: ['docker'],
+      matchPackageNames: [
+        'ghcr.io/home-operations/k8s-sidecar',
+        'kiwigrid/k8s-sidecar',
+      ],
+      allowedVersions: '!/^1\\.30\\.11$/',
+    },
+  ],
 }
