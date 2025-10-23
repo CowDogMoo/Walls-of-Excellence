@@ -5,4 +5,5 @@ kind: Kustomization
 namespace: external-secrets
 resources:
   - ./helmrelease.yaml
+  - helmrepository.yaml
   - ./onepassword-connect.secret.sops.yaml

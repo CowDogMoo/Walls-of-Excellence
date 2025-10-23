@@ -11,15 +11,10 @@ metadata:
   name: cert-manager
   namespace: cert-manager
 spec:
-  chart:
-    spec:
-      chart: cert-manager
-      reconcileStrategy: ChartVersion
-      sourceRef:
-        kind: HelmRepository
-        name: jetstack
-        namespace: flux-system
-  interval: 15m
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: cert-manager
   maxHistory: 3
   install:
     remediation:
