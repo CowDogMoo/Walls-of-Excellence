@@ -1,10 +1,14 @@
 # Printer Monitor
 
-A Kubernetes CronJob that monitors Brother printer health and attempts to wake unresponsive printers.
+A Kubernetes CronJob that monitors Brother printer health and attempts to wake
+unresponsive printers.
 
 ## Overview
 
-This service addresses a known issue with Brother MFC-L3770CDW printers that become unresponsive after entering Deep Sleep mode, requiring manual reboots. The monitor performs regular health checks and attempts to wake the printer automatically.
+This service addresses a known issue with Brother MFC-L3770CDW printers that
+become unresponsive after entering Deep Sleep mode, requiring manual reboots.
+The monitor performs regular health checks and attempts to wake the printer
+automatically.
 
 ## Features
 
@@ -16,7 +20,7 @@ This service addresses a known issue with Brother MFC-L3770CDW printers that bec
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐
 │  Kubernetes     │
 │  CronJob        │
@@ -26,7 +30,6 @@ This service addresses a known issue with Brother MFC-L3770CDW printers that bec
          ▼
 ┌─────────────────┐      ┌──────────────────┐
 │  Python         │─────▶│  Brother Printer │
-│  Monitor Script │      │  192.168.30.120  │
 └────────┬────────┘      └──────────────────┘
          │
          ▼
@@ -44,7 +47,7 @@ This service addresses a known issue with Brother MFC-L3770CDW printers that bec
 The monitor expects a 1Password item named **"Brother Printer"** with:
 
 - **password**: Admin password for the printer
-- **url**: Printer web interface URL (e.g., `http://192.168.30.120/`)
+- **url**: Printer web interface URL
 
 ### Environment Variables
 
@@ -86,7 +89,8 @@ Configured via ExternalSecret (`externalsecret.yaml`):
 
 ### Building the Container Image
 
-The container image is built in the [warpgate](https://github.com/CowDogMoo/warpgate) repository:
+The container image is built in the
+[warpgate](https://github.com/CowDogMoo/warpgate) repository:
 
 ```bash
 cd ~/cowdogmoo/warpgate
@@ -136,44 +140,6 @@ kubectl logs -n home-automation -l app=printer-monitor -f
 kubectl create job -n home-automation --from=cronjob/printer-monitor printer-monitor-manual-$(date +%s)
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Belt Unit Error
-
-If logs show "⚠️  Belt Unit Error detected!":
-
-1. Open printer top cover
-2. Remove all drum/toner cartridges
-3. Remove and firmly reseat the belt unit
-4. Reinstall drums and toners
-5. Close cover
-
-#### 2. Printer Not Responding
-
-If logs show "❌ Printer is not responding":
-
-- Verify printer is powered on
-- Check network connectivity: `ping 192.168.30.120`
-- Verify printer IP hasn't changed
-- May require physical power cycle
-
-#### 3. ExternalSecret Not Syncing
-
-```bash
-kubectl get externalsecret -n home-automation printer-monitor-secret
-kubectl describe externalsecret -n home-automation printer-monitor-secret
-```
-
-#### 4. Missing 1Password Item
-
-Ensure the 1Password item exists and has the correct fields:
-
-```bash
-op item get "Brother Printer" --fields url,password
-```
-
 ### Adjusting Check Frequency
 
 Edit `configmap.yaml` and change the CronJob schedule in `cronjob.yaml`:
@@ -188,34 +154,6 @@ schedule: "*/10 * * * *"
 # Every hour
 schedule: "0 * * * *"
 ```
-
-## Known Issues
-
-### Brother MFC-L3770CDW Deep Sleep Issue
-
-- **Symptom**: Printer requires reboot after long idle periods
-- **Root Cause**: Combination of Deep Sleep mode and intermittent Belt Unit sensor issue
-- **Workaround**: This monitor helps, but hardware issue may require:
-  1. Reseating belt unit
-  2. Firmware update
-  3. Contacting Brother support if under warranty
-
-### Recommended Printer Settings
-
-Via printer web interface (http://192.168.30.120/):
-
-1. **Sleep Time**: Set to OFF or 240 minutes
-2. **Auto Power Off**: Set to OFF or 8+ hours
-3. **Deep Sleep**: Cannot be disabled (hardware limitation)
-
-## Contributing
-
-To extend the monitor:
-
-1. Edit `monitor.py` to add new checks
-2. Rebuild container image
-3. Update CronJob to reference new image
-4. Test with manual job trigger
 
 ## Resources
 
