@@ -12,7 +12,7 @@ automatically.
 
 ## Features
 
-- **Regular Health Checks**: Runs every 5 minutes via Kubernetes CronJob
+- **Regular Health Checks**: Runs every 30 minutes via Kubernetes CronJob
 - **Automatic Wake Attempts**: Attempts to wake printer if unresponsive
 - **Belt Unit Error Detection**: Monitors for "No Belt Unit" errors
 - **Secure Configuration**: Uses 1Password via External Secrets for credentials
@@ -24,7 +24,7 @@ automatically.
 ┌─────────────────┐
 │  Kubernetes     │
 │  CronJob        │
-│  (every 5 min)  │
+│  (every 30 min) │
 └────────┬────────┘
          │
          ▼
@@ -53,10 +53,12 @@ The monitor expects a 1Password item named **"Brother Printer"** with:
 
 Configured via ConfigMap (`configmap.yaml`):
 
-- `CHECK_INTERVAL`: Seconds between checks (default: 300)
 - `TIMEOUT`: HTTP request timeout in seconds (default: 10)
 - `MAX_RETRIES`: Maximum retry attempts (default: 3)
 - `RUN_MODE`: Execution mode - `cronjob` or `continuous` (default: cronjob)
+
+Note: `CHECK_INTERVAL` is only needed for `continuous` mode. In `cronjob` mode,
+the schedule is controlled by the CronJob spec.
 
 Configured via ExternalSecret (`externalsecret.yaml`):
 
@@ -142,14 +144,11 @@ kubectl create job -n home-automation --from=cronjob/printer-monitor printer-mon
 
 ### Adjusting Check Frequency
 
-Edit `configmap.yaml` and change the CronJob schedule in `cronjob.yaml`:
+Edit the CronJob schedule in `cronjob.yaml`:
 
 ```yaml
-# Every 5 minutes (default)
-schedule: "*/5 * * * *"
-
-# Every 10 minutes
-schedule: "*/10 * * * *"
+# Every 30 minutes (default)
+schedule: "*/30 * * * *"
 
 # Every hour
 schedule: "0 * * * *"

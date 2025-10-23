@@ -5,8 +5,8 @@ metadata:
   name: printer-monitor
   namespace: home-automation
 spec:
-  # Run every 5 minutes
-  schedule: "*/5 * * * *"
+  # Run every 30 minutes
+  schedule: "*/30 * * * *"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   concurrencyPolicy: Forbid
