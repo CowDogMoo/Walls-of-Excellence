@@ -12,7 +12,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: external-dns
-        namespace: flux-system
+        namespace: networking
   interval: 5m
   maxHistory: 3
   releaseName: external-dns

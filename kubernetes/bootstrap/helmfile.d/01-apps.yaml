@@ -2,6 +2,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/helmfile
 
 helmDefaults:
+  args:
+    - --skip-crds
   cleanupOnFail: true
   wait: true
   waitForJobs: true
