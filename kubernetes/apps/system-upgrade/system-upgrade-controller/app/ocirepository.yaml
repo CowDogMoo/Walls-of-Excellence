@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
   name: system-upgrade-controller
+  namespace: system-upgrade
 spec:
   interval: 15m
   layerSelector:
