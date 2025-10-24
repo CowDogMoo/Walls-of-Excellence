@@ -77,14 +77,17 @@ jobs:
 
       - name: Install Flux CLI
         run: |
-          curl -LO "https://github.com/fluxcd/flux2/releases/download/${{ env.FLUX_VERSION }}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz"
-          tar -xzf flux_${FLUX_VERSION#v}_linux_amd64.tar.gz
+          FLUX_VERSION_NO_V="${{ env.FLUX_VERSION }}"
+          FLUX_VERSION_NO_V="${FLUX_VERSION_NO_V#v}"
+          curl -LO "https://github.com/fluxcd/flux2/releases/download/${{ env.FLUX_VERSION }}/flux_${FLUX_VERSION_NO_V}_linux_amd64.tar.gz"
+          tar -xzf "flux_${FLUX_VERSION_NO_V}_linux_amd64.tar.gz"
           sudo mv flux /usr/local/bin/
           flux version --client
 
       - name: Install Helmfile
         run: |
-          wget -qO- https://github.com/helmfile/helmfile/releases/download/${{ env.HELMFILE_VERSION }}/helmfile_${{ env.HELMFILE_VERSION }}_linux_amd64.tar.gz | tar xvz
+          curl -LO "https://github.com/helmfile/helmfile/releases/download/${{ env.HELMFILE_VERSION }}/helmfile_${{ env.HELMFILE_VERSION }}_linux_amd64.tar.gz"
+          tar -xzf "helmfile_${{ env.HELMFILE_VERSION }}_linux_amd64.tar.gz"
           sudo mv helmfile /usr/local/bin/
           helmfile version
 
