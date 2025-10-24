@@ -86,8 +86,10 @@ jobs:
 
       - name: Install Helmfile
         run: |
-          curl -LO "https://github.com/helmfile/helmfile/releases/download/${{ env.HELMFILE_VERSION }}/helmfile_${{ env.HELMFILE_VERSION }}_linux_amd64.tar.gz"
-          tar -xzf "helmfile_${{ env.HELMFILE_VERSION }}_linux_amd64.tar.gz"
+          HELMFILE_VERSION_NO_V="${{ env.HELMFILE_VERSION }}"
+          HELMFILE_VERSION_NO_V="${HELMFILE_VERSION_NO_V#v}"
+          curl -LO "https://github.com/helmfile/helmfile/releases/download/${{ env.HELMFILE_VERSION }}/helmfile_${HELMFILE_VERSION_NO_V}_linux_amd64.tar.gz"
+          tar -xzf "helmfile_${HELMFILE_VERSION_NO_V}_linux_amd64.tar.gz"
           sudo mv helmfile /usr/local/bin/
           helmfile version
 
