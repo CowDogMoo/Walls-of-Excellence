@@ -103,7 +103,7 @@ jobs:
         run: task -y test:apply
 
       - name: Wait for deployments
-        run: sleep 90
+        run: sleep 180
 
       - name: Check deployment status
         id: check-status
