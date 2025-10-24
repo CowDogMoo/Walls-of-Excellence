@@ -20,7 +20,7 @@ spec:
   decryption:
     provider: sops
     secretRef:
-      name: sops-age
+      name: sops-age-secret
   wait: false
   interval: 30m
   retryInterval: 1m
