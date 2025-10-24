@@ -77,7 +77,9 @@ jobs:
 
       - name: Install Flux CLI
         run: |
-          curl -s https://fluxcd.io/install.sh | sudo bash -s ${{ env.FLUX_VERSION }}
+          curl -LO "https://github.com/fluxcd/flux2/releases/download/${{ env.FLUX_VERSION }}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz"
+          tar -xzf flux_${FLUX_VERSION#v}_linux_amd64.tar.gz
+          sudo mv flux /usr/local/bin/
           flux version --client
 
       - name: Install Helmfile
