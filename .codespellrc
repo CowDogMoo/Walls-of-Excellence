@@ -1,5 +1,5 @@
 [codespell]
-skip = .git,.github,magefiles/go.*,kubernetes/flux/config/*,kubernetes/apps/home-automation/home-assistant/app/helmrelease.yaml,kubernetes/apps/home-automation/music-assistant/app/helmrelease.yaml
+skip = .git,.github,kubernetes/flux/config/*,kubernetes/apps/home-automation/home-assistant/app/helmrelease.yaml,kubernetes/apps/home-automation/music-assistant/app/helmrelease.yaml,kubernetes/apps/external-secrets/external-secrets/app/onepassword-connect.secret.sops.yaml
 ignore-words-list = NotIn,notin
 quiet-level = 3
 check-filenames =
