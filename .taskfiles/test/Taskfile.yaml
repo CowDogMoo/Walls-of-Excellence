@@ -222,7 +222,7 @@ tasks:
             fi
 
             echo "  ✓ Applied: $app_path"
-            kubectl apply -k "$dir" 2>&1 | grep -v "Warning:\|Error from server (BadRequest).*sops" || true
+            kubectl apply -k "$dir" 2>&1 | grep -v "Warning:\|Error from server (BadRequest).*sops\|no matches for kind.*PrometheusRule" || true
             APPLIED_COUNT=$((APPLIED_COUNT + 1))
           fi
         done
