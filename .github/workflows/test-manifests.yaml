@@ -46,7 +46,7 @@ jobs:
           kustomize version
 
       - name: Validate manifests
-        run: task test:validate
+        run: task -y test:validate
 
   test-deployments:
     name: Test Cluster Deployments
@@ -87,13 +87,13 @@ jobs:
           helmfile version
 
       - name: Create test cluster
-        run: task test:create
+        run: task -y test:create
 
       - name: Install Flux in test cluster
-        run: task test:install-flux
+        run: task -y test:install-flux
 
       - name: Apply testable apps
-        run: task test:apply
+        run: task -y test:apply
 
       - name: Wait for deployments
         run: sleep 90
@@ -164,7 +164,7 @@ jobs:
 
       - name: Cleanup test cluster
         if: always()
-        run: task test:destroy --yes || true
+        run: task -y test:destroy --yes || true
 
   test-summary:
     name: Test Summary
