@@ -24,6 +24,7 @@ spec:
         kind: Kustomization
         metadata:
           name: _
+          namespace: flux-system
         spec:
           decryption:
             provider: sops
