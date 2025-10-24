@@ -30,6 +30,23 @@ popd || exit 1
    ```bash
    cat <<EOF > onepassword-connect.secret.yaml
    ---
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: onepassword-connect-secret
+     namespace: external-secrets
+   stringData:
+     1password-credentials.json: |
+       $(cat ~/Downloads/1password-credentials.json)
+     token: $(op item get '1password-access-token-secret' --fields label=credential --reveal)
+   EOF
+   ```
+
+   Alternatively, you can run the following command:
+
+   ```bash
+   cat <<EOF > onepassword-connect.secret.yaml
+   ---
    # yamllint disable
    apiVersion: v1
    kind: Secret
@@ -40,7 +57,7 @@ popd || exit 1
      # Pray to whatever deity you believe in if you don't base64 encode this
      # bad boy twice!!!
      1password-credentials.json: $(cat ~/Downloads/1password-credentials.json | base64 | base64)
-     token: $(op item get 'woe Access Token: k8s' --fields credential | base64)
+     token: $(op item get '1password-access-token-secret' --fields label=credential --reveal)
    EOF
    ```
 
