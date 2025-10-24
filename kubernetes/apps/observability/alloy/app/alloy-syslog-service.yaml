@@ -6,6 +6,7 @@ metadata:
   namespace: observability
 spec:
   type: LoadBalancer
+  loadBalancerIP: 192.168.20.16
   selector:
     app.kubernetes.io/name: alloy
   ports:
