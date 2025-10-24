@@ -1,6 +1,6 @@
 ---
 keys:
-  - &user_flux age130xlnwkp6ncpwd85pfqh69sr79wreazqyqq5w579w8q59d0j35fqsxsnvy
+  - &user_flux age1a3kdeu05ux3tk8hzlwvtz5jfwejpeegwya04adkc98hyaecj9ecs57t7vt
 
 creation_rules:
   - path_regex: kubernetes/.+\.secret(\.sops)?\.ya?ml
