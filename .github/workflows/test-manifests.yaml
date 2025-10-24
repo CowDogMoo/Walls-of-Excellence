@@ -127,8 +127,8 @@ jobs:
           echo "✅ Verifying critical deployments..."
           FAILED=0
 
-          # Check that core apps deployed successfully
-          for app in "external-secrets:external-secrets" "kube-system:nfs-subdir-external-provisioner" "kube-system:reflector" "attack-simulation:atomic-red-team" "attack-simulation:ttpforge" "system-upgrade:system-upgrade-controller"; do
+          # Check that core apps deployed successfully (excluding nfs-subdir which requires external NFS server)
+          for app in "external-secrets:external-secrets" "kube-system:reflector" "attack-simulation:atomic-red-team" "attack-simulation:ttpforge" "system-upgrade:system-upgrade-controller"; do
             namespace=$(echo $app | cut -d: -f1)
             name=$(echo $app | cut -d: -f2)
 
