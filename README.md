@@ -31,6 +31,7 @@ Infrastructure as Code (IaC) and GitOps practices where possible
 ## Table of Contents
 
 - [Developer Environment Setup](docs/dev.md)
+- [Test Environment](docs/test-environment.md)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)

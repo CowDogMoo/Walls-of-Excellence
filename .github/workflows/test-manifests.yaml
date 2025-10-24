@@ -1,0 +1,194 @@
+---
+name: 🧪 Test Kubernetes Manifests
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "kubernetes/**"
+      - ".taskfiles/test/**"
+      - ".github/workflows/test-manifests.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: test-manifests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TASK_VERSION: 3.43.3
+  TASK_X_REMOTE_TASKFILES: 1
+  KIND_VERSION: v0.25.0
+  KUBECTL_VERSION: v1.31.4
+  FLUX_VERSION: v2.4.0
+  HELMFILE_VERSION: v1.0.0-rc.1
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-manifests:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up git repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup go-task
+        run: |
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin v${{ env.TASK_VERSION }}
+          task --version
+
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
+
+      - name: Validate manifests
+        run: task -y test:validate
+
+  test-deployments:
+    name: Test Cluster Deployments
+    runs-on: ubuntu-latest
+    needs: validate-manifests
+    steps:
+      - name: Set up git repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup go-task
+        run: |
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin v${{ env.TASK_VERSION }}
+          task --version
+
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/${{ env.KIND_VERSION }}/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/${{ env.KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Install Flux CLI
+        run: |
+          FLUX_VERSION_NO_V="${{ env.FLUX_VERSION }}"
+          FLUX_VERSION_NO_V="${FLUX_VERSION_NO_V#v}"
+          curl -LO "https://github.com/fluxcd/flux2/releases/download/${{ env.FLUX_VERSION }}/flux_${FLUX_VERSION_NO_V}_linux_amd64.tar.gz"
+          tar -xzf "flux_${FLUX_VERSION_NO_V}_linux_amd64.tar.gz"
+          sudo mv flux /usr/local/bin/
+          flux version --client
+
+      - name: Install Helmfile
+        run: |
+          HELMFILE_VERSION_NO_V="${{ env.HELMFILE_VERSION }}"
+          HELMFILE_VERSION_NO_V="${HELMFILE_VERSION_NO_V#v}"
+          curl -LO "https://github.com/helmfile/helmfile/releases/download/${{ env.HELMFILE_VERSION }}/helmfile_${HELMFILE_VERSION_NO_V}_linux_amd64.tar.gz"
+          tar -xzf "helmfile_${HELMFILE_VERSION_NO_V}_linux_amd64.tar.gz"
+          sudo mv helmfile /usr/local/bin/
+          helmfile version
+
+      - name: Create test cluster
+        run: task -y test:create
+
+      - name: Install Flux in test cluster
+        run: task -y test:install-flux
+
+      - name: Apply testable apps
+        run: task -y test:apply
+
+      - name: Wait for deployments
+        run: sleep 180
+
+      - name: Check deployment status
+        id: check-status
+        run: |
+          echo "📋 Checking HelmRelease status..."
+          kubectl get helmrelease -A
+
+          echo ""
+          echo "📦 Checking HelmRepository status..."
+          kubectl get helmrepository -A
+
+          echo ""
+          echo "🐳 Checking OCIRepository status..."
+          kubectl get ocirepository -A
+
+          echo ""
+          echo "🚀 Checking testable pods..."
+          kubectl get pods -A | grep -E "external-secrets|nfs-subdir|reflector|atomic|ttpforge|system-upgrade" || true
+
+          echo ""
+          echo "✅ Verifying critical deployments..."
+          FAILED=0
+
+          # Check that core apps deployed successfully (excluding nfs-subdir which requires external NFS server)
+          for app in "external-secrets:external-secrets" "kube-system:reflector" "attack-simulation:atomic-red-team" "attack-simulation:ttpforge" "system-upgrade:system-upgrade-controller"; do
+            namespace=$(echo $app | cut -d: -f1)
+            name=$(echo $app | cut -d: -f2)
+
+            status=$(kubectl get helmrelease $name -n $namespace -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "NotFound")
+
+            if [ "$status" != "True" ]; then
+              echo "❌ FAILED: $namespace/$name has status: $status"
+              FAILED=1
+            else
+              echo "✅ SUCCESS: $namespace/$name deployed"
+            fi
+          done
+
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "❌ Some deployments failed. Check logs above."
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All testable apps deployed successfully!"
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Failed HelmReleases ==="
+          kubectl get helmrelease -A | grep False || true
+
+          echo ""
+          echo "=== Failed Pods ==="
+          kubectl get pods -A | grep -v Running | grep -v Completed || true
+
+          echo ""
+          echo "=== Flux Helm Controller Logs ==="
+          kubectl logs -n flux-system -l app=helm-controller --tail=100 || true
+
+          echo ""
+          echo "=== Flux Source Controller Logs ==="
+          kubectl logs -n flux-system -l app=source-controller --tail=100 || true
+
+      - name: Cleanup test cluster
+        if: always()
+        run: task -y test:destroy --yes || true
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [validate-manifests, test-deployments]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.validate-manifests.result }}" != "success" ]; then
+            echo "❌ Manifest validation failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.test-deployments.result }}" != "success" ]; then
+            echo "❌ Deployment tests failed"
+            exit 1
+          fi
+
+          echo "✅ All tests passed!"

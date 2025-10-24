@@ -2,9 +2,9 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: k8s-at-home
-  namespace: flux-system
+  name: emberstack
+  namespace: kube-system
 spec:
   interval: 10m
-  url: https://k8s-at-home.com/charts/
+  url: https://emberstack.github.io/helm-charts
   timeout: 3m

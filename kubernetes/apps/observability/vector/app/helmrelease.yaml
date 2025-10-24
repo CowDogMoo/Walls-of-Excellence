@@ -14,7 +14,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: vector
-        namespace: flux-system
+        namespace: observability
   install:
     remediation:
       retries: -1

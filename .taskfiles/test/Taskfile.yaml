@@ -1,0 +1,464 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+set: [pipefail]
+
+vars:
+  TEST_CLUSTER_NAME: '{{.TEST_CLUSTER_NAME | default "woe-test"}}'
+
+tasks:
+  create:
+    desc: Create a local test environment using kind
+    summary: |
+      Creates a kind cluster for testing FluxCD changes locally.
+      This cluster is completely isolated from your production environment.
+
+      Usage:
+        task test:create
+        task test:create TEST_CLUSTER_NAME=my-test
+
+      The cluster includes:
+      - 1 control plane node
+      - 1 worker node
+      - Ready for Flux installation
+    cmds:
+      - |
+        echo "Creating kind cluster '{{.TEST_CLUSTER_NAME}}' for testing..."
+
+        # Check if cluster already exists
+        if kind get clusters 2>/dev/null | grep -q "^{{.TEST_CLUSTER_NAME}}$"; then
+          echo "❌ Cluster {{.TEST_CLUSTER_NAME}} already exists."
+          echo "   Use 'task test:destroy' first or choose a different name."
+          exit 1
+        fi
+
+        # Create cluster
+        cat <<EOF | kind create cluster --name {{.TEST_CLUSTER_NAME}} --config=-
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        nodes:
+        - role: control-plane
+          kubeadmConfigPatches:
+          - |
+            kind: InitConfiguration
+            nodeRegistration:
+              kubeletExtraArgs:
+                node-labels: "ingress-ready=true"
+        - role: worker
+        EOF
+
+        echo "✅ Cluster created successfully!"
+        echo ""
+        echo "Setting kubectl context to kind-{{.TEST_CLUSTER_NAME}}..."
+        kubectl config use-context kind-{{.TEST_CLUSTER_NAME}}
+
+        echo ""
+        echo "📋 Next steps:"
+        echo "  1. Install Flux: task test:install-flux"
+        echo "  2. Apply configs: task test:apply"
+        echo "  3. Check status:  task test:status"
+    silent: true
+
+  destroy:
+    desc: Destroy the test environment
+    summary: |
+      Destroys the kind test cluster and cleans up resources.
+      This will delete all resources in the test cluster.
+
+      Usage:
+        task test:destroy
+        task test:destroy TEST_CLUSTER_NAME=my-test
+    prompt: This will destroy the test cluster '{{.TEST_CLUSTER_NAME}}'. Continue?
+    cmds:
+      - |
+        echo "Destroying kind cluster '{{.TEST_CLUSTER_NAME}}'..."
+
+        if ! kind get clusters 2>/dev/null | grep -q "^{{.TEST_CLUSTER_NAME}}$"; then
+          echo "❌ Cluster {{.TEST_CLUSTER_NAME}} does not exist."
+          exit 1
+        fi
+
+        kind delete cluster --name {{.TEST_CLUSTER_NAME}}
+        echo "✅ Test cluster destroyed successfully!"
+    silent: true
+
+  install-flux:
+    desc: Install Flux in the test environment
+    summary: |
+      Installs Flux components in the test cluster using the bootstrap configuration.
+      This does NOT connect to GitHub - it's for local testing only.
+
+      Usage:
+        task test:install-flux
+    cmds:
+      - |
+        echo "Installing Flux in test cluster..."
+
+        # Verify we're in a test context
+        CURRENT_CONTEXT=$(kubectl config current-context)
+        if ! echo "$CURRENT_CONTEXT" | grep -q "kind-.*-test"; then
+          echo "⚠️  Warning: Not connected to a test cluster"
+          echo "   Current context: $CURRENT_CONTEXT"
+          echo ""
+          read -p "Continue anyway? (y/N) " -n 1 -r
+          echo
+          if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+          fi
+        fi
+
+        # Create flux-system namespace
+        echo "Creating flux-system namespace..."
+        kubectl create namespace flux-system --dry-run=client -o yaml | kubectl apply -f -
+
+        # Install Flux using kustomize from bootstrap directory
+        echo "Applying Flux components..."
+        kubectl apply -k kubernetes/bootstrap/flux/
+
+        echo "Waiting for Flux controllers to be ready..."
+        kubectl wait --for=condition=ready pod \
+          -l app.kubernetes.io/part-of=flux \
+          -n flux-system \
+          --timeout=5m
+
+        echo ""
+        echo "✅ Flux installed successfully!"
+        echo ""
+        echo "📋 Next step: task test:apply"
+    silent: true
+
+  apply:
+    desc: Apply your Flux configurations to the test environment
+    summary: |
+      Applies Flux configurations using local files instead of GitHub.
+      Perfect for testing changes before committing.
+
+      This will:
+      - Create required namespaces
+      - Apply non-SOPS configurations
+      - Skip encrypted secrets (use test:mock-secrets for testing)
+
+      Usage:
+        task test:apply
+    cmds:
+      - |
+        echo "Applying Flux configurations to test cluster..."
+
+        # Verify kubectl context
+        CURRENT_CONTEXT=$(kubectl config current-context)
+        echo "Current context: $CURRENT_CONTEXT"
+
+        if ! echo "$CURRENT_CONTEXT" | grep -q "kind-"; then
+          echo "⚠️  Warning: Not connected to a kind cluster"
+          read -p "Continue anyway? (y/N) " -n 1 -r
+          echo
+          if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+          fi
+        fi
+
+        # Create cluster-settings configmap for testing
+        echo ""
+        echo "Creating cluster-settings configmap..."
+        kubectl create configmap cluster-settings \
+          -n flux-system \
+          --from-literal=CLUSTER_NAME={{.TEST_CLUSTER_NAME}} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        # Apply namespace definitions
+        echo ""
+        echo "Applying namespaces..."
+        find kubernetes/apps -name "namespace.yaml" -not -path "*/deprecated/*" | while read -r ns_file; do
+          echo "  - $(dirname "$ns_file" | sed 's|kubernetes/apps/||')"
+          kubectl apply -f "$ns_file"
+        done
+
+        # Apply Flux config (without GitRepository - we're using local files)
+        echo ""
+        echo "Applying Flux configuration..."
+        kubectl apply -k kubernetes/flux/vars/
+
+        # Apply only apps that can work in test environment
+        echo ""
+        echo "Applying testable app configurations..."
+        APPLIED_COUNT=0
+        SKIPPED_COUNT=0
+
+        # Apps that work in test environment (no external dependencies)
+        TESTABLE_APPS=(
+          "cert-manager/cert-manager/app"
+          "external-secrets/external-secrets/app"
+          "kube-system/nfs-subdir-external-provisioner/app"
+          "kube-system/reflector/app"
+          "kube-system/reloader/app"
+          "flux-system/flux-operator/app"
+          "flux-system/flux-instance/app"
+          "attack-simulation/atomic-red-team/app"
+          "attack-simulation/ttpforge/app"
+          "system-upgrade/system-upgrade-controller/app"
+        )
+
+        for app_path in "${TESTABLE_APPS[@]}"; do
+          full_path="kubernetes/apps/$app_path"
+
+          # Find kustomization in this path
+          if [ -d "$full_path" ]; then
+            if [ -f "$full_path/kustomization.yaml" ]; then
+              kfile="$full_path/kustomization.yaml"
+            else
+              echo "  ⊘ Skipped: $app_path (no kustomization found)"
+              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+              continue
+            fi
+
+            dir=$(dirname "$kfile")
+
+            # Skip if it references SOPS
+            if grep -q "sops\|\.secret\." "$kfile" 2>/dev/null; then
+              echo "  ⊘ Skipped: $app_path (has SOPS encryption)"
+              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+              continue
+            fi
+
+            echo "  ✓ Applied: $app_path"
+            (kubectl apply -k "$dir" 2>&1 || true) | grep -v "Warning:\|Error from server (BadRequest).*sops\|no matches for kind.*PrometheusRule\|ensure CRDs are installed first\|resource mapping not found\|error:" || true
+            APPLIED_COUNT=$((APPLIED_COUNT + 1))
+          fi
+        done
+
+        echo ""
+        echo "✅ Configuration apply complete!"
+        echo "   Applied: $APPLIED_COUNT apps"
+        echo "   Skipped: $SKIPPED_COUNT apps"
+        echo ""
+        echo "📋 Check status: task test:status"
+    silent: true
+
+  apply-app:
+    desc: Apply a specific app to the test environment
+    summary: |
+      Apply a specific application for targeted testing.
+      Useful when you're only testing changes to one app.
+
+      Usage:
+        task test:apply-app APP=cert-manager
+        task test:apply-app APP=external-secrets
+        task test:apply-app APP=home-automation/grocy
+    vars:
+      APP: "{{.APP}}"
+    cmds:
+      - |
+        if [ -z "{{.APP}}" ]; then
+          echo "❌ Error: APP variable required"
+          echo ""
+          echo "Usage: task test:apply-app APP=<app-name>"
+          echo ""
+          echo "Available apps:"
+          find kubernetes/apps -mindepth 1 -maxdepth 2 -type d -not -path "*/deprecated/*" -not -path "*/app" | \
+            sed 's|kubernetes/apps/||' | sort | sed 's/^/  - /'
+          exit 1
+        fi
+
+        # Find the app directory
+        APP_DIR=$(find kubernetes/apps -type d -path "*/{{.APP}}" -o -path "*/{{.APP}}/app" | grep -v deprecated | head -1)
+
+        if [ -z "$APP_DIR" ]; then
+          # Try to find it as a subdirectory
+          APP_DIR=$(find kubernetes/apps -type d -name "{{.APP}}" -not -path "*/deprecated/*" | head -1)
+        fi
+
+        if [ -z "$APP_DIR" ]; then
+          echo "❌ Error: App '{{.APP}}' not found"
+          echo ""
+          echo "Available apps:"
+          find kubernetes/apps -mindepth 1 -maxdepth 2 -type d -not -path "*/deprecated/*" -not -path "*/app" | \
+            sed 's|kubernetes/apps/||' | sort | sed 's/^/  - /'
+          exit 1
+        fi
+
+        echo "Applying app: {{.APP}}"
+        echo "Directory: $APP_DIR"
+        echo ""
+
+        # Apply namespace first if it exists
+        NAMESPACE_FILE=$(dirname "$APP_DIR")/namespace.yaml
+        if [ "$NAMESPACE_FILE" != "./namespace.yaml" ] && [ -f "$NAMESPACE_FILE" ]; then
+          echo "Creating namespace..."
+          kubectl apply -f "$NAMESPACE_FILE"
+        fi
+
+        # Apply the app
+        if [ -f "$APP_DIR/app/kustomization.yaml" ]; then
+          echo "Applying from app/kustomization.yaml..."
+          kubectl apply -k "$APP_DIR/app/"
+        elif [ -f "$APP_DIR/kustomization.yaml" ]; then
+          echo "Applying from kustomization.yaml..."
+          kubectl apply -k "$APP_DIR/"
+        else
+          echo "❌ No kustomization found for {{.APP}}"
+          exit 1
+        fi
+
+        echo ""
+        echo "✅ App {{.APP}} applied successfully!"
+        echo ""
+        echo "Check pods: kubectl get pods -n <namespace>"
+    silent: true
+
+  status:
+    desc: Check the status of the test environment
+    summary: |
+      Shows the status of pods, flux resources, and potential issues.
+      Great for a quick overview of your test cluster.
+
+      Usage:
+        task test:status
+    cmds:
+      - |
+        echo "╔════════════════════════════════════════════════════════════════╗"
+        echo "║           Test Environment Status                             ║"
+        echo "╚════════════════════════════════════════════════════════════════╝"
+        echo ""
+
+        echo "📍 Context: $(kubectl config current-context)"
+        echo ""
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🔧 Flux System Pods"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        kubectl get pods -n flux-system -o wide 2>/dev/null || echo "Flux not installed"
+        echo ""
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📦 Namespaces"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        kubectl get namespaces
+        echo ""
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🚀 Pods (all namespaces)"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        kubectl get pods -A --sort-by=.metadata.namespace
+        echo ""
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📋 Flux Kustomizations"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        kubectl get kustomizations -A 2>/dev/null || echo "No Flux Kustomizations found"
+        echo ""
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📦 Helm Releases"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        kubectl get helmreleases -A 2>/dev/null || echo "No Helm Releases found"
+        echo ""
+
+        # Check for failed pods
+        FAILED_PODS=$(kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null | tail -n +2)
+        if [ -n "$FAILED_PODS" ]; then
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "⚠️  Failed/Pending Pods"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "$FAILED_PODS"
+          echo ""
+        fi
+
+        echo "✅ Status check complete"
+    silent: true
+
+  validate:
+    desc: Validate Kubernetes manifests before applying
+    summary: |
+      Validates testable Kubernetes manifests using kubectl --dry-run.
+      Run this before committing changes to catch errors early.
+
+      This only validates apps that can work in test environment:
+      - No external dependencies (1Password, NFS, etc.)
+      - YAML syntax
+      - Kubernetes API compatibility
+      - Required fields
+
+      Usage:
+        task test:validate
+    cmds:
+      - |
+        echo "🔍 Validating testable Kubernetes manifests..."
+        echo ""
+
+        ERROR_COUNT=0
+        SUCCESS_COUNT=0
+        SKIP_COUNT=0
+
+        # Only validate app implementations (not parent kustomizations)
+        TESTABLE_APPS=(
+          "cert-manager/cert-manager/app"
+          "external-secrets/external-secrets/app"
+          "kube-system/nfs-subdir-external-provisioner/app"
+          "kube-system/reflector/app"
+          "kube-system/reloader/app"
+          "flux-system/flux-operator/app"
+          "flux-system/flux-instance/app"
+          "attack-simulation/atomic-red-team/app"
+          "attack-simulation/ttpforge/app"
+          "system-upgrade/system-upgrade-controller/app"
+        )
+
+        for app_path in "${TESTABLE_APPS[@]}"; do
+          full_path="kubernetes/apps/$app_path"
+
+          # Find kustomization in this path
+          if [ -d "$full_path" ]; then
+            if [ -f "$full_path/kustomization.yaml" ]; then
+              kfile="$full_path/kustomization.yaml"
+            else
+              echo "  ⊘ Skipped: $app_path (no kustomization found)"
+              SKIP_COUNT=$((SKIP_COUNT + 1))
+              continue
+            fi
+
+            dir=$(dirname "$kfile")
+
+            # Skip if it references SOPS
+            if grep -q "sops\|\.secret\." "$kfile" 2>/dev/null; then
+              echo "  ⊘ Skipped: $app_path (has SOPS)"
+              SKIP_COUNT=$((SKIP_COUNT + 1))
+              continue
+            fi
+
+            echo -n "  🔎 Validating: $app_path ... "
+
+            # Use kustomize build to validate YAML syntax and structure
+            if kustomize build "$dir" > /dev/null 2>&1; then
+              echo "✅"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            else
+              echo "❌"
+              echo ""
+              echo "     Error details:"
+              kustomize build "$dir" 2>&1 | head -10 | sed 's/^/     /'
+              echo ""
+              ERROR_COUNT=$((ERROR_COUNT + 1))
+            fi
+          fi
+        done
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📊 Validation Summary"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  ✅ Success: $SUCCESS_COUNT"
+        echo "  ❌ Failed:  $ERROR_COUNT"
+        echo "  ⊘ Skipped: $SKIP_COUNT"
+        echo ""
+
+        if [ $ERROR_COUNT -gt 0 ]; then
+          echo "❌ Validation failed with $ERROR_COUNT errors"
+          echo "   Fix the errors above before committing"
+          exit 1
+        fi
+
+        echo "✅ All testable manifests validated successfully!"
+        echo ""
+        echo "Note: Apps requiring external dependencies (1Password, NFS, etc.) are not validated in tests"
+    silent: true

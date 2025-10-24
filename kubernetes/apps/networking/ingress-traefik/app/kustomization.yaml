@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: networking
 resources:
   - ./helmrelease.yaml
+  - helmrepository.yaml
   - ./authentik-middleware.yaml
   - ./ingressroute.yaml
 labels:

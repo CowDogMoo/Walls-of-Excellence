@@ -1,87 +1,81 @@
 # Bootstrap Instructions
 
-Navigate to the bootstrap directory (`kubernetes/bootstrap`) and do the following:
+Bootstrap configuration for the Kubernetes cluster using Taskfile + Helmfile.
 
-1. Install flux
+## Prerequisites
 
-   ```bash
-   kubectl apply -k ./flux
-   ```
+- `kubectl`, `task`, `helmfile`, `helm`, `kustomize`, `yq`
+- `op` - 1Password CLI (authenticated)
 
-1. Add age key to the cluster
+## Directory Structure
 
-   ```bash
-   export SOPS_AGE_KEY_FILE='/path/to/generated/keys/file/from/age/keys.txt'
-   sops -d flux/age-key.secret.sops.yaml | kubectl apply -f -
-   ```
+```text
+bootstrap/
+├── README.md                          # This file
+├── helmfile.d/                        # Helmfile configurations
+│   ├── 00-crds.yaml                  # CRD extraction from charts
+│   ├── 01-apps.yaml                  # Core bootstrap applications
+│   └── templates/
+│       └── values.yaml.gotmpl        # Values template (reads from apps/)
+└── resources.yaml.j2                 # Bootstrap resources with 1Password refs
+```
 
-1. Start the flux bootstrap process
+## Bootstrap Process
 
-   ```bash
-   kubectl apply --server-side -k ../flux/config
-   kubectl apply -k ../flux/config
-   ```
+Run the complete bootstrap:
 
-1. Create the cluster settings ConfigMap and configure sops
+```bash
+task bootstrap
+```
 
-   ```bash
-   kubectl apply --server-side -f ../flux/apps.yaml
-   kubectl apply -f ../flux/apps.yaml
-   kubectl apply -k ../flux/vars
-   ```
+Or run individual stages:
 
-1. Install the repositories and sync
+- `task bootstrap:wait` - Wait for nodes
+- `task bootstrap:namespaces` - Apply namespaces
+- `task bootstrap:resources` - Apply secrets (1Password injection)
+- `task bootstrap:crds` - Apply CRDs
+- `task bootstrap:apps` - Deploy core apps (cert-manager, external-secrets)
 
-   ```bash
-   kubectl apply -k ../flux/repositories
-   ```
+## 1Password Setup
 
-1. Add all of the k8s apps to the cluster:
+Required secrets in the `kubernetes` vault:
 
-   ```bash
-   cd ../apps
-   find . -type f -name "kustomization.yaml" -execdir kubectl apply -k . \;
-   ```
+- `1password`: `OP_CREDENTIALS_JSON`, `OP_CONNECT_TOKEN`
+- `sops`: `SOPS_PRIVATE_KEY`
+
+## Values
+
+Bootstrap values are sourced from `kubernetes/apps/*/app/helmrelease.yaml`
+to ensure consistency with Flux-managed deployments.
+
+## Post-Bootstrap
+
+After bootstrap, initialize Flux to manage remaining applications. See main
+repository documentation for Flux setup.
+
+## Troubleshooting
+
+**CRD failures**: Check CRD generation output with
+`helmfile -f kubernetes/bootstrap/helmfile.d/00-crds.yaml template -q`
+
+**1Password auth**: `op whoami`
+
+**Missing tools**: Tasks will fail with clear error messages
+
+## Maintenance
+
+Chart versions are in `helmfile.d/*.yaml`. Keep synced with
+`kubernetes/apps/` HelmRelease definitions.
 
 ---
 
-## Initial Creation of the age key
+## First-Time Setup
 
-1. Create the `age` key:
+For new cluster setup, create SOPS age key:
 
-   ```bash
-   cd flux
-   age-keygen -o keys.txt
-   ```
+1. Generate: `age-keygen -o keys.txt`
+2. Store private key in 1Password (`kubernetes/sops/SOPS_PRIVATE_KEY`)
+3. Add public key to `.sops.yaml`
+4. Create encrypted secret in `kubernetes/bootstrap/flux/age-key.secret.sops.yaml`
 
-1. Create `age-key.secret.yaml` with the following content:
-
-   ```bash
-   cat <<EOF > age-key.secret.yaml
-   ---
-   # yamllint disable
-   apiVersion: v1
-   kind: Secret
-   metadata:
-       name: sops-age
-       namespace: flux-system
-   stringData:
-     age.agekey: $(cat keys.txt | grep -i "AGE-SECRET-KEY" | base64)
-   EOF
-   ```
-
-1. Create the `age-key.secret.sops.yaml` file by running the
-   following command:
-
-   ```bash
-   AGE_PUBLIC_KEY=age....
-   sops --encrypt \
-   --age $AGE_PUBLIC_KEY \
-   age-key.secret.yaml > age-key.secret.sops.yaml
-   ```
-
-1. Delete the `age-key.secret.yaml` file:
-
-   ```bash
-   rm age-key.secret.yaml
-   ```
+See repository setup documentation for detailed instructions.

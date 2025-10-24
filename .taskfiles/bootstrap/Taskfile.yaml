@@ -1,0 +1,114 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+set: [pipefail]
+
+vars:
+  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
+  BOOTSTRAP_DIR: "{{.KUBERNETES_DIR}}/bootstrap"
+
+tasks:
+  default:
+    desc: Run complete bootstrap process
+    summary: |
+      Runs the complete k8s bootstrap process in order:
+      1. Wait for nodes to be ready
+      2. Apply namespaces
+      3. Apply bootstrap resources (secrets)
+      4. Apply CRDs via helmfile
+      5. Apply core apps via helmfile
+    cmds:
+      - task: wait
+      - task: namespaces
+      - task: resources
+      - task: crds
+      - task: apps
+    silent: true
+
+  wait:
+    deps: [":k8s:check-kubectl"]
+    desc: Wait for k8s nodes to be ready
+    cmds:
+      - |
+        echo "Waiting for nodes to be ready..."
+        if ! kubectl wait nodes --for=condition=Ready=True --all --timeout=10s &>/dev/null; then
+          until kubectl wait nodes --for=condition=Ready=True --all --timeout=10s &>/dev/null; do
+            echo "Nodes not ready, waiting for nodes to be available. Retrying in 5 seconds..."
+            sleep 5
+          done
+        fi
+        echo "All nodes are ready"
+    silent: true
+
+  namespaces:
+    deps: [":k8s:check-kubectl"]
+    desc: Apply Kubernetes namespaces
+    cmds:
+      - |
+        echo "Applying namespaces..."
+        find "{{.KUBERNETES_DIR}}/apps" -mindepth 1 -maxdepth 1 -type d | while IFS= read -r dir; do
+          dir_name=$(basename "$dir")
+          echo "Processing namespace for $dir_name"
+
+          # Extract namespace manifests
+          NS_YAML=$(kustomize build "$dir" | yq ea -e 'select(.kind == "Namespace")' 2>/dev/null || true)
+
+          # Apply if found
+          if [ -n "$NS_YAML" ]; then
+            echo "$NS_YAML" | kubectl apply --server-side --field-manager bootstrap --force-conflicts -f - || {
+              echo "Error: Failed to apply namespace for $dir_name"
+              exit 1
+            }
+          fi
+        done
+        echo "Namespaces applied successfully"
+    silent: true
+
+  resources:
+    deps: [":k8s:check-kubectl"]
+    desc: Apply Kubernetes resources from template
+    summary: |
+      Applies bootstrap resources (secrets) using 1Password CLI injection
+      Requires: op CLI tool to be installed and authenticated
+    cmds:
+      - |
+        echo "Applying bootstrap resources..."
+        if ! op inject -i "{{.BOOTSTRAP_DIR}}/resources.yaml.j2" | kubectl apply --server-side --field-manager bootstrap --force-conflicts -f -; then
+          echo "Error: Failed to apply resources"
+          exit 1
+        fi
+        echo "Resources applied successfully"
+    silent: true
+
+  crds:
+    deps: [":k8s:check-kubectl", ":k8s:helm:check-helm"]
+    desc: Apply Helmfile CRDs
+    summary: |
+      Extracts and applies CRDs from Helm charts using helmfile
+      CRDs are applied before the actual apps to ensure they exist
+    cmds:
+      - |
+        echo "Applying CRDs..."
+        if ! helmfile -f "{{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml" template -q | kubectl apply --server-side --field-manager bootstrap --force-conflicts -f -; then
+          echo "Error: Failed to apply CRDs"
+          exit 1
+        fi
+        echo "CRDs applied successfully"
+    silent: true
+
+  apps:
+    deps: [":k8s:check-kubectl", ":k8s:helm:check-helm"]
+    desc: Apply Helmfile Apps
+    summary: |
+      Syncs core bootstrap apps via helmfile
+      These are the foundational apps needed before Flux takes over
+    cmds:
+      - |
+        echo "Syncing helmfile apps..."
+        if ! helmfile -f "{{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml" sync --hide-notes; then
+          echo "Error: Failed to sync helmfile"
+          exit 1
+        fi
+        echo "Helmfile apps synced successfully"
+    silent: true
