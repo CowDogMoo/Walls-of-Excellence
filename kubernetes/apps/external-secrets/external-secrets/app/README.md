@@ -1,164 +1,180 @@
-# Managing sops external-secrets secret
+# Managing 1Password Connect Secret
 
-## Decrypt and Apply to Kubernetes
+The 1Password Connect secret is managed through the bootstrap process using
+1Password CLI injection, not SOPS encryption.
 
-```bash
-pushd kubernetes/apps/external-secrets/external-secrets/app ||  exit 1
-sops -d onepassword-connect.secret.sops.yaml | kubectl apply -f -
-popd || exit 1
-```
+## Bootstrap Secret Management
 
-## Create the 1password-connect.secret.yaml file
-
-1. You will need to create a dedicated vault using the
-   1password web interface.
-
-1. You will also need to create a custom connect server
-   after, which will provide you with the `1password-credentials.json` file
-   and the `token` to use with the connect server.
-
-1. Retrieve your public key used to bootstrap the cluster. If using 1password,
-   you can use the cli to get this information:
-
-   ```bash
-   op item get 'woe age key' --fields publicKey
-   ```
-
-1. Create `onepassword-connect.secret.yaml` - you will need to replace
-   some of these values depending on your situation:
-
-   ```bash
-   cat <<EOF > onepassword-connect.secret.yaml
-   ---
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: onepassword-connect-secret
-     namespace: external-secrets
-   stringData:
-     1password-credentials.json: |
-       $(cat ~/Downloads/1password-credentials.json)
-     token: $(op item get '1password-access-token-secret' --fields label=credential --reveal)
-   EOF
-   ```
-
-   Alternatively, you can run the following command:
-
-   ```bash
-   cat <<EOF > onepassword-connect.secret.yaml
-   ---
-   # yamllint disable
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: onepassword-connect-secret
-     namespace: external-secrets
-   stringData:
-     # Pray to whatever deity you believe in if you don't base64 encode this
-     # bad boy twice!!!
-     1password-credentials.json: $(cat ~/Downloads/1password-credentials.json | base64 | base64)
-     token: $(op item get '1password-access-token-secret' --fields label=credential --reveal)
-   EOF
-   ```
-
-1. Create the `onepassword-connect.secret.sops.yaml` file by running the
-   following command:
-
-   ```bash
-   AGE_PUBLIC_KEY=age....
-   sops --encrypt \
-   --age $AGE_PUBLIC_KEY \
-   onepassword-connect.secret.yaml > onepassword-connect.secret.sops.yaml
-   ```
-
-1. Delete the `onepassword-connect.secret.yaml` file:
-
-   ```bash
-   rm onepassword-connect.secret.yaml
-   ```
-
----
-
-## Miscellaneous Notes and Tidbits
-
-### Troubleshooting
-
-- **Key File Location**: If `sops` cannot locate the `age` key file, set the
-  `SOPS_AGE_KEY_FILE` environment variable to its path.
-
-- **Errors in Decryption**: Ensure the correct decryption key is available and
-  accessible. The file must be encrypted with `sops` and the same keys used for
-  encryption.
-
-### Editing Encrypted Files
-
-To directly edit an encrypted file, use:
-
-```bash
-sops onepassword-connect.secret.sops.yaml
-```
-
-This opens the file in an editor, allowing for viewing and editing the
-decrypted content. Upon saving and exiting, `sops` re-encrypts the file.
-
-### Decrypting encrypted files
-
-To decrypt a sops encrypted file, run the following commands:
-
-```bash
-touch keys.txt
-# populate keys.txt with the age private key
-export SOPS_AGE_KEY_FILE=$(pwd)/keys.txt
-sops -d --output onepassword-connect.secret.yaml onepassword-connect.secret.sops.yaml
-```
-
-At this point, we should have the decrypted `onepassword-connect.yaml`.
-
-Run this command to set the 1p connect secret:
-
-```bash
-kubectl apply -f onepassword-connect.secret.yaml
-```
-
-Be sure to clean it up after you're done:
-
-```bash
-rm onepassword-connect.secret.yaml
-```
-
-### Pre-encryption 1password-connect.secret.yaml example
+The secret is defined in `kubernetes/bootstrap/resources.yaml.j2` and applied
+during the bootstrap process:
 
 ```yaml
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: onepassword-connect-secret
+  name: onepassword-secret
   namespace: external-secrets
 stringData:
-  1password-credentials.json: |
-    {
-      "verifier": {
-        "salt": "...",
-        "localHash": "...",
-      },
-      "encCredentials": {
-        "kid": "...",
-        ...
-      },
-      "version": "2",
-      "deviceUuid": "...",
-      "uniqueKey": {
-        "alg": "A256GCM",
-        "ext": true,
-        "k": "...",
-        "key_ops": [
-          "encrypt",
-          "decrypt"
-        ],
-        "kty": "...",
-        "kid": "..."
-      }
-    }
-  token: ey...
+  1password-credentials.json: op://automation/onepassword-connect-secret/1password-credentials.json
+  token: op://automation/1password-access-token-secret/credential
 ```
+
+## Prerequisites
+
+1. **1Password Vault**: Create a dedicated vault named "automation" using the
+   1Password web interface.
+
+2. **1Password Connect Server**: Create a custom connect server in 1Password,
+   which provides:
+   - `1password-credentials.json` file
+   - Connect token for API access
+
+## Setting Up 1Password Items
+
+### 1. Store the Connect Token
+
+Create or update the 1Password item for the connect token:
+
+```bash
+op item create \
+  --category=password \
+  --title='1password-access-token-secret' \
+  --vault=automation \
+  credential='<your-connect-token>'
+```
+
+### 2. Store the Credentials File (Base64-encoded)
+
+**Important**: The credentials file must be base64-encoded before storing in
+1Password to prevent double-decoding issues with the Connect API.
+
+```bash
+# Base64-encode the credentials file in place (without line wraps)
+base64 < ~/Downloads/1password-credentials.json | tr -d '\n' > ~/Downloads/1password-credentials.json
+
+# Create the 1Password item with the encoded credentials
+op item create \
+  --category=document \
+  --title='onepassword-connect-secret' \
+  --vault=automation \
+  1password-credentials.json="$(cat ~/Downloads/1password-credentials.json)"
+```
+
+Or update an existing item:
+
+```bash
+# Base64-encode and copy to clipboard
+base64 < ~/Downloads/1password-credentials.json | tr -d '\n' | pbcopy
+
+# Update the item using 1Password app or CLI
+op item edit onepassword-connect-secret \
+  --vault=automation \
+  1password-credentials.json="$(pbpaste)"
+```
+
+## Applying the Secret
+
+The secret is automatically created during the bootstrap process:
+
+```bash
+task bootstrap:resources
+```
+
+This command:
+
+1. Injects values from 1Password using `op inject`
+2. Applies the secret to the cluster
+
+## Manual Secret Application
+
+If you need to manually apply the secret:
+
+```bash
+# Generate the secret with injected values
+op inject -i kubernetes/bootstrap/resources.yaml.j2 | kubectl apply -f -
+```
+
+## Verifying the Secret
+
+Check that the secret exists and has the correct keys:
+
+```bash
+kubectl get secret -n external-secrets onepassword-secret
+kubectl describe secret -n external-secrets onepassword-secret
+```
+
+Verify the ClusterSecretStore is ready:
+
+```bash
+kubectl get clustersecretstore onepassword-connect
+```
+
+Should show:
+
+```text
+NAME                  AGE   STATUS   CAPABILITIES   READY
+onepassword-connect   ...   Valid    ReadWrite      True
+```
+
+## Troubleshooting
+
+### ClusterSecretStore Not Ready
+
+If the ClusterSecretStore shows `InvalidProviderConfig`:
+
+1. Check the onepassword pods are running:
+
+   ```bash
+   kubectl get pods -n external-secrets -l app.kubernetes.io/name=onepassword
+   ```
+
+2. Check the logs for errors:
+
+   ```bash
+   kubectl logs -n external-secrets -l app.kubernetes.io/name=onepassword -c sync --tail=50
+   kubectl logs -n external-secrets -l app.kubernetes.io/name=onepassword -c api --tail=50
+   ```
+
+3. Verify the secret has the correct keys:
+
+   ```bash
+   kubectl get secret -n external-secrets onepassword-secret -o jsonpath='{.data}' | jq 'keys'
+   ```
+
+### Base64 Encoding Errors
+
+If you see "illegal base64 data at input byte X" errors in the logs:
+
+The credentials file in 1Password must be **base64-encoded**. This is because:
+
+1. Kubernetes automatically base64-encodes secret data
+2. Kubernetes automatically base64-decodes when mounting as environment
+   variable
+3. 1Password Connect expects the credentials to still be base64-encoded so it
+   can decode them
+
+Re-encode the credentials file following the steps in "Store the Credentials
+File" above.
+
+### ExternalSecret Not Syncing
+
+If ExternalSecrets show `SecretSyncedError`:
+
+1. Verify the 1Password item exists in the correct vault:
+
+   ```bash
+   op item list --vault=automation
+   ```
+
+2. Check the ExternalSecret definition matches the 1Password item structure:
+
+   ```bash
+   kubectl get externalsecret <name> -n <namespace> -o yaml
+   ```
+
+3. Check the external-secrets controller logs:
+
+   ```bash
+   kubectl logs -n external-secrets -l app.kubernetes.io/name=external-secrets --tail=50
+   ```
