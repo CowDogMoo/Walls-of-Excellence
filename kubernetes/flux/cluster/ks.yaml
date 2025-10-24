@@ -6,7 +6,10 @@ metadata:
   name: cluster-apps
   namespace: flux-system
 spec:
-  interval: 10m
+  decryption:
+    provider: sops
+  deletionPolicy: WaitForTermination
+  interval: 1h
   path: ./kubernetes/apps
   prune: true
   sourceRef:
@@ -14,15 +17,6 @@ spec:
     name: flux-system
     namespace: flux-system
   wait: false
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: cluster-settings
-        optional: false
   patches:
     - # Add Kustomization defaults for all child Kustomizations
       patch: |-
@@ -33,15 +27,9 @@ spec:
         spec:
           decryption:
             provider: sops
-            secretRef:
-              name: sops-age
-          postBuild:
-            substituteFrom:
-              - kind: ConfigMap
-                name: cluster-settings
+          deletionPolicy: WaitForTermination
           patches:
-            - # Add HelmRelease defaults for all child HelmReleases
-              patch: |-
+            - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
@@ -49,16 +37,19 @@ spec:
                 spec:
                   install:
                     crds: CreateReplace
-                    remediation:
-                      retries: 3
+                    strategy:
+                      name: RetryOnFailure
+                  rollback:
+                    cleanupOnFail: true
+                    recreate: true
                   upgrade:
                     cleanupOnFail: true
                     crds: CreateReplace
+                    strategy:
+                      name: RemediateOnFailure
                     remediation:
-                      retries: 3
                       remediateLastFailure: true
-                  uninstall:
-                    keepHistory: false
+                      retries: 2
               target:
                 group: helm.toolkit.fluxcd.io
                 kind: HelmRelease
