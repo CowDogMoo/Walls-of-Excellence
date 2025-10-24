@@ -16,6 +16,8 @@ spec:
   wait: false
   decryption:
     provider: sops
+    secretRef:
+      name: sops-age
   postBuild:
     substituteFrom:
       - kind: ConfigMap
@@ -31,6 +33,8 @@ spec:
         spec:
           decryption:
             provider: sops
+            secretRef:
+              name: sops-age
           postBuild:
             substituteFrom:
               - kind: ConfigMap
