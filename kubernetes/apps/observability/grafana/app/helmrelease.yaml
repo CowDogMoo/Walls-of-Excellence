@@ -136,6 +136,8 @@ spec:
             url: http://loki-headless.observability.svc.cluster.local:3100
             jsonData:
               maxLines: 250
+              timeout: 300
+              queryTimeout: 300
           - name: Alertmanager
             type: alertmanager
             uid: alertmanager

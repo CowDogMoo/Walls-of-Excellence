@@ -43,18 +43,18 @@ spec:
                 requests:
                   storage: 1Gi
     kubeControllerManager:
-      enabled: true
+      enabled: false # Disabled: not critical for homelab, metrics not exposed
       endpoints: &cp
         - 192.168.20.170
         - 192.168.20.239
         - 192.168.20.122
 
     kubeEtcd:
-      enabled: true
+      enabled: false # Disabled: not critical for homelab, metrics not exposed
       endpoints: *cp
 
     kubeScheduler:
-      enabled: true
+      enabled: false # Disabled: not critical for homelab, metrics not exposed
       endpoints: *cp
 
     kubeProxy:

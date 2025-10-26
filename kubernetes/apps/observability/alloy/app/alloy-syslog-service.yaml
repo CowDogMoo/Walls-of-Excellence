@@ -7,6 +7,11 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.20.16
+  externalTrafficPolicy: Local
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
   selector:
     app.kubernetes.io/name: alloy
   ports:

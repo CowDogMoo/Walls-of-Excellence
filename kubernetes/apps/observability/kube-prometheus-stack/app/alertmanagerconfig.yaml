@@ -9,10 +9,11 @@ spec:
     groupBy:
       - alertname
       - job
-    groupInterval: 10m
-    groupWait: 1m
+      - severity
+    groupInterval: 5m
+    groupWait: 30s
     receiver: pushover
-    repeatInterval: 12h
+    repeatInterval: 4h
     routes:
       - receiver: "null"
         matchers:
@@ -28,9 +29,18 @@ spec:
             value: Watchdog
             matchType: =
       - receiver: pushover
+        groupWait: 0s
+        repeatInterval: 1h
         matchers:
           - name: severity
             value: critical
+            matchType: =
+      - receiver: pushover
+        groupWait: 5m
+        repeatInterval: 6h
+        matchers:
+          - name: severity
+            value: warning
             matchType: =
   inhibitRules:
     - equal:
