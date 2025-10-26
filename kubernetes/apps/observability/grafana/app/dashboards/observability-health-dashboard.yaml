@@ -56,10 +56,10 @@ data:
           "id": 1,
           "title": "Dashboard Overview",
           "type": "text",
-          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+          "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "# Observability Stack Health\\n\\nTrack key metrics for data-driven infrastructure decisions\\n\\n| Component | Metric | Threshold | Action |\\n|---|---|---|---|\\n| Prometheus | WAL fsync p99 | < 100ms | Keep NFS |\\n| Prometheus | Query p95 | < 1s | No rules needed |\\n| Prometheus | WAL Corrupt | = 0 | Must be zero |\\n| Loki | Query p95 | < 5s | Keep FS |\\n| Loki | Growth | < 1GB/day | Sustainable |\\n| Grafana | Load time | < 3s | Acceptable |\\n\\nMonitor 2 weeks for baselines"
+            "content": "# Observability Stack Health\\n\\n| Component | Metric | Keep if |\\n|---|---|---|\\n| Prometheus | WAL p99 | < 100ms |\\n| Prometheus | Query p95 | < 1s |\\n| Prometheus | WAL Corrupt | = 0 |\\n| Loki | Query p95 | < 5s |\\n| Loki | Growth | < 1GB/day |\\n| Grafana | Load | < 3s |\\n\\nMonitor 2 weeks before changes"
           }
         },
         {
