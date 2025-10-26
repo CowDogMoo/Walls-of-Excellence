@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: troy-backup
+  namespace: home-automation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: troy-backup
+  namespace: home-automation
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec"]
+    verbs: ["get", "list", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: troy-backup
+  namespace: home-automation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: troy-backup
+subjects:
+  - kind: ServiceAccount
+    name: troy-backup
+    namespace: home-automation

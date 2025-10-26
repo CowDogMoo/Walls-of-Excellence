@@ -1,0 +1,73 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: troy-backup
+  namespace: home-automation
+spec:
+  # Run weekly on Sunday at 2 AM
+  schedule: "0 2 * * 0"
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: troy-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: troy-backup
+          containers:
+            - name: backup
+              image: bitnami/kubectl:latest
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "Starting Troy backup at $(date)"
+
+                  # Find the home-assistant pod
+                  POD_NAME=$(kubectl get pods -n home-automation -l app.kubernetes.io/name=home-assistant -o jsonpath='{.items[0].metadata.name}')
+
+                  if [ -z "$POD_NAME" ]; then
+                    echo "ERROR: Could not find home-assistant pod"
+                    exit 1
+                  fi
+
+                  echo "Found home-assistant pod: $POD_NAME"
+
+                  # Create timestamped backup filename
+                  BACKUP_FILE="/troy-backups/troy_backup_$(date +%Y%m%d_%H%M%S).json"
+
+                  # Run the backup inside the home-assistant pod
+                  echo "Running backup command..."
+                  kubectl exec -n home-automation "$POD_NAME" -c app -- \
+                    /config/cowdogmoo/throwingshade/dist/throwingshade_linux_arm64/ts backup -o "$BACKUP_FILE"
+
+                  echo "Backup completed: $BACKUP_FILE"
+
+                  # Show backup size
+                  kubectl exec -n home-automation "$POD_NAME" -c app -- \
+                    du -h "$BACKUP_FILE"
+
+                  # List all backups
+                  echo "All backups:"
+                  kubectl exec -n home-automation "$POD_NAME" -c app -- \
+                    ls -lh /troy-backups/
+
+                  # Clean up backups older than 90 days
+                  kubectl exec -n home-automation "$POD_NAME" -c app -- \
+                    find /troy-backups -name "troy_backup_*.json" -type f -mtime +90 -delete
+
+                  echo "Backup job completed successfully at $(date)"
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"

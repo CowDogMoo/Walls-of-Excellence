@@ -1,0 +1,24 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: troy-config
+  namespace: home-automation
+data:
+  config.yaml: |
+    ---
+    log:
+      format: text
+      level: info
+
+    troy:
+      ip: 192.168.10.247
+      scheme: http
+      success: 200 OK
+
+    control:
+      initial_delay_seconds: 2
+      max_attempts: 5
+      move_delay_seconds: 2
+      position_tolerance: 2
+      small_movement_threshold: 5

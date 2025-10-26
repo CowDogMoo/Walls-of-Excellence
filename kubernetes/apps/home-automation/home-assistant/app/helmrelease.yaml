@@ -192,3 +192,9 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /config/logs
+      troy-backup:
+        enabled: true
+        type: persistentVolumeClaim
+        existingClaim: troy-backup
+        globalMounts:
+          - path: /troy-backups

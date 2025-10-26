@@ -10,3 +10,4 @@ resources:
   - ./mosquitto/ks.yaml
   - ./music-assistant/ks.yaml
   - ./printer-monitor/ks.yaml
+  - ./troy-backup/ks.yaml
