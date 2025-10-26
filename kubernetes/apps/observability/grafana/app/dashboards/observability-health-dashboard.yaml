@@ -59,24 +59,7 @@ data:
           "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "# Observability Stack Health Monitoring\n\n
-              This dashboard helps determine if infrastructure changes are needed
-              based on **measured performance**.\n\n
-              ## Decision Criteria (from Final Consensus):\n\n
-              ### Prometheus NFS Storage\n
-              - Keep NFS if p99 fsync < 100ms\n
-              - Monitor if p99 fsync = 100-500ms\n
-              - Migrate to local storage if p99 fsync > 1s\n\n
-              ### Loki Filesystem Storage\n
-              - Keep filesystem if storage < 10GB stable AND query p95 < 5s\n
-              - Investigate if flush_queue > 100\n
-              - Consider MinIO if growth > 1GB/day unsustainable\n\n
-              ### Recording Rules\n
-              - Not needed if query p95 < 1s\n
-              - Monitor specific queries if query p95 = 1-5s\n
-              - Add targeted rules if query p95 > 5s\n\n
-              ---\n\n
-              **Monitor for 2 weeks, then make data-driven decisions.**"
+            "content": "# Observability Stack Health\\n\\nMonitor infrastructure performance to make data-driven decisions.\\n\\n## Thresholds:\\n**Prometheus:** Keep NFS if p99 fsync < 100ms\\n**Loki:** Keep filesystem if storage stable + query p95 < 5s\\n**Recording Rules:** Not needed if query p95 < 1s\\n\\n**Monitor for 2 weeks before deciding.**"
           }
         },
         {
