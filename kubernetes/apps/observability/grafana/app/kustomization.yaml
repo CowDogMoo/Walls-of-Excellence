@@ -10,3 +10,4 @@ resources:
   - ./dashboards/home-assistant-dashboard.yaml
   - ./dashboards/home-assistant-shades-dashboard.yaml
   - ./dashboards/cowdogmoo-network-analytics-dashboard.yaml
+  - ./dashboards/observability-health-dashboard.yaml
