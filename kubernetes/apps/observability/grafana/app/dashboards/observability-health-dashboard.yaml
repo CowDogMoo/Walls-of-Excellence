@@ -59,7 +59,7 @@ data:
           "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "# Observability Stack Health\\n\\nMonitor infrastructure performance to make data-driven decisions.\\n\\n## Thresholds:\\n**Prometheus:** Keep NFS if p99 fsync < 100ms\\n**Loki:** Keep filesystem if storage stable + query p95 < 5s\\n**Recording Rules:** Not needed if query p95 < 1s\\n\\n**Monitor for 2 weeks before deciding.**"
+            "content": "# Observability Stack Health\\n\\n**Decision Thresholds:**\\n\\n**Prometheus:** WAL fsync p99 < 100ms (keep NFS) | Query p95 < 1s (no recording rules) | WAL corruption = 0\\n\\n**Loki:** Query p95 < 5s (keep filesystem) | Growth < 1GB/day | 5xx errors near 0\\n\\n**Grafana:** Dashboard load < 3s | Monitor 4xx/5xx errors\\n\\n*Monitor 2 weeks to establish baselines before infrastructure changes*"
           }
         },
         {
@@ -77,7 +77,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[5m])) * 1000",
+              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])) * 1000",
               "legendFormat": "p99 fsync duration (ms)",
               "refId": "A"
             }
@@ -121,7 +121,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[5m])) * 1000",
+              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])) * 1000",
               "refId": "A"
             }
           ],
@@ -158,7 +158,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[5m])) * 1000",
+              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])) * 1000",
               "refId": "A"
             }
           ],
@@ -237,7 +237,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=\"query\"}[5m]))",
+              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=\"query\"}[$__rate_interval]))",
               "legendFormat": "p95 query duration",
               "refId": "A"
             }
@@ -301,7 +301,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 17 },
           "targets": [
             {
-              "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[5m])",
+              "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[$__rate_interval])",
               "refId": "A"
             }
           ],
@@ -331,7 +331,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 17 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=\"query\"}[5m]))",
+              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=\"query\"}[$__rate_interval]))",
               "refId": "A"
             }
           ],
@@ -382,10 +382,202 @@ data:
           }
         },
         {
+          "id": 108,
+          "title": "Prometheus Head Series",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+          "targets": [
+            {
+              "expr": "prometheus_tsdb_head_series{namespace=\"observability\"}",
+              "legendFormat": "Head series",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "single" }
+          }
+        },
+        {
+          "id": 109,
+          "title": "Prometheus Head Chunks",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
+          "targets": [
+            {
+              "expr": "prometheus_tsdb_head_chunks{namespace=\"observability\"}",
+              "legendFormat": "Head chunks",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "single" }
+          }
+        },
+        {
+          "id": 110,
+          "title": "WAL Corruption Alert",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 29 },
+          "targets": [
+            {
+              "expr": "increase(prometheus_tsdb_wal_corruptions_total{namespace=\"observability\"}[1h])",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "mappings": [
+                {
+                  "type": "special",
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "✅ No Corruptions",
+                      "color": "green"
+                    }
+                  }
+                },
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 0,
+                    "to": 0,
+                    "result": {
+                      "text": "✅ No Corruptions",
+                      "color": "green"
+                    }
+                  }
+                },
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 1,
+                    "to": 999999,
+                    "result": {
+                      "text": "🔴 WAL Corrupted",
+                      "color": "red"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 1, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "graphMode": "none",
+            "colorMode": "background",
+            "textMode": "name",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
+          }
+        },
+        {
+          "id": 111,
+          "title": "Prometheus Memory Usage",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 29 },
+          "targets": [
+            {
+              "expr": "process_resident_memory_bytes{job=\"prometheus\", namespace=\"observability\"} / 1024 / 1024",
+              "legendFormat": "Memory (MB)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decmbytes",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "single" }
+          }
+        },
+        {
+          "id": 112,
+          "title": "Prometheus CPU Usage",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 29 },
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
+              "legendFormat": "CPU %",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "single" }
+          }
+        },
+        {
           "id": 200,
           "title": "Loki Health",
           "type": "row",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
           "collapsed": false
         },
         {
@@ -396,7 +588,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[$__rate_interval])))",
               "legendFormat": "p95 query latency",
               "refId": "A"
             }
@@ -431,7 +623,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 22 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[$__rate_interval])))",
               "refId": "A"
             }
           ],
@@ -462,7 +654,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 22 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[$__rate_interval])))",
               "refId": "A"
             }
           ],
@@ -668,7 +860,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
           "targets": [
             {
-              "expr": "sum(rate(loki_distributor_bytes_received_total{namespace=\"observability\"}[5m])) / 1024 / 1024",
+              "expr": "sum(rate(loki_distributor_bytes_received_total{namespace=\"observability\"}[$__rate_interval])) / 1024 / 1024",
               "legendFormat": "Ingestion rate (MB/s)",
               "refId": "A"
             }
@@ -682,6 +874,81 @@ data:
                 "fillOpacity": 10
               }
             }
+          }
+        },
+        {
+          "id": 209,
+          "title": "Loki Request Error Rate",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
+          "targets": [
+            {
+              "expr": "sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"5..\"}[$__rate_interval]))",
+              "legendFormat": "5xx errors",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"4..\"}[$__rate_interval]))",
+              "legendFormat": "4xx errors",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 0.1, "color": "yellow" },
+                  { "value": 1, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 210,
+          "title": "Loki Memory Usage",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", pod=~\"loki.*\"}) / 1024 / 1024",
+              "legendFormat": "Memory (MB)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decmbytes",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "single" }
           }
         },
         {
@@ -699,7 +966,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 43 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])))",
               "legendFormat": "p95 dashboard load time",
               "refId": "A"
             }
@@ -734,7 +1001,7 @@ data:
           "gridPos": { "h": 8, "w": 6, "x": 12, "y": 43 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])))",
               "refId": "A"
             }
           ],
@@ -768,7 +1035,7 @@ data:
           "gridPos": { "h": 8, "w": 6, "x": 18, "y": 43 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])))",
               "refId": "A"
             }
           ],
@@ -855,7 +1122,7 @@ data:
           "gridPos": { "h": 8, "w": 18, "x": 6, "y": 51 },
           "targets": [
             {
-              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\"}[5m])) by (status_code)",
+              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\"}[$__rate_interval])) by (status_code)",
               "legendFormat": "{{status_code}}",
               "refId": "A"
             }
@@ -869,6 +1136,81 @@ data:
                 "fillOpacity": 10
               }
             }
+          }
+        },
+        {
+          "id": 306,
+          "title": "Grafana Error Rate",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 59 },
+          "targets": [
+            {
+              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\", status_code=~\"5..\"}[$__rate_interval]))",
+              "legendFormat": "5xx errors",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\", status_code=~\"4..\"}[$__rate_interval]))",
+              "legendFormat": "4xx errors",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 0.1, "color": "yellow" },
+                  { "value": 1, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "multi" }
+          }
+        },
+        {
+          "id": 307,
+          "title": "Grafana Memory Usage",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 59 },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", pod=~\"grafana.*\"}) / 1024 / 1024",
+              "legendFormat": "Memory (MB)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decmbytes",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "single" }
           }
         }
       ]
