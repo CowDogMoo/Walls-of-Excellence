@@ -54,12 +54,12 @@ data:
       "panels": [
         {
           "id": 1,
-          "title": "📊 Dashboard Overview",
+          "title": "Dashboard Overview",
           "type": "text",
-          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "# Observability Stack Health\\n\\n**Decision Thresholds:**\\n\\n**Prometheus:** WAL fsync p99 < 100ms (keep NFS) | Query p95 < 1s (no recording rules) | WAL corruption = 0\\n\\n**Loki:** Query p95 < 5s (keep filesystem) | Growth < 1GB/day | 5xx errors near 0\\n\\n**Grafana:** Dashboard load < 3s | Monitor 4xx/5xx errors\\n\\n*Monitor 2 weeks to establish baselines before infrastructure changes*"
+            "content": "# Observability Stack Health\\n\\nTrack key metrics for data-driven infrastructure decisions\\n\\n| Component | Metric | Threshold | Action |\\n|---|---|---|---|\\n| Prometheus | WAL fsync p99 | < 100ms | Keep NFS |\\n| Prometheus | Query p95 | < 1s | No rules needed |\\n| Prometheus | WAL Corrupt | = 0 | Must be zero |\\n| Loki | Query p95 | < 5s | Keep FS |\\n| Loki | Growth | < 1GB/day | Sustainable |\\n| Grafana | Load time | < 3s | Acceptable |\\n\\nMonitor 2 weeks for baselines"
           }
         },
         {
@@ -295,32 +295,40 @@ data:
         },
         {
           "id": 106,
-          "title": "Prometheus Compactions",
+          "title": "Prometheus Compactions Rate",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 17 },
           "targets": [
             {
               "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[$__rate_interval])",
+              "legendFormat": "Compactions/sec",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "ops",
+              "decimals": 4,
               "color": { "mode": "thresholds" },
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   { "value": 0, "color": "green" },
-                  { "value": 0.1, "color": "yellow" }
+                  { "value": 0.1, "color": "yellow" },
+                  { "value": 1, "color": "red" }
                 ]
               }
             }
           },
           "options": {
             "graphMode": "area",
-            "textMode": "value_and_name"
+            "colorMode": "background",
+            "textMode": "value",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
@@ -519,7 +527,7 @@ data:
           "gridPos": { "h": 8, "w": 9, "x": 6, "y": 29 },
           "targets": [
             {
-              "expr": "process_resident_memory_bytes{job=\"prometheus\", namespace=\"observability\"} / 1024 / 1024",
+              "expr": "process_resident_memory_bytes{app_kubernetes_io_name=\"prometheus\", namespace=\"observability\"} / 1024 / 1024",
               "legendFormat": "Memory (MB)",
               "refId": "A"
             }
@@ -550,7 +558,7 @@ data:
           "gridPos": { "h": 8, "w": 9, "x": 15, "y": 29 },
           "targets": [
             {
-              "expr": "rate(process_cpu_seconds_total{job=\"prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
+              "expr": "rate(process_cpu_seconds_total{app_kubernetes_io_name=\"prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
               "legendFormat": "CPU %",
               "refId": "A"
             }
@@ -741,15 +749,20 @@ data:
         },
         {
           "id": 205,
-          "title": "Loki Storage Usage & Growth",
+          "title": "Loki Storage Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 30 },
           "targets": [
             {
-              "expr": "sum(loki_ingester_chunks_stored{namespace=\"observability\"}) * 2.5 / 1024 / 1024 / 1024",
-              "legendFormat": "Estimated storage (GB)",
+              "expr": "kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"} / 1024 / 1024 / 1024",
+              "legendFormat": "Used (GB)",
               "refId": "A"
+            },
+            {
+              "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"} / 1024 / 1024 / 1024",
+              "legendFormat": "Capacity (GB)",
+              "refId": "B"
             }
           ],
           "fieldConfig": {
@@ -761,23 +774,32 @@ data:
                 "fillOpacity": 10
               }
             }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": { "mode": "multi" }
           }
         },
         {
           "id": 206,
-          "title": "Loki Daily Growth Rate",
+          "title": "Loki Storage Growth (24h)",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 30 },
           "targets": [
             {
-              "expr": "increase(loki_ingester_chunks_stored_total{namespace=\"observability\"}[24h]) * 2.5 / 1024 / 1024 / 1024",
+              "expr": "increase(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
+              "legendFormat": "Growth (GB)",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "gbytes",
+              "decimals": 2,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -791,18 +813,22 @@ data:
           "options": {
             "graphMode": "area",
             "colorMode": "background",
-            "textMode": "value_and_name"
+            "textMode": "value",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
           "id": 207,
-          "title": "Storage Growth Decision",
+          "title": "Storage Growth Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 30 },
           "targets": [
             {
-              "expr": "increase(loki_ingester_chunks_stored_total{namespace=\"observability\"}[24h]) * 2.5 / 1024 / 1024 / 1024",
+              "expr": "increase(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
               "refId": "A"
             }
           ],
@@ -816,7 +842,7 @@ data:
                     "from": 0,
                     "to": 1,
                     "result": {
-                      "text": "✅ Sustainable",
+                      "text": "Sustainable",
                       "color": "green"
                     }
                   }
@@ -827,7 +853,7 @@ data:
                     "from": 1,
                     "to": 2,
                     "result": {
-                      "text": "⚠️ Monitor",
+                      "text": "Monitor",
                       "color": "yellow"
                     }
                   }
@@ -838,18 +864,30 @@ data:
                     "from": 2,
                     "to": 999999,
                     "result": {
-                      "text": "🔴 Too Fast",
+                      "text": "Too Fast",
                       "color": "red"
                     }
                   }
                 }
-              ]
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 2, "color": "red" }
+                ]
+              }
             }
           },
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name"
+            "textMode": "name",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
@@ -928,7 +966,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
           "targets": [
             {
-              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", pod=~\"loki.*\"}) / 1024 / 1024",
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"loki\"}) / 1024 / 1024",
               "legendFormat": "Memory (MB)",
               "refId": "A"
             }
@@ -1190,7 +1228,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 59 },
           "targets": [
             {
-              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", pod=~\"grafana.*\"}) / 1024 / 1024",
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"grafana\"}) / 1024 / 1024",
               "legendFormat": "Memory (MB)",
               "refId": "A"
             }
