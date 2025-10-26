@@ -8,7 +8,7 @@ metadata:
 spec:
   staticConfigs:
     - targets:
-        - onepassword-connect.external-secrets.svc.cluster.local:80
+        - onepassword.external-secrets.svc.cluster.local:80
   metricsPath: /metrics
   relabelings:
     - action: replace
