@@ -8,19 +8,19 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Observability"
-    dashboard-version: "1.0.0"
-    last-modified: "2025-01-26"
-    description: "Monitor observability stack health to establish baselines for Phase 2 decisions"
+    dashboard-version: "2.0.0"
+    last-modified: "2025-10-26"
+    description: "Comprehensive observability stack health monitoring with actionable insights"
 data:
   observability-health.json: |
     {
       "uid": "observability-health",
-      "title": "Observability Stack - Health Monitoring",
-      "description": "Monitor Prometheus, Loki, and Grafana performance to make data-driven infrastructure decisions",
-      "tags": ["observability", "prometheus", "loki", "grafana", "performance"],
+      "title": "📊 Observability Stack Health",
+      "description": "Monitor Prometheus, Loki, and Grafana performance with actionable insights and decision support",
+      "tags": ["observability", "prometheus", "loki", "grafana", "health", "performance"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "1m",
       "time": {
         "from": "now-6h",
@@ -37,112 +37,53 @@ data:
               "value": "prometheus"
             },
             "hide": 0
-          },
-          {
-            "name": "time_range",
-            "type": "custom",
-            "query": "1h,6h,12h,24h,7d,14d,30d",
-            "current": {
-              "text": "6h",
-              "value": "6h"
-            },
-            "multi": false,
-            "includeAll": false
           }
         ]
       },
       "panels": [
         {
           "id": 1,
-          "title": "Dashboard Overview",
-          "type": "text",
-          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
-          "options": {
-            "mode": "markdown",
-            "content": "## Observability Health - Phase 2 Decisions\\n\\n**Thresholds:** WAL >100ms/1s | Query >1s/5s | Loki >5s/10s | Storage >1GB/2GB per day\\n\\n**Actions:** High WAL = test local SSD | Slow queries = add rules/CPU | High Loki = try MinIO | Storage = adjust retention\\n\\n[Runbooks](https://runbooks.prometheus-operator.dev/) | [Loki Docs](https://grafana.com/docs/loki/latest/operations/) | [Alerts](https://alert-manager.techvomit.xyz)"
-          }
-        },
-        {
-          "id": 100,
-          "title": "Prometheus Health",
-          "type": "row",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
-          "collapsed": false
-        },
-        {
-          "id": 101,
-          "title": "WAL Fsync Duration (p99) - Threshold: 100ms",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
-          "targets": [
-            {
-              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
-              "legendFormat": "p99 fsync duration (ms)",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "ms",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "spanNulls": false,
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 100, "color": "yellow" },
-                  { "value": 500, "color": "orange" },
-                  { "value": 1000, "color": "red" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
-          }
-        },
-        {
-          "id": 102,
-          "title": "WAL Fsync Status",
+          "title": "🎯 OVERALL HEALTH",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
+          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
           "targets": [
             {
-              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
+              "expr": "min(up{job=~\"kube-prometheus-stack-prometheus|loki|grafana\", namespace=\"observability\"})",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "ms",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "text": "✅ ALL SYSTEMS HEALTHY",
+                      "color": "green"
+                    },
+                    "0": {
+                      "text": "🔴 SYSTEM DOWN",
+                      "color": "red"
+                    }
+                  }
+                }
+              ],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 100, "color": "yellow" },
-                  { "value": 500, "color": "orange" },
-                  { "value": 1000, "color": "red" }
+                  { "value": 0, "color": "red" },
+                  { "value": 1, "color": "green" }
                 ]
               }
             }
           },
           "options": {
-            "graphMode": "area",
+            "graphMode": "none",
             "colorMode": "background",
-            "textMode": "value_and_name",
+            "textMode": "value",
+            "justifyMode": "center",
             "reduceOptions": {
               "values": false,
               "calcs": ["lastNotNull"]
@@ -150,15 +91,23 @@ data:
           }
         },
         {
-          "id": 103,
-          "title": "NFS Decision",
+          "id": 100,
+          "title": "🚨 PRIMARY DECISIONS",
+          "type": "row",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+          "collapsed": false
+        },
+        {
+          "id": 101,
+          "title": "💾 Storage Performance",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 5 },
           "targets": [
             {
-              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
-              "refId": "A"
+              "expr": "max(prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000)",
+              "refId": "A",
+              "instant": true
             }
           ],
           "fieldConfig": {
@@ -171,7 +120,7 @@ data:
                     "from": 0,
                     "to": 100,
                     "result": {
-                      "text": "Keep NFS"
+                      "text": "✅ Keep NFS"
                     }
                   }
                 },
@@ -181,7 +130,7 @@ data:
                     "from": 100,
                     "to": 500,
                     "result": {
-                      "text": "Monitor"
+                      "text": "👀 Monitor"
                     }
                   }
                 },
@@ -191,7 +140,7 @@ data:
                     "from": 500,
                     "to": 1000,
                     "result": {
-                      "text": "Watch Closely"
+                      "text": "⚠️ Watch Closely"
                     }
                   }
                 },
@@ -201,7 +150,7 @@ data:
                     "from": 1000,
                     "to": 999999,
                     "result": {
-                      "text": "Migrate to SSD"
+                      "text": "🚨 Migrate to SSD"
                     }
                   }
                 }
@@ -220,109 +169,9 @@ data:
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          }
-        },
-        {
-          "id": 104,
-          "title": "Query Duration (p95) - Threshold: 1s",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=~\"/api/v1/query.*\"}[$__rate_interval]))",
-              "legendFormat": "p95 query duration",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 1, "color": "yellow" },
-                  { "value": 5, "color": "red" }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "id": 105,
-          "title": "Prometheus Storage Usage",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
-          "targets": [
-            {
-              "expr": "prometheus_tsdb_storage_blocks_bytes{namespace=\"observability\"} / 1024 / 1024 / 1024",
-              "legendFormat": "Storage (GB)",
-              "refId": "A"
-            },
-            {
-              "expr": "50",
-              "legendFormat": "Max (50GB)",
-              "refId": "B"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "gbytes",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          }
-        },
-        {
-          "id": 106,
-          "title": "Prometheus Compactions Rate",
-          "type": "stat",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 18 },
-          "targets": [
-            {
-              "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[5m])",
-              "legendFormat": "Compactions/sec",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "cps",
-              "decimals": 5,
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 0.1, "color": "yellow" },
-                  { "value": 1, "color": "red" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "graphMode": "area",
-            "colorMode": "background",
             "textMode": "value",
+            "justifyMode": "center",
+            "noValue": "⏳ Collecting Data",
             "reduceOptions": {
               "values": false,
               "calcs": ["lastNotNull"]
@@ -330,343 +179,16 @@ data:
           }
         },
         {
-          "id": 107,
-          "title": "Recording Rules Needed?",
+          "id": 103,
+          "title": "🔧 Loki Storage Decision",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 18 },
+          "gridPos": { "h": 4, "w": 8, "x": 8, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=~\"/api/v1/query.*\"}[$__rate_interval]))",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "mappings": [
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 0,
-                    "to": 1,
-                    "result": {
-                      "text": "Not Needed"
-                    }
-                  }
-                },
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 1,
-                    "to": 5,
-                    "result": {
-                      "text": "Monitor"
-                    }
-                  }
-                },
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 5,
-                    "to": 999999,
-                    "result": {
-                      "text": "Add Rules"
-                    }
-                  }
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 1, "color": "yellow" },
-                  { "value": 5, "color": "red" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "graphMode": "none",
-            "colorMode": "background",
-            "textMode": "name",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          }
-        },
-        {
-          "id": 108,
-          "title": "Prometheus Head Series",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
-          "targets": [
-            {
-              "expr": "prometheus_tsdb_head_series{namespace=\"observability\"}",
-              "legendFormat": "Head series",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
-          }
-        },
-        {
-          "id": 109,
-          "title": "Prometheus Head Chunks",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
-          "targets": [
-            {
-              "expr": "prometheus_tsdb_head_chunks{namespace=\"observability\"}",
-              "legendFormat": "Head chunks",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
-          }
-        },
-        {
-          "id": 110,
-          "title": "WAL Corruption Alert",
-          "type": "stat",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 30 },
-          "targets": [
-            {
-              "expr": "increase(prometheus_tsdb_wal_corruptions_total{namespace=\"observability\"}[1h])",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "mappings": [
-                {
-                  "type": "special",
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "No Corruptions"
-                    }
-                  }
-                },
-                {
-                  "type": "value",
-                  "options": {
-                    "value": "0",
-                    "result": {
-                      "text": "No Corruptions"
-                    }
-                  }
-                },
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 1,
-                    "to": 999999,
-                    "result": {
-                      "text": "WAL Corrupted"
-                    }
-                  }
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 1, "color": "red" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "graphMode": "none",
-            "colorMode": "background",
-            "textMode": "name",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          }
-        },
-        {
-          "id": 111,
-          "title": "Prometheus Memory Usage",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 30 },
-          "targets": [
-            {
-              "expr": "process_resident_memory_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"} / 1024 / 1024",
-              "legendFormat": "Memory (MB)",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "decmbytes",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
-          }
-        },
-        {
-          "id": 112,
-          "title": "Prometheus CPU Usage",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 30 },
-          "targets": [
-            {
-              "expr": "rate(process_cpu_seconds_total{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
-              "legendFormat": "CPU %",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "percent",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
-          }
-        },
-        {
-          "id": 200,
-          "title": "Loki Health",
-          "type": "row",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
-          "collapsed": false
-        },
-        {
-          "id": 201,
-          "title": "Loki Query Latency (p95) - Threshold: 5s",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
-              "legendFormat": "p95 query latency",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 5, "color": "yellow" },
-                  { "value": 10, "color": "red" }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "id": 202,
-          "title": "Loki Query Status",
-          "type": "stat",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 39 },
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 5, "color": "yellow" },
-                  { "value": 10, "color": "red" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "graphMode": "area",
-            "colorMode": "background",
-            "textMode": "value_and_name"
-          }
-        },
-        {
-          "id": 203,
-          "title": "Filesystem Storage Decision",
-          "type": "stat",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 39 },
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
-              "refId": "A"
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\"observability/loki\", namespace=\"observability\", route=~\"loki_api_v1_query.*\"}[5m])))",
+              "refId": "A",
+              "instant": true
             }
           ],
           "fieldConfig": {
@@ -679,7 +201,7 @@ data:
                     "from": 0,
                     "to": 5,
                     "result": {
-                      "text": "Keep Filesystem"
+                      "text": "✅ Keep FS"
                     }
                   }
                 },
@@ -689,7 +211,7 @@ data:
                     "from": 5,
                     "to": 10,
                     "result": {
-                      "text": "Monitor"
+                      "text": "👀 Monitor"
                     }
                   }
                 },
@@ -699,7 +221,7 @@ data:
                     "from": 10,
                     "to": 999999,
                     "result": {
-                      "text": "Consider MinIO"
+                      "text": "💡 Try MinIO"
                     }
                   }
                 }
@@ -717,115 +239,9 @@ data:
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          }
-        },
-        {
-          "id": 204,
-          "title": "Loki Ingester Flush Queue - Threshold: 100",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 43 },
-          "targets": [
-            {
-              "expr": "loki_ingester_flush_queue_length{namespace=\"observability\"}",
-              "legendFormat": "Flush queue length",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 100, "color": "yellow" },
-                  { "value": 200, "color": "red" }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "id": 205,
-          "title": "Loki Storage Usage",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 47 },
-          "targets": [
-            {
-              "expr": "kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"} / 1024 / 1024 / 1024",
-              "legendFormat": "Used (GB)",
-              "refId": "A"
-            },
-            {
-              "expr": "kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"} / 1024 / 1024 / 1024",
-              "legendFormat": "Capacity (GB)",
-              "refId": "B"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "gbytes",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "multi" }
-          }
-        },
-        {
-          "id": 206,
-          "title": "Loki Storage Growth (24h)",
-          "type": "stat",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 47 },
-          "targets": [
-            {
-              "expr": "delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
-              "legendFormat": "Growth (GB)",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "gbytes",
-              "decimals": 2,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 1, "color": "yellow" },
-                  { "value": 2, "color": "red" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "graphMode": "area",
-            "colorMode": "background",
             "textMode": "value",
+            "justifyMode": "center",
+            "noValue": "⏳ Collecting Data",
             "reduceOptions": {
               "values": false,
               "calcs": ["lastNotNull"]
@@ -833,15 +249,16 @@ data:
           }
         },
         {
-          "id": 207,
-          "title": "Storage Growth Status",
+          "id": 104,
+          "title": "📦 Storage Growth Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 47 },
+          "gridPos": { "h": 4, "w": 8, "x": 16, "y": 5 },
           "targets": [
             {
-              "expr": "delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
-              "refId": "A"
+              "expr": "sum(delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[6h])) / 1024 / 1024 / 1024",
+              "refId": "A",
+              "instant": true
             }
           ],
           "fieldConfig": {
@@ -852,9 +269,19 @@ data:
                   "type": "range",
                   "options": {
                     "from": -999999,
+                    "to": 0.5,
+                    "result": {
+                      "text": "✅ Sustainable"
+                    }
+                  }
+                },
+                {
+                  "type": "range",
+                  "options": {
+                    "from": 0.5,
                     "to": 1,
                     "result": {
-                      "text": "Sustainable"
+                      "text": "👀 Monitor"
                     }
                   }
                 },
@@ -862,19 +289,9 @@ data:
                   "type": "range",
                   "options": {
                     "from": 1,
-                    "to": 2,
-                    "result": {
-                      "text": "Monitor"
-                    }
-                  }
-                },
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 2,
                     "to": 999999,
                     "result": {
-                      "text": "Too Fast"
+                      "text": "🚨 Too Fast"
                     }
                   }
                 }
@@ -883,8 +300,8 @@ data:
                 "mode": "absolute",
                 "steps": [
                   { "value": 0, "color": "green" },
-                  { "value": 1, "color": "yellow" },
-                  { "value": 2, "color": "red" }
+                  { "value": 0.5, "color": "yellow" },
+                  { "value": 1, "color": "red" }
                 ]
               }
             }
@@ -892,7 +309,9 @@ data:
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name",
+            "textMode": "value",
+            "justifyMode": "center",
+            "noValue": "⏳ Collecting Data",
             "reduceOptions": {
               "values": false,
               "calcs": ["lastNotNull"]
@@ -900,167 +319,191 @@ data:
           }
         },
         {
-          "id": 208,
-          "title": "Loki Ingestion Rate",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 51 },
-          "targets": [
-            {
-              "expr": "sum(rate(loki_distributor_bytes_received_total{namespace=\"observability\"}[$__rate_interval])) / 1024 / 1024",
-              "legendFormat": "Ingestion rate (MB/s)",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "MBs",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          }
+          "id": 200,
+          "title": "🎯 KEY METRICS",
+          "type": "row",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+          "collapsed": false
         },
         {
-          "id": 209,
-          "title": "Loki Request Error Rate",
-          "type": "timeseries",
+          "id": 201,
+          "title": "🟢 Prometheus",
+          "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 55 },
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 10 },
           "targets": [
             {
-              "expr": "sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"5..\"}[$__rate_interval]))",
-              "legendFormat": "5xx errors",
+              "expr": "up{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}",
               "refId": "A"
-            },
-            {
-              "expr": "sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"4..\"}[$__rate_interval]))",
-              "legendFormat": "4xx errors",
-              "refId": "B"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "reqps",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "text": "✅ UP",
+                      "color": "green"
+                    },
+                    "0": {
+                      "text": "🔴 DOWN",
+                      "color": "red"
+                    }
+                  }
+                }
+              ],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 0.1, "color": "yellow" },
-                  { "value": 1, "color": "red" }
+                  { "value": 0, "color": "red" },
+                  { "value": 1, "color": "green" }
                 ]
               }
             }
           },
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "multi" }
+            "graphMode": "none",
+            "colorMode": "background",
+            "textMode": "value",
+            "justifyMode": "center",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
-          "id": 210,
-          "title": "Loki Memory Usage",
-          "type": "timeseries",
+          "id": 202,
+          "title": "🟢 Loki",
+          "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 55 },
+          "gridPos": { "h": 4, "w": 8, "x": 8, "y": 10 },
           "targets": [
             {
-              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"loki\"}) / 1024 / 1024",
-              "legendFormat": "Memory (MB)",
+              "expr": "up{job=\"observability/loki\", namespace=\"observability\"}",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "decmbytes",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "text": "✅ UP",
+                      "color": "green"
+                    },
+                    "0": {
+                      "text": "🔴 DOWN",
+                      "color": "red"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "red" },
+                  { "value": 1, "color": "green" }
+                ]
               }
             }
           },
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
+            "graphMode": "none",
+            "colorMode": "background",
+            "textMode": "value",
+            "justifyMode": "center",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
+          }
+        },
+        {
+          "id": 203,
+          "title": "🟢 Grafana",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 4, "w": 8, "x": 16, "y": 10 },
+          "targets": [
+            {
+              "expr": "up{job=\"grafana\", namespace=\"observability\"}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "text": "✅ UP",
+                      "color": "green"
+                    },
+                    "0": {
+                      "text": "🔴 DOWN",
+                      "color": "red"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "red" },
+                  { "value": 1, "color": "green" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "graphMode": "none",
+            "colorMode": "background",
+            "textMode": "value",
+            "justifyMode": "center",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
           "id": 300,
-          "title": "Grafana Performance",
+          "title": "📊 STORAGE & QUERIES",
           "type": "row",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 63 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
           "collapsed": false
         },
         {
           "id": 301,
-          "title": "Dashboard Load Time (p95) - Threshold: 3s",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
-          "targets": [
-            {
-              "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
-              "legendFormat": "p95 dashboard load time",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "s",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10,
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 3, "color": "yellow" },
-                  { "value": 5, "color": "red" }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "id": 302,
-          "title": "Dashboard Load Status",
+          "title": "💾 Prometheus Storage",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 64 },
+          "gridPos": { "h": 8, "w": 4, "x": 0, "y": 15 },
           "targets": [
             {
-              "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
-              "refId": "A"
+              "expr": "max(prometheus_tsdb_storage_blocks_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Storage Used",
+              "refId": "A",
+              "instant": true
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "s",
+              "unit": "gbytes",
+              "decimals": 1,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   { "value": 0, "color": "green" },
-                  { "value": 3, "color": "yellow" },
-                  { "value": 5, "color": "red" }
+                  { "value": 15, "color": "yellow" },
+                  { "value": 20, "color": "orange" },
+                  { "value": 25, "color": "red" }
                 ]
               }
             }
@@ -1069,62 +512,666 @@ data:
             "graphMode": "area",
             "colorMode": "background",
             "textMode": "value_and_name",
+            "noValue": "⏳ Collecting",
             "reduceOptions": {
+              "values": false,
               "calcs": ["lastNotNull"]
             }
           }
         },
         {
-          "id": 303,
-          "title": "Grafana Performance Status",
+          "id": 3011,
+          "title": "💾 Loki Storage",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 64 },
+          "gridPos": { "h": 8, "w": 4, "x": 4, "y": 15 },
           "targets": [
             {
-              "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
+              "expr": "sum(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Storage Used",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "gbytes",
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 80, "color": "yellow" },
+                  { "value": 100, "color": "orange" },
+                  { "value": 110, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "graphMode": "area",
+            "colorMode": "background",
+            "textMode": "value_and_name",
+            "noValue": "⏳ Collecting",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
+          }
+        },
+        {
+          "id": 302,
+          "title": "📈 Queries by Route",
+          "type": "piechart",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 15 },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (handler) (rate(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/.*\"}[5m])) > 0)",
+              "legendFormat": "{{handler}}",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "s",
-              "mappings": [
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 0,
-                    "to": 3,
-                    "result": {
-                      "text": "Fast"
-                    }
-                  }
-                },
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 3,
-                    "to": 5,
-                    "result": {
-                      "text": "Acceptable"
-                    }
-                  }
-                },
-                {
-                  "type": "range",
-                  "options": {
-                    "from": 5,
-                    "to": 999999,
-                    "result": {
-                      "text": "Slow"
-                    }
-                  }
-                }
-              ],
+              "unit": "reqps",
+              "decimals": 2
+            }
+          },
+          "options": {
+            "pieType": "donut",
+            "displayLabels": ["percent"],
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "values": ["value", "percent"],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          }
+        },
+        {
+          "id": 303,
+          "title": "🚨 Error Rates by Service",
+          "type": "bargauge",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 15 },
+          "targets": [
+            {
+              "expr": "label_replace(sum(rate(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", code=~\"5..\"}[5m])), \"service\", \"Prometheus\", \"\", \"\") or label_replace(vector(0), \"service\", \"Prometheus\", \"\", \"\")",
+              "legendFormat": "{{service}}",
+              "refId": "A",
+              "instant": true
+            },
+            {
+              "expr": "label_replace(sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"5..\"}[5m])), \"service\", \"Loki\", \"\", \"\") or label_replace(vector(0), \"service\", \"Loki\", \"\", \"\")",
+              "legendFormat": "{{service}}",
+              "refId": "B",
+              "instant": true
+            },
+            {
+              "expr": "label_replace(sum(rate(grafana_api_response_status_total{job=\"grafana\", namespace=\"observability\", status_code=~\"5..\"}[5m])), \"service\", \"Grafana\", \"\", \"\") or label_replace(vector(0), \"service\", \"Grafana\", \"\", \"\")",
+              "legendFormat": "{{service}}",
+              "refId": "C",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "decimals": 3,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   { "value": 0, "color": "green" },
+                  { "value": 0.01, "color": "yellow" },
+                  { "value": 0.1, "color": "orange" },
+                  { "value": 1, "color": "red" }
+                ]
+              },
+              "noValue": "✅ No Errors"
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": false
+          }
+        },
+        {
+          "id": 304,
+          "title": "🐌 Top 10 Slowest Query Routes",
+          "type": "bargauge",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+          "targets": [
+            {
+              "expr": "topk(10, histogram_quantile(0.95, sum by (handler, le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/.*\"}[5m]))))",
+              "legendFormat": "{{handler}}",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "decimals": 3,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 0.5, "color": "yellow" },
+                  { "value": 1, "color": "orange" },
+                  { "value": 5, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true
+          }
+        },
+        {
+          "id": 400,
+          "title": "🔍 PROMETHEUS PERFORMANCE",
+          "type": "row",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+          "collapsed": false
+        },
+        {
+          "id": 401,
+          "title": "Prometheus Disk Write Speed",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+          "targets": [
+            {
+              "expr": "rate(prometheus_tsdb_wal_fsync_duration_seconds_sum{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m]) / rate(prometheus_tsdb_wal_fsync_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m]) * 1000",
+              "legendFormat": "Write speed (lower is better)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "transparent" },
+                  { "value": 100, "color": "yellow" },
+                  { "value": 1000, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "id": 402,
+          "title": "Query Response Time (95% of queries finish within this time)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/query.*\"}[5m])))",
+              "legendFormat": "Slowest 5% (p95)",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/query.*\"}[5m])))",
+              "legendFormat": "Typical (p50)",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "transparent" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 5, "color": "red" }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Slowest 5% (p95)" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Typical (p50)" },
+                "properties": [
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "id": 403,
+          "title": "Resource Usage",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 40 },
+          "targets": [
+            {
+              "expr": "process_resident_memory_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"} / 1024 / 1024",
+              "legendFormat": "Memory (MB)",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m]) * 100",
+              "legendFormat": "CPU %",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "spanNulls": false,
+                "showPoints": "never"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Memory (MB)" },
+                "properties": [
+                  { "id": "unit", "value": "decmbytes" },
+                  { "id": "custom.axisPlacement", "value": "left" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "CPU %" },
+                "properties": [
+                  { "id": "unit", "value": "percent" },
+                  { "id": "custom.axisPlacement", "value": "right" }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "none" }
+          }
+        },
+        {
+          "id": 405,
+          "title": "📋 Recent Prometheus Errors",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 },
+          "targets": [
+            {
+              "expr": "{namespace=\"observability\", pod=~\"prometheus-.*\"} |~ \"(?i)error|warn|fail|fatal\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          }
+        },
+        {
+          "id": 500,
+          "title": "📝 LOKI PERFORMANCE",
+          "type": "row",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 56 },
+          "collapsed": false
+        },
+        {
+          "id": 501,
+          "title": "Log Query Response Times (how long Loki takes to answer)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
+          "description": "Shows how fast Loki answers log queries. '95% of queries' means most queries finish within this time. '50% of queries' is the typical response time.",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\"observability/loki\", namespace=\"observability\", route=~\"loki_api_v1_query.*\"}[5m])))",
+              "legendFormat": "95% of queries finish within",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\"observability/loki\", namespace=\"observability\", route=~\"loki_api_v1_query.*\"}[5m])))",
+              "legendFormat": "50% of queries finish within (typical)",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "transparent" },
+                  { "value": 5, "color": "yellow" },
+                  { "value": 10, "color": "red" }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          }
+        },
+        {
+          "id": 502,
+          "title": "Storage Growth & Capacity",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
+          "targets": [
+            {
+              "expr": "sum(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Used (GB)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Capacity (GB)",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "gbytes",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "spanNulls": false,
+                "showPoints": "never"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "none" }
+          }
+        },
+        {
+          "id": 503,
+          "title": "Ingestion & Error Rates",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 65 },
+          "targets": [
+            {
+              "expr": "sum(rate(loki_distributor_bytes_received_total{job=\"observability/loki\", namespace=\"observability\"}[5m])) / 1024 / 1024",
+              "legendFormat": "Ingestion (MB/s)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(loki_request_duration_seconds_count{job=\"observability/loki\", namespace=\"observability\", status_code=~\"5..\"}[5m]))",
+              "legendFormat": "5xx errors",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "spanNulls": false,
+                "showPoints": "never"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Ingestion (MB/s)" },
+                "properties": [
+                  { "id": "unit", "value": "MBs" },
+                  { "id": "custom.axisPlacement", "value": "left" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "5xx errors" },
+                "properties": [
+                  { "id": "unit", "value": "reqps" },
+                  { "id": "custom.axisPlacement", "value": "right" },
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "none" }
+          }
+        },
+        {
+          "id": 504,
+          "title": "Write Backlog & Memory Usage (how well Loki keeps up)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 65 },
+          "description": "Flush queue shows data chunks waiting to be written to disk. 0 is healthy - Loki is keeping up. High numbers mean Loki is falling behind and may lose data if it crashes. Memory shows RAM usage.",
+          "targets": [
+            {
+              "expr": "loki_ingester_flush_queue_length{job=\"observability/loki\", namespace=\"observability\"}",
+              "legendFormat": "Data chunks waiting to write (left axis)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"loki\"}) / 1024 / 1024",
+              "legendFormat": "Memory usage MB (right axis)",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "spanNulls": false,
+                "showPoints": "never"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Flush queue" },
+                "properties": [
+                  { "id": "unit", "value": "short" },
+                  { "id": "custom.axisPlacement", "value": "left" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Memory (MB)" },
+                "properties": [
+                  { "id": "unit", "value": "decmbytes" },
+                  { "id": "custom.axisPlacement", "value": "right" }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "none" }
+          }
+        },
+        {
+          "id": 505,
+          "title": "📋 Recent Loki Errors",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 73 },
+          "targets": [
+            {
+              "expr": "{namespace=\"observability\", pod=~\"loki-.*\"} |~ \"(?i)error|warn|fail|fatal\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          }
+        },
+        {
+          "id": 600,
+          "title": "🎨 GRAFANA PERFORMANCE",
+          "type": "row",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 81 },
+          "collapsed": false
+        },
+        {
+          "id": 601,
+          "title": "Grafana Response Times (how fast Grafana responds to requests)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 82 },
+          "description": "Shows how fast Grafana responds to all HTTP requests (UI, API, dashboards, etc). '90% respond within' means most requests finish within this time. '50% respond within' is the typical response time.",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.9, sum(rate(grafana_http_request_duration_seconds_bucket{job=\"grafana\", namespace=\"observability\"}[5m])) by (le))",
+              "legendFormat": "90% of requests respond within",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.5, sum(rate(grafana_http_request_duration_seconds_bucket{job=\"grafana\", namespace=\"observability\"}[5m])) by (le))",
+              "legendFormat": "50% of requests respond within (typical)",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "transparent" },
                   { "value": 3, "color": "yellow" },
                   { "value": 5, "color": "red" }
                 ]
@@ -1132,59 +1179,24 @@ data:
             }
           },
           "options": {
-            "graphMode": "none",
-            "colorMode": "background",
-            "textMode": "name",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "mean", "max"]
+            },
+            "tooltip": { "mode": "multi", "sort": "desc" }
           }
         },
         {
-          "id": 304,
-          "title": "Grafana Active Users",
-          "type": "stat",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 72 },
-          "targets": [
-            {
-              "expr": "count(grafana_stat_totals_dashboard{namespace=\"observability\"})",
-              "legendFormat": "Total Dashboards",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" }
-                ]
-              }
-            }
-          },
-          "options": {
-            "graphMode": "none",
-            "colorMode": "background",
-            "textMode": "value_and_name",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          }
-        },
-        {
-          "id": 305,
-          "title": "Grafana API Request Rate",
+          "id": 602,
+          "title": "API Response Status Codes",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 18, "x": 6, "y": 72 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 82 },
           "targets": [
             {
-              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\"}[$__rate_interval])) by (status_code)",
+              "expr": "sum by (status_code) (rate(grafana_api_response_status_total{job=\"grafana\", namespace=\"observability\"}[5m]))",
               "legendFormat": "{{status_code}}",
               "refId": "A"
             }
@@ -1194,85 +1206,47 @@ data:
               "unit": "reqps",
               "color": { "mode": "palette-classic" },
               "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
                 "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          }
-        },
-        {
-          "id": 306,
-          "title": "Grafana Error Rate",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 80 },
-          "targets": [
-            {
-              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\", status_code=~\"5..\"}[$__rate_interval]))",
-              "legendFormat": "5xx errors",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\", status_code=~\"4..\"}[$__rate_interval]))",
-              "legendFormat": "4xx errors",
-              "refId": "B"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "reqps",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": 0, "color": "green" },
-                  { "value": 0.1, "color": "yellow" },
-                  { "value": 1, "color": "red" }
-                ]
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "spanNulls": false,
+                "showPoints": "never"
               }
             }
           },
           "options": {
             "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": ["lastNotNull", "sum"]
             },
-            "tooltip": { "mode": "multi" }
+            "tooltip": { "mode": "multi", "sort": "desc" }
           }
         },
         {
-          "id": 307,
-          "title": "Grafana Memory Usage",
-          "type": "timeseries",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 80 },
+          "id": 603,
+          "title": "📋 Recent Grafana Errors",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 90 },
           "targets": [
             {
-              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"grafana\"}) / 1024 / 1024",
-              "legendFormat": "Memory (MB)",
+              "expr": "{namespace=\"observability\", pod=~\"grafana-.*\"} |~ \"(?i)error|warn|fail|fatal\"",
               "refId": "A"
             }
           ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "decmbytes",
-              "color": { "mode": "palette-classic" },
-              "custom": {
-                "lineWidth": 2,
-                "fillOpacity": 10
-              }
-            }
-          },
           "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom"
-            },
-            "tooltip": { "mode": "single" }
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
           }
         }
       ]
