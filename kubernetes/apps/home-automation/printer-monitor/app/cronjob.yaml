@@ -7,8 +7,8 @@ metadata:
 spec:
   # Run every 30 minutes
   schedule: "*/30 * * * *"
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
