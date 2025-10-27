@@ -125,10 +125,9 @@ spec:
                 done
             resources:
               requests:
-                cpu: 10m
+                cpu: 20m
                 memory: 32Mi
               limits:
-                cpu: 500m
                 memory: 64Mi
         pod:
           # Enable devices to be discoverable
