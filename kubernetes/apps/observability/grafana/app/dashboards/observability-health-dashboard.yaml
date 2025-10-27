@@ -201,7 +201,7 @@ data:
                     "from": 0,
                     "to": 5,
                     "result": {
-                      "text": "✅ Keep FS"
+                      "text": "✅ Storage is fast"
                     }
                   }
                 },
@@ -211,7 +211,7 @@ data:
                     "from": 5,
                     "to": 10,
                     "result": {
-                      "text": "👀 Monitor"
+                      "text": "👀 Getting slow"
                     }
                   }
                 },
@@ -221,7 +221,7 @@ data:
                     "from": 10,
                     "to": 999999,
                     "result": {
-                      "text": "💡 Try MinIO"
+                      "text": "🚨 Too slow - consider MinIO"
                     }
                   }
                 }
@@ -594,26 +594,26 @@ data:
         },
         {
           "id": 303,
-          "title": "🚨 Error Rates by Service",
+          "title": "🚨 HTTP 5xx Error Rates",
           "type": "bargauge",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 15 },
           "targets": [
             {
-              "expr": "label_replace(sum(rate(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", code=~\"5..\"}[5m])), \"service\", \"Prometheus\", \"\", \"\") or label_replace(vector(0), \"service\", \"Prometheus\", \"\", \"\")",
-              "legendFormat": "{{service}}",
+              "expr": "sum(rate(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", code=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "Prometheus",
               "refId": "A",
               "instant": true
             },
             {
-              "expr": "label_replace(sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"5..\"}[5m])), \"service\", \"Loki\", \"\", \"\") or label_replace(vector(0), \"service\", \"Loki\", \"\", \"\")",
-              "legendFormat": "{{service}}",
+              "expr": "sum(rate(loki_request_duration_seconds_count{job=\"observability/loki\", namespace=\"observability\", status_code=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "Loki",
               "refId": "B",
               "instant": true
             },
             {
-              "expr": "label_replace(sum(rate(grafana_api_response_status_total{job=\"grafana\", namespace=\"observability\", status_code=~\"5..\"}[5m])), \"service\", \"Grafana\", \"\", \"\") or label_replace(vector(0), \"service\", \"Grafana\", \"\", \"\")",
-              "legendFormat": "{{service}}",
+              "expr": "sum(rate(grafana_api_response_status_total{job=\"grafana\", namespace=\"observability\", status_code=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "Grafana",
               "refId": "C",
               "instant": true
             }
@@ -631,7 +631,7 @@ data:
                   { "value": 1, "color": "red" }
                 ]
               },
-              "noValue": "✅ No Errors"
+              "noValue": "✅ No HTTP Errors"
             }
           },
           "options": {
