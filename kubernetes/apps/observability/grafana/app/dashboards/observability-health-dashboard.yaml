@@ -59,7 +59,7 @@ data:
           "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "# Observability Stack Health\\n\\n| Component | Metric | Keep if |\\n|---|---|---|\\n| Prometheus | WAL p99 | < 100ms |\\n| Prometheus | Query p95 | < 1s |\\n| Prometheus | WAL Corrupt | = 0 |\\n| Loki | Query p95 | < 5s |\\n| Loki | Growth | < 1GB/day |\\n| Grafana | Load | < 3s |\\n\\nMonitor 2 weeks before changes"
+            "content": "# Observability Stack Health\n\n| Component | Metric | Keep if |\n|---|---|---|\n| Prometheus | WAL p99 | < 100ms |\n| Prometheus | Query p95 | < 1s |\n| Prometheus | WAL Corrupt | = 0 |\n| Loki | Query p95 | < 5s |\n| Loki | Growth | < 1GB/day |\n| Grafana | Load | < 3s |\n\nMonitor 2 weeks before changes"
           }
         },
         {
