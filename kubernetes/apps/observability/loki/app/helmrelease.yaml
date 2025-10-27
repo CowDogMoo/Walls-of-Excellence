@@ -91,12 +91,19 @@ spec:
     monitoring:
       serviceMonitor:
         enabled: true
+        labels:
+          prometheus: kube-prometheus-stack
       selfMonitoring:
         enabled: false
         grafanaAgent:
           installOperator: false
       lokiCanary:
         enabled: false
+
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: kube-prometheus-stack
 
     singleBinary:
       replicas: 1
