@@ -648,10 +648,9 @@ data:
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
           "targets": [
             {
-              "expr": "topk(10, histogram_quantile(0.95, sum by (handler, le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/.*\"}[5m]))))",
+              "expr": "topk(10, histogram_quantile(0.95, sum by (handler, le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/.*\"}[5m]))) > 0)",
               "legendFormat": "{{handler}}",
-              "refId": "A",
-              "instant": true
+              "refId": "A"
             }
           ],
           "fieldConfig": {
@@ -690,9 +689,14 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
           "targets": [
             {
-              "expr": "rate(prometheus_tsdb_wal_fsync_duration_seconds_sum{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m]) / rate(prometheus_tsdb_wal_fsync_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m]) * 1000",
-              "legendFormat": "Write speed (lower is better)",
+              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{quantile=\"0.99\"} * 1000",
+              "legendFormat": "p99 (slowest)",
               "refId": "A"
+            },
+            {
+              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{quantile=\"0.5\"} * 1000",
+              "legendFormat": "p50 (typical)",
+              "refId": "B"
             }
           ],
           "fieldConfig": {
