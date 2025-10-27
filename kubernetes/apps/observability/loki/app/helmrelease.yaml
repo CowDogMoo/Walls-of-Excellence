@@ -88,6 +88,16 @@ spec:
             local:
               directory: /rules
           rule_path: /rules/fake
+    monitoring:
+      serviceMonitor:
+        enabled: true
+      selfMonitoring:
+        enabled: false
+        grafanaAgent:
+          installOperator: false
+      lokiCanary:
+        enabled: false
+
     singleBinary:
       replicas: 1
       persistence:
