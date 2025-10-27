@@ -56,10 +56,10 @@ data:
           "id": 1,
           "title": "Dashboard Overview",
           "type": "text",
-          "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+          "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "# Observability Stack Health\n\n| Component | Metric | Keep if |\n|---|---|---|\n| Prometheus | WAL p99 | < 100ms |\n| Prometheus | Query p95 | < 1s |\n| Prometheus | WAL Corrupt | = 0 |\n| Loki | Query p95 | < 5s |\n| Loki | Growth | < 1GB/day |\n| Grafana | Load | < 3s |\n\nMonitor 2 weeks before changes"
+            "content": "## Monitoring observability stack performance to establish baselines and identify optimization opportunities\n\nThis dashboard tracks **Prometheus** (WAL fsync, query latency, storage), **Loki** (query performance, storage growth), and **Grafana** (dashboard load times). Green panels indicate healthy operation. Yellow/red panels require investigation."
           }
         },
         {
@@ -209,7 +209,10 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "value": 0, "color": "green" }
+                  { "value": 0, "color": "green" },
+                  { "value": 100, "color": "yellow" },
+                  { "value": 500, "color": "orange" },
+                  { "value": 1000, "color": "red" }
                 ]
               }
             }
@@ -232,7 +235,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=\"query\"}[$__rate_interval]))",
+              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=~\"/api/v1/query.*\"}[$__rate_interval]))",
               "legendFormat": "p95 query duration",
               "refId": "A"
             }
@@ -334,7 +337,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 17 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=\"query\"}[$__rate_interval]))",
+              "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=~\"/api/v1/query.*\"}[$__rate_interval]))",
               "refId": "A"
             }
           ],
@@ -1010,7 +1013,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 63 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])))",
+              "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
               "legendFormat": "p95 dashboard load time",
               "refId": "A"
             }
@@ -1045,7 +1048,7 @@ data:
           "gridPos": { "h": 8, "w": 6, "x": 12, "y": 63 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])))",
+              "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
               "refId": "A"
             }
           ],
@@ -1079,7 +1082,7 @@ data:
           "gridPos": { "h": 8, "w": 6, "x": 18, "y": 63 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_api_dashboard_get_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])))",
+              "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
               "refId": "A"
             }
           ],
