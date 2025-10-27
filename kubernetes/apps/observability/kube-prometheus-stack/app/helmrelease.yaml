@@ -19,6 +19,12 @@ spec:
       retries: 3
   values:
     cleanPrometheusOperatorObjectNames: true
+    defaultRules:
+      rules:
+        kubeApiserverAvailability: false
+        kubeApiserverBurnrate: false
+        kubeApiserverHistogram: false
+        kubeApiserverSlos: false
     alertmanager:
       ingress:
         enabled: true
@@ -59,6 +65,9 @@ spec:
 
     kubeProxy:
       enabled: false
+
+    kubeApiServer:
+      enabled: false # Disabled: not critical for homelab, causing slow rule evaluations
 
     prometheus:
       ingress:
