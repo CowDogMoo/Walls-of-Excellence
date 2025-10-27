@@ -56,10 +56,10 @@ data:
           "id": 1,
           "title": "Dashboard Overview",
           "type": "text",
-          "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
           "options": {
             "mode": "markdown",
-            "content": "## Monitoring observability stack performance to establish baselines and identify optimization opportunities\n\nThis dashboard tracks **Prometheus** (WAL fsync, query latency, storage), **Loki** (query performance, storage growth), and **Grafana** (dashboard load times). Green panels indicate healthy operation. Yellow/red panels require investigation."
+            "content": "## Observability Health - Phase 2 Decisions\\n\\n**Thresholds:** WAL >100ms/1s | Query >1s/5s | Loki >5s/10s | Storage >1GB/2GB per day\\n\\n**Actions:** High WAL = test local SSD | Slow queries = add rules/CPU | High Loki = try MinIO | Storage = adjust retention\\n\\n[Runbooks](https://runbooks.prometheus-operator.dev/) | [Loki Docs](https://grafana.com/docs/loki/latest/operations/) | [Alerts](https://alert-manager.techvomit.xyz)"
           }
         },
         {
@@ -74,7 +74,7 @@ data:
           "title": "WAL Fsync Duration (p99) - Threshold: 100ms",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
           "targets": [
             {
               "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
@@ -118,7 +118,7 @@ data:
           "title": "WAL Fsync Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
           "targets": [
             {
               "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
@@ -154,7 +154,7 @@ data:
           "title": "NFS Decision",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
           "targets": [
             {
               "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
@@ -232,7 +232,7 @@ data:
           "title": "Query Duration (p95) - Threshold: 1s",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
           "targets": [
             {
               "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=~\"/api/v1/query.*\"}[$__rate_interval]))",
@@ -267,7 +267,7 @@ data:
           "title": "Prometheus Storage Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
           "targets": [
             {
               "expr": "prometheus_tsdb_storage_blocks_bytes{namespace=\"observability\"} / 1024 / 1024 / 1024",
@@ -296,7 +296,7 @@ data:
           "title": "Prometheus Compactions Rate",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 17 },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 18 },
           "targets": [
             {
               "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[5m])",
@@ -334,7 +334,7 @@ data:
           "title": "Recording Rules Needed?",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 17 },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 18 },
           "targets": [
             {
               "expr": "histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket{namespace=\"observability\", handler=~\"/api/v1/query.*\"}[$__rate_interval]))",
@@ -401,7 +401,7 @@ data:
           "title": "Prometheus Head Series",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
           "targets": [
             {
               "expr": "prometheus_tsdb_head_series{namespace=\"observability\"}",
@@ -432,7 +432,7 @@ data:
           "title": "Prometheus Head Chunks",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
           "targets": [
             {
               "expr": "prometheus_tsdb_head_chunks{namespace=\"observability\"}",
@@ -463,7 +463,7 @@ data:
           "title": "WAL Corruption Alert",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 29 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 30 },
           "targets": [
             {
               "expr": "increase(prometheus_tsdb_wal_corruptions_total{namespace=\"observability\"}[1h])",
@@ -527,7 +527,7 @@ data:
           "title": "Prometheus Memory Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 29 },
+          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 30 },
           "targets": [
             {
               "expr": "process_resident_memory_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"} / 1024 / 1024",
@@ -558,7 +558,7 @@ data:
           "title": "Prometheus CPU Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 29 },
+          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 30 },
           "targets": [
             {
               "expr": "rate(process_cpu_seconds_total{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
@@ -588,7 +588,7 @@ data:
           "id": 200,
           "title": "Loki Health",
           "type": "row",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
           "collapsed": false
         },
         {
@@ -596,7 +596,7 @@ data:
           "title": "Loki Query Latency (p95) - Threshold: 5s",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 38 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
           "targets": [
             {
               "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
@@ -631,7 +631,7 @@ data:
           "title": "Loki Query Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 38 },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 39 },
           "targets": [
             {
               "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
@@ -662,7 +662,7 @@ data:
           "title": "Filesystem Storage Decision",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 38 },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 39 },
           "targets": [
             {
               "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
@@ -729,7 +729,7 @@ data:
           "title": "Loki Ingester Flush Queue - Threshold: 100",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 43 },
           "targets": [
             {
               "expr": "loki_ingester_flush_queue_length{namespace=\"observability\"}",
@@ -764,7 +764,7 @@ data:
           "title": "Loki Storage Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 47 },
           "targets": [
             {
               "expr": "kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"} / 1024 / 1024 / 1024",
@@ -800,7 +800,7 @@ data:
           "title": "Loki Storage Growth (24h)",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 46 },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 47 },
           "targets": [
             {
               "expr": "delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
@@ -837,7 +837,7 @@ data:
           "title": "Storage Growth Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 46 },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 47 },
           "targets": [
             {
               "expr": "delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
@@ -904,7 +904,7 @@ data:
           "title": "Loki Ingestion Rate",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 50 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 51 },
           "targets": [
             {
               "expr": "sum(rate(loki_distributor_bytes_received_total{namespace=\"observability\"}[$__rate_interval])) / 1024 / 1024",
@@ -928,7 +928,7 @@ data:
           "title": "Loki Request Error Rate",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 54 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 55 },
           "targets": [
             {
               "expr": "sum(rate(loki_request_duration_seconds_count{namespace=\"observability\", status_code=~\"5..\"}[$__rate_interval]))",
@@ -972,7 +972,7 @@ data:
           "title": "Loki Memory Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 54 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 55 },
           "targets": [
             {
               "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"loki\"}) / 1024 / 1024",
@@ -1002,7 +1002,7 @@ data:
           "id": 300,
           "title": "Grafana Performance",
           "type": "row",
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 62 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 63 },
           "collapsed": false
         },
         {
@@ -1010,7 +1010,7 @@ data:
           "title": "Dashboard Load Time (p95) - Threshold: 3s",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 63 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
           "targets": [
             {
               "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
@@ -1045,7 +1045,7 @@ data:
           "title": "Dashboard Load Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 63 },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 64 },
           "targets": [
             {
               "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
@@ -1079,7 +1079,7 @@ data:
           "title": "Grafana Performance Status",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 63 },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 64 },
           "targets": [
             {
               "expr": "grafana_api_dashboard_get_milliseconds{namespace=\"observability\", quantile=\"0.95\"} / 1000",
@@ -1146,7 +1146,7 @@ data:
           "title": "Grafana Active Users",
           "type": "stat",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 71 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 72 },
           "targets": [
             {
               "expr": "count(grafana_stat_totals_dashboard{namespace=\"observability\"})",
@@ -1181,7 +1181,7 @@ data:
           "title": "Grafana API Request Rate",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 18, "x": 6, "y": 71 },
+          "gridPos": { "h": 8, "w": 18, "x": 6, "y": 72 },
           "targets": [
             {
               "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\"}[$__rate_interval])) by (status_code)",
@@ -1205,7 +1205,7 @@ data:
           "title": "Grafana Error Rate",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 79 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 80 },
           "targets": [
             {
               "expr": "sum(rate(grafana_api_response_status_total{namespace=\"observability\", status_code=~\"5..\"}[$__rate_interval]))",
@@ -1249,7 +1249,7 @@ data:
           "title": "Grafana Memory Usage",
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 79 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 80 },
           "targets": [
             {
               "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"grafana\"}) / 1024 / 1024",
