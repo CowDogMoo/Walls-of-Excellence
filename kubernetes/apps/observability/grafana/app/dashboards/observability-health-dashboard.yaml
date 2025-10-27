@@ -77,7 +77,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])) * 1000",
+              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
               "legendFormat": "p99 fsync duration (ms)",
               "refId": "A"
             }
@@ -121,14 +121,13 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])) * 1000",
+              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
               "unit": "ms",
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -158,13 +157,13 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, rate(prometheus_tsdb_wal_fsync_duration_seconds_bucket{namespace=\"observability\"}[$__rate_interval])) * 1000",
+              "expr": "prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"} * 1000",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
+              "unit": "ms",
               "mappings": [
                 {
                   "type": "range",
@@ -172,8 +171,7 @@ data:
                     "from": 0,
                     "to": 100,
                     "result": {
-                      "text": "✅ Keep NFS",
-                      "color": "green"
+                      "text": "Keep NFS"
                     }
                   }
                 },
@@ -183,8 +181,7 @@ data:
                     "from": 100,
                     "to": 500,
                     "result": {
-                      "text": "⚠️ Monitor",
-                      "color": "yellow"
+                      "text": "Monitor"
                     }
                   }
                 },
@@ -194,8 +191,7 @@ data:
                     "from": 500,
                     "to": 1000,
                     "result": {
-                      "text": "⚠️ Watch Closely",
-                      "color": "orange"
+                      "text": "Watch Closely"
                     }
                   }
                 },
@@ -205,8 +201,7 @@ data:
                     "from": 1000,
                     "to": 999999,
                     "result": {
-                      "text": "🔴 Migrate SSD",
-                      "color": "red"
+                      "text": "Migrate to SSD"
                     }
                   }
                 }
@@ -301,15 +296,15 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 17 },
           "targets": [
             {
-              "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[$__rate_interval])",
+              "expr": "rate(prometheus_tsdb_compactions_total{namespace=\"observability\"}[5m])",
               "legendFormat": "Compactions/sec",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
-              "decimals": 4,
+              "unit": "cps",
+              "decimals": 5,
               "color": { "mode": "thresholds" },
               "thresholds": {
                 "mode": "absolute",
@@ -345,7 +340,7 @@ data:
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
+              "unit": "s",
               "mappings": [
                 {
                   "type": "range",
@@ -353,8 +348,7 @@ data:
                     "from": 0,
                     "to": 1,
                     "result": {
-                      "text": "✅ Not Needed",
-                      "color": "green"
+                      "text": "Not Needed"
                     }
                   }
                 },
@@ -364,8 +358,7 @@ data:
                     "from": 1,
                     "to": 5,
                     "result": {
-                      "text": "⚠️ Monitor",
-                      "color": "yellow"
+                      "text": "Monitor"
                     }
                   }
                 },
@@ -375,18 +368,29 @@ data:
                     "from": 5,
                     "to": 999999,
                     "result": {
-                      "text": "🔴 Add Rules",
-                      "color": "red"
+                      "text": "Add Rules"
                     }
                   }
                 }
-              ]
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 5, "color": "red" }
+                ]
+              }
             }
           },
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name"
+            "textMode": "name",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
@@ -472,19 +476,16 @@ data:
                   "options": {
                     "match": "null",
                     "result": {
-                      "text": "✅ No Corruptions",
-                      "color": "green"
+                      "text": "No Corruptions"
                     }
                   }
                 },
                 {
-                  "type": "range",
+                  "type": "value",
                   "options": {
-                    "from": 0,
-                    "to": 0,
+                    "value": "0",
                     "result": {
-                      "text": "✅ No Corruptions",
-                      "color": "green"
+                      "text": "No Corruptions"
                     }
                   }
                 },
@@ -494,8 +495,7 @@ data:
                     "from": 1,
                     "to": 999999,
                     "result": {
-                      "text": "🔴 WAL Corrupted",
-                      "color": "red"
+                      "text": "WAL Corrupted"
                     }
                   }
                 }
@@ -527,7 +527,7 @@ data:
           "gridPos": { "h": 8, "w": 9, "x": 6, "y": 29 },
           "targets": [
             {
-              "expr": "process_resident_memory_bytes{app_kubernetes_io_name=\"prometheus\", namespace=\"observability\"} / 1024 / 1024",
+              "expr": "process_resident_memory_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"} / 1024 / 1024",
               "legendFormat": "Memory (MB)",
               "refId": "A"
             }
@@ -558,7 +558,7 @@ data:
           "gridPos": { "h": 8, "w": 9, "x": 15, "y": 29 },
           "targets": [
             {
-              "expr": "rate(process_cpu_seconds_total{app_kubernetes_io_name=\"prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
+              "expr": "rate(process_cpu_seconds_total{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[$__rate_interval]) * 100",
               "legendFormat": "CPU %",
               "refId": "A"
             }
@@ -596,7 +596,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 38 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
               "legendFormat": "p95 query latency",
               "refId": "A"
             }
@@ -631,7 +631,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 38 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
               "refId": "A"
             }
           ],
@@ -662,13 +662,13 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 38 },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\".*query.*\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{namespace=\"observability\", route=~\"/loki/api/v1/query.*\"}[$__rate_interval])))",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
+              "unit": "s",
               "mappings": [
                 {
                   "type": "range",
@@ -676,8 +676,7 @@ data:
                     "from": 0,
                     "to": 5,
                     "result": {
-                      "text": "✅ Keep Filesystem",
-                      "color": "green"
+                      "text": "Keep Filesystem"
                     }
                   }
                 },
@@ -687,8 +686,7 @@ data:
                     "from": 5,
                     "to": 10,
                     "result": {
-                      "text": "⚠️ Monitor",
-                      "color": "yellow"
+                      "text": "Monitor"
                     }
                   }
                 },
@@ -698,18 +696,29 @@ data:
                     "from": 10,
                     "to": 999999,
                     "result": {
-                      "text": "🔴 Consider MinIO",
-                      "color": "red"
+                      "text": "Consider MinIO"
                     }
                   }
                 }
-              ]
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 5, "color": "yellow" },
+                  { "value": 10, "color": "red" }
+                ]
+              }
             }
           },
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name"
+            "textMode": "name",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
@@ -791,7 +800,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 46 },
           "targets": [
             {
-              "expr": "increase(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
+              "expr": "delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
               "legendFormat": "Growth (GB)",
               "refId": "A"
             }
@@ -828,22 +837,21 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 46 },
           "targets": [
             {
-              "expr": "increase(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
+              "expr": "delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h]) / 1024 / 1024 / 1024",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
+              "unit": "gbytes",
               "mappings": [
                 {
                   "type": "range",
                   "options": {
-                    "from": 0,
+                    "from": -999999,
                     "to": 1,
                     "result": {
-                      "text": "Sustainable",
-                      "color": "green"
+                      "text": "Sustainable"
                     }
                   }
                 },
@@ -853,8 +861,7 @@ data:
                     "from": 1,
                     "to": 2,
                     "result": {
-                      "text": "Monitor",
-                      "color": "yellow"
+                      "text": "Monitor"
                     }
                   }
                 },
@@ -864,8 +871,7 @@ data:
                     "from": 2,
                     "to": 999999,
                     "result": {
-                      "text": "Too Fast",
-                      "color": "red"
+                      "text": "Too Fast"
                     }
                   }
                 }
@@ -1079,7 +1085,7 @@ data:
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
+              "unit": "s",
               "mappings": [
                 {
                   "type": "range",
@@ -1087,8 +1093,7 @@ data:
                     "from": 0,
                     "to": 3,
                     "result": {
-                      "text": "✅ Fast",
-                      "color": "green"
+                      "text": "Fast"
                     }
                   }
                 },
@@ -1098,8 +1103,7 @@ data:
                     "from": 3,
                     "to": 5,
                     "result": {
-                      "text": "⚠️ Acceptable",
-                      "color": "yellow"
+                      "text": "Acceptable"
                     }
                   }
                 },
@@ -1109,18 +1113,29 @@ data:
                     "from": 5,
                     "to": 999999,
                     "result": {
-                      "text": "🔴 Slow",
-                      "color": "red"
+                      "text": "Slow"
                     }
                   }
                 }
-              ]
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": 0, "color": "green" },
+                  { "value": 3, "color": "yellow" },
+                  { "value": 5, "color": "red" }
+                ]
+              }
             }
           },
           "options": {
             "graphMode": "none",
             "colorMode": "background",
-            "textMode": "name"
+            "textMode": "name",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
@@ -1131,7 +1146,8 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 0, "y": 71 },
           "targets": [
             {
-              "expr": "grafana_stat_totals_dashboard{namespace=\"observability\"}",
+              "expr": "count(grafana_stat_totals_dashboard{namespace=\"observability\"})",
+              "legendFormat": "Total Dashboards",
               "refId": "A"
             }
           ],
@@ -1149,7 +1165,12 @@ data:
           },
           "options": {
             "graphMode": "none",
-            "textMode": "value_and_name"
+            "colorMode": "background",
+            "textMode": "value_and_name",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
           }
         },
         {
