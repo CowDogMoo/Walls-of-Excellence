@@ -16,6 +16,7 @@ spec:
       labels:
         app: guacamole
     spec:
+      serviceAccountName: default
       containers:
         - image: flcontainers/guacamole:1.6.0
           env:
