@@ -40,7 +40,8 @@ spec:
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
     adminUser:
-      create: false
+      create: true
+      username: admin
     oidcSecret:
       create: true
       issuerURL: https://auth.techvomit.xyz/application/o/weave-gitops/
@@ -68,6 +69,10 @@ spec:
       impersonationResourceNames:
         - admin
   valuesFrom:
+    - kind: Secret
+      name: weave-gitops-secret
+      valuesKey: ADMIN_PASSWORD
+      targetPath: adminUser.passwordHash
     - kind: Secret
       name: authentik-secrets
       valuesKey: WEAVE_GITOPS_CLIENT_SECRET
