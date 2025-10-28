@@ -54,13 +54,14 @@ spec:
     global:
       image: {}
 
-      # Shared memory volume for all pods (server and worker)
-      volumes:
+      # Additional volumes for all pods (server and worker)
+      # Note: Blueprint ConfigMaps are automatically mounted by the chart
+      additionalVolumes:
         - name: dshm
           emptyDir:
             medium: Memory
             sizeLimit: 256Mi
-      volumeMounts:
+      additionalVolumeMounts:
         - name: dshm
           mountPath: /dev/shm
 
