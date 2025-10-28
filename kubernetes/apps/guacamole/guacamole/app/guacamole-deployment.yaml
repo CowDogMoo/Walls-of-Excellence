@@ -18,10 +18,13 @@ spec:
     spec:
       containers:
         - image: flcontainers/guacamole:1.6.0
-          # Uncomment to enable TOTP 2FA
-          # env:
-          # - name: EXTENSIONS
-          #   value: auth-totp
+          env:
+            - name: EXTENSIONS
+              value: auth-header
+            - name: HEADER_ENABLED
+              value: "true"
+            - name: HTTP_AUTH_HEADER
+              value: X-authentik-username
           name: guacamole
           ports:
             - name: guacd
