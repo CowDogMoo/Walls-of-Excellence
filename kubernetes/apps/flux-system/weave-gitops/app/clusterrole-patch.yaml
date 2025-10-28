@@ -4,6 +4,9 @@ kind: ClusterRole
 metadata:
   name: weave-gitops
 rules:
+  - apiGroups: [""]
+    resources: [users, groups]
+    verbs: [impersonate]
   - nonResourceURLs:
       - /api
       - /api/*
