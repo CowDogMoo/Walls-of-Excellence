@@ -44,7 +44,7 @@ spec:
       username: admin
     oidcSecret:
       create: true
-      issuerURL: https://auth.techvomit.xyz/application/o/weave-gitops/
+      issuerURL: https://auth.techvomit.xyz/application/o/weave-gitops
       clientID: weave-gitops
       redirectURL: https://weave.techvomit.xyz/oauth2/callback
       tokenDuration: 1h
