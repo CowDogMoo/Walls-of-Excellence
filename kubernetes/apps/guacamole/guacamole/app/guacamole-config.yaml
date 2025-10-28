@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guacamole-config
+  namespace: guacamole
+data:
+  guacamole.properties: |
+    # Header Authentication
+    http-auth-header: X-authentik-username

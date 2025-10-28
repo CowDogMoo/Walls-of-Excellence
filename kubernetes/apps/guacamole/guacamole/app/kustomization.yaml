@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: guacamole
 resources:
   - ./guacamole-pvc.yaml
+  - ./guacamole-config.yaml
   - ./guacamole-deployment.yaml
   - ./guacamole-service.yaml
   - ./guacamole-ingress.yaml

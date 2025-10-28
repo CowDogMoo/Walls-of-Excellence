@@ -39,9 +39,23 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: guacamole-pvc
+            - mountPath: /tmp/guac-config
+              name: guacamole-config
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    sleep 10
+                    echo "http-auth-header: X-authentik-username" >> /config/guacamole/guacamole.properties
       restartPolicy: Always
       hostNetwork: true
       volumes:
         - name: guacamole-pvc
           persistentVolumeClaim:
             claimName: guacamole-pvc
+        - name: guacamole-config
+          configMap:
+            name: guacamole-config
