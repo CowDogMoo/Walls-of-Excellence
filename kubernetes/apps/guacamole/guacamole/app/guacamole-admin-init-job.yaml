@@ -1,0 +1,96 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: guacamole-admin-init
+  namespace: guacamole
+  annotations:
+    # This ensures the job runs after the deployment is ready
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "1"
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: guacamole-admin-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: admin-init
+          image: postgres:13-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Extract password from guacamole.properties
+              echo "Reading database password from guacamole.properties..."
+              export PGPASSWORD=$(grep "postgresql-password:" /config/guacamole/guacamole.properties | cut -d' ' -f2)
+
+              if [ -z "$PGPASSWORD" ]; then
+                echo "ERROR: Could not read postgresql-password from guacamole.properties"
+                exit 1
+              fi
+
+              # Wait for Guacamole PostgreSQL to be ready
+              echo "Waiting for Guacamole PostgreSQL to be ready..."
+              until psql -h guacamole -U guacamole -d guacamole_db -c '\q' 2>/dev/null; do
+                echo "PostgreSQL not ready, waiting..."
+                sleep 5
+              done
+
+              echo "PostgreSQL is ready. Setting up admin user..."
+
+              # Create SSO user entity if not exists
+              psql -h guacamole -U guacamole -d guacamole_db <<'EOSQL'
+              -- Create entity for SSO user
+              INSERT INTO guacamole_entity (name, type)
+              VALUES ('jayson.e.grace@gmail.com', 'USER')
+              ON CONFLICT (name, type) DO NOTHING;
+
+              -- Get entity ID
+              DO $$
+              DECLARE
+                  user_entity_id INTEGER;
+              BEGIN
+                  SELECT entity_id INTO user_entity_id
+                  FROM guacamole_entity
+                  WHERE name = 'jayson.e.grace@gmail.com' AND type = 'USER';
+
+                  -- Create user record if not exists
+                  INSERT INTO guacamole_user (entity_id, password_hash, password_salt, password_date)
+                  VALUES (user_entity_id, E'\\x', E'\\x', NOW())
+                  ON CONFLICT (entity_id) DO NOTHING;
+
+                  -- Grant ALL system permissions
+                  INSERT INTO guacamole_system_permission (entity_id, permission)
+                  VALUES
+                      (user_entity_id, 'CREATE_CONNECTION'),
+                      (user_entity_id, 'CREATE_CONNECTION_GROUP'),
+                      (user_entity_id, 'CREATE_SHARING_PROFILE'),
+                      (user_entity_id, 'CREATE_USER'),
+                      (user_entity_id, 'CREATE_USER_GROUP'),
+                      (user_entity_id, 'ADMINISTER')
+                  ON CONFLICT (entity_id, permission) DO NOTHING;
+
+                  RAISE NOTICE 'Admin permissions granted to jayson.e.grace@gmail.com';
+              END $$;
+              EOSQL
+
+              echo "Admin user setup complete!"
+          volumeMounts:
+            - mountPath: /config
+              name: guacamole-pvc
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: guacamole-pvc
+          persistentVolumeClaim:
+            claimName: guacamole-pvc
