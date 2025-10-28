@@ -119,6 +119,7 @@ data:
           authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
           redirect_uris:
             - matching_mode: strict
               url: "https://weave.techvomit.xyz/oauth2/callback"
