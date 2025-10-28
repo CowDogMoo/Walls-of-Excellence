@@ -4,6 +4,8 @@ kind: Ingress
 metadata:
   name: guacamole
   namespace: guacamole
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
 spec:
   ingressClassName: ingress-traefik
   rules:

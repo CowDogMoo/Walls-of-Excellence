@@ -42,6 +42,14 @@ spec:
       name: authentik-secrets
       valuesKey: TRAEFIK_CLIENT_SECRET
       targetPath: blueprints.context.traefik_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: WEAVE_GITOPS_CLIENT_SECRET
+      targetPath: blueprints.context.weave_gitops_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: GUACAMOLE_CLIENT_SECRET
+      targetPath: blueprints.context.guacamole_client_secret
   values:
     global:
       image: {}

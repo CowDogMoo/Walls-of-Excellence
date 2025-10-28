@@ -40,8 +40,13 @@ spec:
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
     adminUser:
+      create: false
+    oidcSecret:
       create: true
-      username: admin
+      issuerURL: https://auth.techvomit.xyz/application/o/weave-gitops/
+      clientID: weave-gitops
+      redirectURL: https://weave.techvomit.xyz/oauth2/callback
+      tokenDuration: 1h
     ingress:
       annotations:
         external-dns.alpha.kubernetes.io/hostname: weave.techvomit.xyz
@@ -64,6 +69,6 @@ spec:
         - admin
   valuesFrom:
     - kind: Secret
-      name: weave-gitops-secret
-      valuesKey: ADMIN_PASSWORD
-      targetPath: adminUser.passwordHash
+      name: authentik-secrets
+      valuesKey: WEAVE_GITOPS_CLIENT_SECRET
+      targetPath: oidcSecret.clientSecret

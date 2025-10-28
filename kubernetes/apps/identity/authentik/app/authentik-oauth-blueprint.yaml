@@ -16,6 +16,8 @@ data:
     context:
       grafana_client_secret: !Env GRAFANA_CLIENT_SECRET
       traefik_client_secret: !Env TRAEFIK_CLIENT_SECRET
+      weave_gitops_client_secret: !Env WEAVE_GITOPS_CLIENT_SECRET
+      guacamole_client_secret: !Env GUACAMOLE_CLIENT_SECRET
     entries:
       # Groups for role mapping
       - model: authentik_core.group
@@ -41,6 +43,22 @@ data:
         state: present
         attrs:
           name: Traefik Admins
+
+      - model: authentik_core.group
+        id: weave-gitops-admins
+        identifiers:
+          name: Weave GitOps Admins
+        state: present
+        attrs:
+          name: Weave GitOps Admins
+
+      - model: authentik_core.group
+        id: guacamole-users
+        identifiers:
+          name: Guacamole Users
+        state: present
+        attrs:
+          name: Guacamole Users
 
       # OAuth2 Provider for Grafana
       - model: authentik_providers_oauth2.oauth2provider
@@ -87,6 +105,51 @@ data:
           access_token_validity: "minutes=5"
           refresh_token_validity: "days=30"
 
+      # OAuth2 Provider for Weave GitOps
+      - model: authentik_providers_oauth2.oauth2provider
+        id: weave-gitops-provider
+        identifiers:
+          name: Weave GitOps
+        state: present
+        attrs:
+          name: Weave GitOps
+          client_id: weave-gitops
+          client_secret: !Context weave_gitops_client_secret
+          client_type: confidential
+          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          redirect_uris:
+            - matching_mode: strict
+              url: "https://weave.techvomit.xyz/oauth2/callback"
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+          sub_mode: hashed_user_id
+          access_code_validity: "minutes=1"
+          access_token_validity: "minutes=5"
+          refresh_token_validity: "days=30"
+
+      # Proxy Provider for Guacamole (Forward Auth)
+      - model: authentik_providers_proxy.proxyprovider
+        id: guacamole-provider
+        identifiers:
+          name: Guacamole
+        state: present
+        attrs:
+          name: Guacamole
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          mode: forward_single
+          external_host: "https://guacamole.techvomit.xyz"
+          cookie_domain: "techvomit.xyz"
+          skip_path_regex: ""
+          basic_auth_enabled: false
+          intercept_header_auth: true
+          access_token_validity: "minutes=5"
+          refresh_token_validity: "days=30"
+
       # Application for Grafana
       - model: authentik_core.application
         id: grafana-app
@@ -115,6 +178,34 @@ data:
           meta_description: "Traefik Ingress Controller Dashboard"
           policy_engine_mode: any
 
+      # Application for Weave GitOps
+      - model: authentik_core.application
+        id: weave-gitops-app
+        identifiers:
+          slug: weave-gitops
+        state: present
+        attrs:
+          name: Weave GitOps
+          slug: weave-gitops
+          provider: !KeyOf weave-gitops-provider
+          meta_launch_url: "https://weave.techvomit.xyz"
+          meta_description: "Weave GitOps Dashboard - GitOps Management"
+          policy_engine_mode: any
+
+      # Application for Guacamole
+      - model: authentik_core.application
+        id: guacamole-app
+        identifiers:
+          slug: guacamole
+        state: present
+        attrs:
+          name: Guacamole
+          slug: guacamole
+          provider: !KeyOf guacamole-provider
+          meta_launch_url: "https://guacamole.techvomit.xyz"
+          meta_description: "Apache Guacamole - Remote Desktop Gateway"
+          policy_engine_mode: any
+
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
@@ -126,11 +217,53 @@ data:
           expression: |
             return ak_is_group_member(request.user, name="Traefik Admins")
 
+      - model: authentik_policies_expression.expressionpolicy
+        id: weave-gitops-admin-policy
+        identifiers:
+          name: weave-gitops-admin-policy
+        state: present
+        attrs:
+          name: weave-gitops-admin-policy
+          expression: |
+            return ak_is_group_member(request.user, name="Weave GitOps Admins")
+
+      - model: authentik_policies_expression.expressionpolicy
+        id: guacamole-user-policy
+        identifiers:
+          name: guacamole-user-policy
+        state: present
+        attrs:
+          name: guacamole-user-policy
+          expression: |
+            return ak_is_group_member(request.user, name="Guacamole Users")
+
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
         identifiers:
           target: !KeyOf traefik-app
           policy: !KeyOf traefik-admin-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Weave GitOps application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf weave-gitops-app
+          policy: !KeyOf weave-gitops-admin-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Guacamole application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf guacamole-app
+          policy: !KeyOf guacamole-user-policy
           order: 0
         state: present
         attrs:
@@ -144,3 +277,4 @@ data:
         attrs:
           providers:
             - !KeyOf traefik-provider
+            - !KeyOf guacamole-provider
