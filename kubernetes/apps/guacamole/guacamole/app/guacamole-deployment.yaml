@@ -30,6 +30,8 @@ spec:
           ports:
             - name: guacd
               containerPort: 8080
+            - name: postgresql
+              containerPort: 5432
           resources:
             requests:
               cpu: 100m

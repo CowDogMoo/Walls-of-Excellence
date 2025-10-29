@@ -13,5 +13,9 @@ spec:
       port: 8080
       targetPort: 8080
       protocol: TCP
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
   selector:
     app: guacamole
