@@ -50,6 +50,8 @@ subjects:
     name: user2@example.com
 ```
 
+**IMPORTANT**: Also add users to `impersonationResourceNames` in `helmrelease.yaml`.
+
 Commit and push changes - Flux will apply automatically.
 
 ## Access
@@ -94,8 +96,8 @@ applications or resources.
 
 **Cause**: weave-gitops ServiceAccount can't impersonate OIDC users.
 
-**Solution**: Already fixed - `impersonationResourceNames: []` allows
-impersonating any user.
+**Solution**: Ensure `impersonationResourceNames` in `helmrelease.yaml`
+explicitly lists allowed users instead of being empty.
 
 ## Configuration Files
 
@@ -125,5 +127,4 @@ includes:
 - OIDC users require both:
   1. Authentik group membership ("Weave GitOps Admins")
   2. Kubernetes RBAC (ClusterRoleBinding)
-- User impersonation is unrestricted but users still need RBAC
-  permissions
+- User impersonation restricted to explicitly listed users

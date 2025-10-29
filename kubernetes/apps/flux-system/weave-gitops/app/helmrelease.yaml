@@ -66,7 +66,11 @@ spec:
       create: true
     rbac:
       create: true
-      impersonationResourceNames: []
+      # Restrict impersonation to only explicitly allowed OIDC users
+      # This list should match users in oidc-user-clusterrolebinding.yaml
+      impersonationResourceNames:
+        - admin
+        - jayson.e.grace@gmail.com
       additionalRules:
         - apiGroups: [""]
           resources:
