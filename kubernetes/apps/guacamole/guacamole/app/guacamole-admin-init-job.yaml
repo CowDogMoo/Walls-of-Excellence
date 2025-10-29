@@ -40,41 +40,46 @@ spec:
                 sleep 5
               done
 
-              echo "PostgreSQL is ready. Setting up admin user..."
+              echo "PostgreSQL is ready. Setting up admin users..."
 
-              # Create SSO user entity if not exists
+              # Create SSO user entities if not exist and grant admin permissions
+              # Handle both email and username formats
               psql -h guacamole -U guacamole -d guacamole_db <<'EOSQL'
-              -- Create entity for SSO user
+              -- Create entities for SSO users (both email and username)
               INSERT INTO guacamole_entity (name, type)
-              VALUES ('jayson.e.grace@gmail.com', 'USER')
+              VALUES
+                  ('jayson.e.grace@gmail.com', 'USER'),
+                  ('jayson', 'USER')
               ON CONFLICT (name, type) DO NOTHING;
 
-              -- Get entity ID
+              -- Grant admin permissions to both users
               DO $$
               DECLARE
-                  user_entity_id INTEGER;
+                  user_rec RECORD;
               BEGIN
-                  SELECT entity_id INTO user_entity_id
-                  FROM guacamole_entity
-                  WHERE name = 'jayson.e.grace@gmail.com' AND type = 'USER';
+                  FOR user_rec IN
+                      SELECT entity_id, name
+                      FROM guacamole_entity
+                      WHERE name IN ('jayson.e.grace@gmail.com', 'jayson') AND type = 'USER'
+                  LOOP
+                      -- Create user record if not exists
+                      INSERT INTO guacamole_user (entity_id, password_hash, password_salt, password_date)
+                      VALUES (user_rec.entity_id, E'\\x', E'\\x', NOW())
+                      ON CONFLICT (entity_id) DO NOTHING;
 
-                  -- Create user record if not exists
-                  INSERT INTO guacamole_user (entity_id, password_hash, password_salt, password_date)
-                  VALUES (user_entity_id, E'\\x', E'\\x', NOW())
-                  ON CONFLICT (entity_id) DO NOTHING;
+                      -- Grant ALL system permissions
+                      INSERT INTO guacamole_system_permission (entity_id, permission)
+                      VALUES
+                          (user_rec.entity_id, 'CREATE_CONNECTION'),
+                          (user_rec.entity_id, 'CREATE_CONNECTION_GROUP'),
+                          (user_rec.entity_id, 'CREATE_SHARING_PROFILE'),
+                          (user_rec.entity_id, 'CREATE_USER'),
+                          (user_rec.entity_id, 'CREATE_USER_GROUP'),
+                          (user_rec.entity_id, 'ADMINISTER')
+                      ON CONFLICT (entity_id, permission) DO NOTHING;
 
-                  -- Grant ALL system permissions
-                  INSERT INTO guacamole_system_permission (entity_id, permission)
-                  VALUES
-                      (user_entity_id, 'CREATE_CONNECTION'),
-                      (user_entity_id, 'CREATE_CONNECTION_GROUP'),
-                      (user_entity_id, 'CREATE_SHARING_PROFILE'),
-                      (user_entity_id, 'CREATE_USER'),
-                      (user_entity_id, 'CREATE_USER_GROUP'),
-                      (user_entity_id, 'ADMINISTER')
-                  ON CONFLICT (entity_id, permission) DO NOTHING;
-
-                  RAISE NOTICE 'Admin permissions granted to jayson.e.grace@gmail.com';
+                      RAISE NOTICE 'Admin permissions granted to %', user_rec.name;
+                  END LOOP;
               END $$;
               EOSQL
 
