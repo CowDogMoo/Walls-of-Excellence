@@ -174,11 +174,6 @@ tasks:
           kubectl apply -f "$ns_file"
         done
 
-        # Apply Flux config (without GitRepository - we're using local files)
-        echo ""
-        echo "Applying Flux configuration..."
-        kubectl apply -k kubernetes/flux/vars/
-
         # Apply only apps that can work in test environment
         echo ""
         echo "Applying testable app configurations..."
