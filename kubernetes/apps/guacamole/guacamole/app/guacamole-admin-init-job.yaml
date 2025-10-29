@@ -19,7 +19,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: admin-init
-          image: postgres:13-alpine
+          image: postgres:18-alpine
           command:
             - /bin/sh
             - -c
