@@ -10,6 +10,7 @@ spec:
   version: "v1.34.1+k3s1"
   serviceAccountName: system-upgrade
   concurrency: 1
+  jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
   nodeSelector:
     matchExpressions:
       - { key: node-role.kubernetes.io/control-plane, operator: DoesNotExist }

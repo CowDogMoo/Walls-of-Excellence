@@ -35,7 +35,7 @@ spec:
                   fieldRef:
                     fieldPath: spec.nodeName
               SYSTEM_UPGRADE_JOB_BACKOFF_LIMIT: "99"
-              SYSTEM_UPGRADE_JOB_PRIVILEGED: false
+              SYSTEM_UPGRADE_JOB_PRIVILEGED: true
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -54,6 +54,15 @@ spec:
             name: cluster-admin
           subjects:
             - identifier: system-upgrade-controller
+        system-upgrade:
+          type: ClusterRoleBinding
+          roleRef:
+            kind: ClusterRole
+            name: cluster-admin
+          subjects:
+            - identifier: system-upgrade
     serviceAccount:
       system-upgrade-controller:
+        enabled: true
+      system-upgrade:
         enabled: true
