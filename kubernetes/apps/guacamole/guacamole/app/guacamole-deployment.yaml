@@ -52,6 +52,12 @@ spec:
                   - |
                     sleep 10
                     echo "http-auth-header: X-authentik-username" >> /config/guacamole/guacamole.properties
+                    # Configure PostgreSQL to listen on all interfaces
+                    if ! grep -q "^listen_addresses = '\*'" /config/postgres/postgresql.conf; then
+                      sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /config/postgres/postgresql.conf
+                      # Restart PostgreSQL to apply changes
+                      killall -HUP postgres || true
+                    fi
       restartPolicy: Always
       volumes:
         - name: guacamole-pvc
