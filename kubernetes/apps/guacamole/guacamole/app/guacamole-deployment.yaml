@@ -58,6 +58,169 @@ spec:
                       # Restart PostgreSQL to apply changes
                       killall -HUP postgres || true
                     fi
+        - image: python:3.11-alpine
+          name: connection-provisioner
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Install dependencies
+              echo "Installing dependencies..."
+              pip install pyyaml psycopg2-binary --quiet
+
+              # Create Python script
+              cat > /tmp/provision_connections.py <<'EOPY'
+              import yaml
+              import psycopg2
+              import os
+              import sys
+              import glob
+              import time
+
+              def get_or_create_entity(cursor, username):
+                  """Get or create entity_id for a user"""
+                  cursor.execute("""
+                      INSERT INTO guacamole_entity (name, type)
+                      VALUES (%s, 'USER')
+                      ON CONFLICT (name, type) DO NOTHING
+                      RETURNING entity_id;
+                  """, (username,))
+                  result = cursor.fetchone()
+
+                  if result:
+                      return result[0]
+
+                  cursor.execute("""
+                      SELECT entity_id FROM guacamole_entity
+                      WHERE name = %s AND type = 'USER';
+                  """, (username,))
+                  return cursor.fetchone()[0]
+
+              def create_connection(cursor, conn_data):
+                  """Create a connection and its parameters"""
+                  name = conn_data['name']
+                  protocol = conn_data['protocol']
+
+                  cursor.execute("""
+                      SELECT connection_id FROM guacamole_connection
+                      WHERE connection_name = %s;
+                  """, (name,))
+                  existing = cursor.fetchone()
+
+                  if existing:
+                      print(f"Connection '{name}' already exists (ID: {existing[0]}), updating...")
+                      connection_id = existing[0]
+                      cursor.execute("""
+                          DELETE FROM guacamole_connection_parameter
+                          WHERE connection_id = %s;
+                      """, (connection_id,))
+                  else:
+                      cursor.execute("""
+                          INSERT INTO guacamole_connection (connection_name, protocol)
+                          VALUES (%s, %s)
+                          RETURNING connection_id;
+                      """, (name, protocol))
+                      connection_id = cursor.fetchone()[0]
+                      print(f"Created connection '{name}' (ID: {connection_id})")
+
+                  if 'parameters' in conn_data:
+                      for param_name, param_value in conn_data['parameters'].items():
+                          cursor.execute("""
+                              INSERT INTO guacamole_connection_parameter
+                              (connection_id, parameter_name, parameter_value)
+                              VALUES (%s, %s, %s);
+                          """, (connection_id, param_name, str(param_value)))
+                      print(f"  Added {len(conn_data['parameters'])} parameters")
+
+                  if 'users' in conn_data:
+                      permissions = conn_data.get('permissions', ['READ'])
+                      for username in conn_data['users']:
+                          entity_id = get_or_create_entity(cursor, username)
+                          for permission in permissions:
+                              cursor.execute("""
+                                  INSERT INTO guacamole_connection_permission
+                                  (entity_id, connection_id, permission)
+                                  VALUES (%s, %s, %s)
+                                  ON CONFLICT DO NOTHING;
+                              """, (entity_id, connection_id, permission))
+                          print(f"  Granted {permissions} to '{username}'")
+
+                  return connection_id
+
+              def main():
+                  print("Waiting for Guacamole to start...")
+                  time.sleep(30)
+
+                  while True:
+                      print("\n" + "="*50)
+                      print("Checking for connection updates...")
+                      print("="*50)
+
+                      connection_files = glob.glob('/connections/*/connection.yaml')
+
+                      if not connection_files:
+                          print("⚠️  No connection files found")
+                          time.sleep(300)
+                          continue
+
+                      connections = []
+                      for conn_file in connection_files:
+                          print(f"Reading: {conn_file}")
+                          with open(conn_file, 'r') as f:
+                              conn_data = yaml.safe_load(f)
+                              connections.append(conn_data)
+
+                      with open('/config/guacamole/guacamole.properties', 'r') as f:
+                          for line in f:
+                              if 'postgresql-password:' in line:
+                                  db_password = line.split(':', 1)[1].strip()
+                                  break
+
+                      try:
+                          conn = psycopg2.connect(
+                              host='localhost',
+                              database='guacamole_db',
+                              user='guacamole',
+                              password=db_password
+                          )
+
+                          cursor = conn.cursor()
+                          print(f"\nProvisioning {len(connections)} connection(s)...")
+
+                          for conn_data in connections:
+                              create_connection(cursor, conn_data)
+
+                          conn.commit()
+                          print(f"\n✅ Successfully provisioned {len(connections)} connection(s)!")
+                          cursor.close()
+                          conn.close()
+
+                      except Exception as e:
+                          print(f"❌ Error: {e}")
+                          import traceback
+                          traceback.print_exc()
+
+                      print("\nWaiting 5 minutes before next check...")
+                      time.sleep(300)
+
+              if __name__ == '__main__':
+                  main()
+              EOPY
+
+              python /tmp/provision_connections.py
+          volumeMounts:
+            - mountPath: /connections/jayson-pc
+              name: connection-jayson-pc
+              readOnly: true
+            - mountPath: /config
+              name: guacamole-pvc
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
       restartPolicy: Always
       volumes:
         - name: guacamole-pvc
@@ -66,3 +229,6 @@ spec:
         - name: guacamole-config
           configMap:
             name: guacamole-config
+        - name: connection-jayson-pc
+          secret:
+            secretName: guacamole-connection-jayson-pc
