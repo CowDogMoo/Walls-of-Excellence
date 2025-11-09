@@ -7,6 +7,18 @@ metadata:
   namespace: observability
 spec:
   interval: 1h
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: loki
+            patch: |
+              - op: add
+                path: /spec/template/spec/containers/1/volumeMounts/-
+                value:
+                  name: tmp
+                  mountPath: /tmp
   chartRef:
     kind: OCIRepository
     name: loki
