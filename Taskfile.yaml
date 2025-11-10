@@ -10,8 +10,10 @@ includes:
   pre-commit: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/pre-commit/Taskfile.yaml
   terraform: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/terraform/Taskfile.yaml
   renovate: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/renovate/Taskfile.yaml
+  onepassword: https://raw.githubusercontent.com/CowDogMoo/taskfile-templates/main/secrets/onepassword/Taskfile.yaml
   bootstrap: ./.taskfiles/bootstrap/Taskfile.yaml
   test: ./.taskfiles/test/Taskfile.yaml
+  guacamole: ./.taskfiles/guacamole/Taskfile.yaml
 
 vars:
   INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"
