@@ -77,6 +77,9 @@ spec:
             - mountPath: /connections/k8s2
               name: connection-k8s2
               readOnly: true
+            - mountPath: /connections/k8s3
+              name: connection-k8s3
+              readOnly: true
             - mountPath: /config
               name: guacamole-pvc
               readOnly: true
@@ -103,3 +106,6 @@ spec:
         - name: connection-k8s2
           secret:
             secretName: guacamole-connection-k8s2
+        - name: connection-k8s3
+          secret:
+            secretName: guacamole-connection-k8s3

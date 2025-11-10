@@ -245,38 +245,51 @@ tasks:
         if ! grep -q "/connections/$CONNECTION_NAME" "$DEPLOYMENT_FILE"; then
           echo "Adding volume mount to deployment..."
 
-          # Find the line with "readOnly: true" under connection-provisioner volumeMounts
-          # and add the new mount before the last one (which should be /config)
+          # Find the line with the last connection mount
           LAST_CONN_MOUNT=$(grep -n "mountPath: /connections/" "$DEPLOYMENT_FILE" | tail -1 | cut -d: -f1)
 
           if [ -n "$LAST_CONN_MOUNT" ]; then
-            # Add after the last connection mount (find the readOnly line after it)
+            # Add after the readOnly line of the last connection (2 lines after mountPath)
             READONLY_LINE=$((LAST_CONN_MOUNT + 2))
-            sed -i.bak "${READONLY_LINE}a\\
-            - mountPath: /connections/$CONNECTION_NAME\\
-              name: connection-$CONNECTION_NAME\\
-              readOnly: true
-        " "$DEPLOYMENT_FILE" && rm "$DEPLOYMENT_FILE.bak"
+
+            # Create temp file with the new lines inserted
+            awk -v line="$READONLY_LINE" -v conn="$CONNECTION_NAME" '
+              NR == line {
+                print
+                print "            - mountPath: /connections/" conn
+                print "              name: connection-" conn
+                print "              readOnly: true"
+                next
+              }
+              { print }
+            ' "$DEPLOYMENT_FILE" > "$DEPLOYMENT_FILE.tmp" && mv "$DEPLOYMENT_FILE.tmp" "$DEPLOYMENT_FILE"
           fi
 
           echo "✅ Added volume mount to deployment"
         fi
 
-        # Add volume definition
-        if ! grep -q "name: connection-$CONNECTION_NAME" "$DEPLOYMENT_FILE"; then
+        # Add volume definition (check in volumes section specifically, not volumeMounts)
+        if ! grep -q "^        - name: connection-$CONNECTION_NAME" "$DEPLOYMENT_FILE"; then
           echo "Adding volume definition to deployment..."
 
-          # Find the last connection volume and add after it
-          LAST_VOL=$(grep -n "name: connection-" "$DEPLOYMENT_FILE" | tail -1 | cut -d: -f1)
+          # Find the last connection volume (with 8-space indentation in volumes section)
+          LAST_VOL=$(grep -n "^        - name: connection-" "$DEPLOYMENT_FILE" | tail -1 | cut -d: -f1)
 
           if [ -n "$LAST_VOL" ]; then
-            # Find the secretName line after this volume name
+            # Find the secretName line (2 lines after the volume name)
             SECRET_LINE=$((LAST_VOL + 2))
-            sed -i.bak "${SECRET_LINE}a\\
-        - name: connection-$CONNECTION_NAME\\
-          secret:\\
-            secretName: $SECRET_NAME
-        " "$DEPLOYMENT_FILE" && rm "$DEPLOYMENT_FILE.bak"
+
+            # Create temp file with the new lines inserted
+            awk -v line="$SECRET_LINE" -v conn="$CONNECTION_NAME" -v secret="$SECRET_NAME" '
+              NR == line {
+                print
+                print "        - name: connection-" conn
+                print "          secret:"
+                print "            secretName: " secret
+                next
+              }
+              { print }
+            ' "$DEPLOYMENT_FILE" > "$DEPLOYMENT_FILE.tmp" && mv "$DEPLOYMENT_FILE.tmp" "$DEPLOYMENT_FILE"
           fi
 
           echo "✅ Added volume definition to deployment"
