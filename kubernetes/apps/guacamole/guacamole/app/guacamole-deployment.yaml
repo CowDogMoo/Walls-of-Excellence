@@ -17,6 +17,7 @@ spec:
         app: guacamole
     spec:
       serviceAccountName: default
+      terminationGracePeriodSeconds: 120
       containers:
         - image: flcontainers/guacamole:1.6.0
           env:
@@ -38,6 +39,34 @@ spec:
               memory: 128Mi
             limits:
               memory: 1024Mi
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check if PostgreSQL is ready
+                  pg_isready -U guacamole_user -d guacamole_db -h localhost -p 5432 && \
+                  # Check if Tomcat is responding
+                  curl -f http://localhost:8080/guacamole/ > /dev/null 2>&1
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check if PostgreSQL is running
+                  pg_isready -U guacamole_user -d guacamole_db -h localhost -p 5432 && \
+                  # Check if Tomcat is running
+                  pgrep -f tomcat > /dev/null
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
           volumeMounts:
             - mountPath: /config
               name: guacamole-pvc
@@ -58,6 +87,24 @@ spec:
                       # Restart PostgreSQL to apply changes
                       killall -HUP postgres || true
                     fi
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    # Gracefully shutdown PostgreSQL
+                    echo "Initiating graceful PostgreSQL shutdown..."
+                    su-exec postgres pg_ctl stop -D /config/postgres -m fast -t 60 || true
+                    # Wait for PostgreSQL to fully stop
+                    sleep 5
+                    # Stop Tomcat gracefully
+                    echo "Stopping Tomcat..."
+                    /opt/tomcat/bin/catalina.sh stop 30 -force || true
+                    # Stop guacd gracefully
+                    echo "Stopping guacd..."
+                    killall -TERM guacd || true
+                    sleep 2
         - image: ghcr.io/cowdogmoo/guacamole-provisioner:latest
           name: connection-provisioner
           env:
