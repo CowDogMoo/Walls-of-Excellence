@@ -232,6 +232,58 @@ tasks:
 
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ 1Password item created successfully!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        # Update deployment.yaml with new volume mount
+        DEPLOYMENT_FILE="{{.GUACAMOLE_APP_DIR}}/guacamole-deployment.yaml"
+        CONNECTION_NAME="{{.NAME}}"
+        SECRET_NAME="guacamole-connection-{{.NAME}}"
+
+        # Check if volume mount already exists
+        if ! grep -q "/connections/$CONNECTION_NAME" "$DEPLOYMENT_FILE"; then
+          echo "Adding volume mount to deployment..."
+
+          # Find the line with "readOnly: true" under connection-provisioner volumeMounts
+          # and add the new mount before the last one (which should be /config)
+          LAST_CONN_MOUNT=$(grep -n "mountPath: /connections/" "$DEPLOYMENT_FILE" | tail -1 | cut -d: -f1)
+
+          if [ -n "$LAST_CONN_MOUNT" ]; then
+            # Add after the last connection mount (find the readOnly line after it)
+            READONLY_LINE=$((LAST_CONN_MOUNT + 2))
+            sed -i.bak "${READONLY_LINE}a\\
+            - mountPath: /connections/$CONNECTION_NAME\\
+              name: connection-$CONNECTION_NAME\\
+              readOnly: true
+        " "$DEPLOYMENT_FILE" && rm "$DEPLOYMENT_FILE.bak"
+          fi
+
+          echo "✅ Added volume mount to deployment"
+        fi
+
+        # Add volume definition
+        if ! grep -q "name: connection-$CONNECTION_NAME" "$DEPLOYMENT_FILE"; then
+          echo "Adding volume definition to deployment..."
+
+          # Find the last connection volume and add after it
+          LAST_VOL=$(grep -n "name: connection-" "$DEPLOYMENT_FILE" | tail -1 | cut -d: -f1)
+
+          if [ -n "$LAST_VOL" ]; then
+            # Find the secretName line after this volume name
+            SECRET_LINE=$((LAST_VOL + 2))
+            sed -i.bak "${SECRET_LINE}a\\
+        - name: connection-$CONNECTION_NAME\\
+          secret:\\
+            secretName: $SECRET_NAME
+        " "$DEPLOYMENT_FILE" && rm "$DEPLOYMENT_FILE.bak"
+          fi
+
+          echo "✅ Added volume definition to deployment"
+        fi
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "✅ Connection '{{.NAME}}' created successfully!"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
