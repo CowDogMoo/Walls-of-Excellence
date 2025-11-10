@@ -50,6 +50,10 @@ spec:
       name: authentik-secrets
       valuesKey: GUACAMOLE_CLIENT_SECRET
       targetPath: blueprints.context.guacamole_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: TAILSCALE_CLIENT_SECRET
+      targetPath: blueprints.context.tailscale_client_secret
   values:
     global:
       image: {}
