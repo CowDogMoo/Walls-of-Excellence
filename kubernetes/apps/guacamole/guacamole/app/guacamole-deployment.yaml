@@ -71,6 +71,9 @@ spec:
             - mountPath: /connections/jayson-pc
               name: connection-jayson-pc
               readOnly: true
+            - mountPath: /connections/k8s1
+              name: connection-k8s1
+              readOnly: true
             - mountPath: /config
               name: guacamole-pvc
               readOnly: true
@@ -91,3 +94,6 @@ spec:
         - name: connection-jayson-pc
           secret:
             secretName: guacamole-connection-jayson-pc
+        - name: connection-k8s1
+          secret:
+            secretName: guacamole-connection-k8s1
