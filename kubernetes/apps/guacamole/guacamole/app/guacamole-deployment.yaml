@@ -49,10 +49,10 @@ spec:
                   pg_isready -U guacamole_user -d guacamole_db -h localhost -p 5432 && \
                   # Check if Tomcat is responding
                   curl -f http://localhost:8080/guacamole/ > /dev/null 2>&1
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           livenessProbe:
             exec:
               command:
@@ -63,7 +63,7 @@ spec:
                   pg_isready -U guacamole_user -d guacamole_db -h localhost -p 5432 && \
                   # Check if Tomcat is running
                   pgrep -f tomcat > /dev/null
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
