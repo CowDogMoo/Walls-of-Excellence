@@ -10,9 +10,9 @@ resources:
   - ./guacamole-service.yaml
   - ./guacamole-ingress.yaml
   - ./guacamole-admin-init-job.yaml
-  - ./externalsecret-jayson-pc.yaml
-  - ./externalsecret-k8s1.yaml
   - ./externalsecret-k8s2.yaml
+  - ./externalsecret-k8s1.yaml
+  - ./externalsecret-jayson-pc.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: guacamole

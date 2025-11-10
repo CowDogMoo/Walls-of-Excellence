@@ -204,16 +204,21 @@ tasks:
           if [ -n "{{.PASSWORD}}" ]; then
             FIELDS="$FIELDS||password={{.PASSWORD}}:password"
           fi
-          if [ -n "{{.DOMAIN}}" ]; then
-            FIELDS="$FIELDS||domain={{.DOMAIN}}"
-          fi
+          # Always add domain field (empty if not provided)
+          FIELDS="$FIELDS||domain={{.DOMAIN}}"
           if [ -n "{{.SECURITY}}" ]; then
             FIELDS="$FIELDS||security={{.SECURITY}}"
           fi
+          # Always add RDP optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_audio=true"
         else
           if [ -n "{{.PRIVATE_KEY}}" ]; then
             FIELDS="$FIELDS||private_key={{.PRIVATE_KEY}}:password"
           fi
+          # Always add SSH optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_sftp=true"
         fi
 
         echo "Creating 1Password secure note..."
@@ -334,16 +339,21 @@ tasks:
           if [ -n "{{.PASSWORD}}" ]; then
             FIELDS="$FIELDS||password={{.PASSWORD}}:password"
           fi
-          if [ -n "{{.DOMAIN}}" ]; then
-            FIELDS="$FIELDS||domain={{.DOMAIN}}"
-          fi
+          # Always add domain field (empty if not provided)
+          FIELDS="$FIELDS||domain={{.DOMAIN}}"
           if [ -n "{{.SECURITY}}" ]; then
             FIELDS="$FIELDS||security={{.SECURITY}}"
           fi
+          # Always add RDP optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_audio=true"
         else
           if [ -n "{{.PRIVATE_KEY}}" ]; then
             FIELDS="$FIELDS||private_key={{.PRIVATE_KEY}}:password"
           fi
+          # Always add SSH optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_sftp=true"
         fi
 
         # Call the onepassword task to create the secure note
