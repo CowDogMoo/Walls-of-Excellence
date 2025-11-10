@@ -27,34 +27,14 @@ spec:
             {{ "{{" }}- if .private_key {{ "}}" }}
             private-key: {{ "{{" }} .private_key | quote {{ "}}" }}
             {{ "{{" }}- end {{ "}}" }}
-            {{ "{{" }}- if .enable_sftp {{ "}}" }}
-            enable-sftp: {{ "{{" }} .enable_sftp | quote {{ "}}" }}
-            {{ "{{" }}- else {{ "}}" }}
             enable-sftp: "true"
-            {{ "{{" }}- end {{ "}}" }}
-            {{ "{{" }}- if .sftp_root_directory {{ "}}" }}
-            sftp-root-directory: {{ "{{" }} .sftp_root_directory | quote {{ "}}" }}
-            {{ "{{" }}- else if .username {{ "}}" }}
+            {{ "{{" }}- if .username {{ "}}" }}
             sftp-root-directory: {{ "{{" }} printf "/home/%s" .username | quote {{ "}}" }}
             {{ "{{" }}- end {{ "}}" }}
-            {{ "{{" }}- if .color_scheme {{ "}}" }}
-            color-scheme: {{ "{{" }} .color_scheme | quote {{ "}}" }}
-            {{ "{{" }}- else {{ "}}" }}
             color-scheme: "green-black"
-            {{ "{{" }}- end {{ "}}" }}
-            {{ "{{" }}- if .font_name {{ "}}" }}
-            font-name: {{ "{{" }} .font_name | quote {{ "}}" }}
-            {{ "{{" }}- else {{ "}}" }}
             font-name: "monospace"
-            {{ "{{" }}- end {{ "}}" }}
-            {{ "{{" }}- if .font_size {{ "}}" }}
-            font-size: {{ "{{" }} .font_size | quote {{ "}}" }}
-            {{ "{{" }}- else {{ "}}" }}
             font-size: "12"
-            {{ "{{" }}- end {{ "}}" }}
-            {{ "{{" }}- if .enable_clipboard {{ "}}" }}
-            enable-clipboard: {{ "{{" }} .enable_clipboard | quote {{ "}}" }}
-            {{ "{{" }}- end {{ "}}" }}
+            enable-clipboard: "true"
           users:
             {{ "{{" }}- if .users {{ "}}" }}
             {{ "{{" }}- $users := .users {{ "}}" }}
