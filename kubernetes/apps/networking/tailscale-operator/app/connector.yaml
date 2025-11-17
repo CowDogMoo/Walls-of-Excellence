@@ -15,8 +15,8 @@ spec:
       - "10.42.0.0/16"
       # K3s default service CIDR - adjust if you've customized your cluster
       - "10.43.0.0/16"
-      # Uncomment and adjust to advertise your local network if needed
-      # - "192.168.1.0/24"
+      # Local network for LoadBalancer IPs
+      - "192.168.20.0/24"
 
   # Tags applied to this device in Tailscale
   tags:
