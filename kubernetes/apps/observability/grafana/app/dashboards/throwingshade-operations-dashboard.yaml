@@ -26,40 +26,7 @@ data:
         "to": "now"
       },
       "templating": {
-        "list": [
-          {
-            "name": "shade_name",
-            "label": "Shade",
-            "type": "query",
-            "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\", shade_name)",
-            "multi": true,
-            "includeAll": true,
-            "current": {
-              "selected": true,
-              "text": "All",
-              "value": "$__all"
-            },
-            "refresh": 1,
-            "sort": 1
-          },
-          {
-            "name": "operation",
-            "label": "Operation",
-            "type": "query",
-            "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\", operation)",
-            "multi": true,
-            "includeAll": true,
-            "current": {
-              "selected": true,
-              "text": "All",
-              "value": "$__all"
-            },
-            "refresh": 1,
-            "sort": 1
-          }
-        ]
+        "list": []
       },
       "panels": [
         {
@@ -69,7 +36,7 @@ data:
           "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\" [6h])",
+              "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [6h])",
               "refId": "A"
             }
           ],
@@ -96,7 +63,7 @@ data:
           "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", level=\"ERROR\"} |= \"throwingshade\" [6h])",
+              "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(ERROR|error)\" |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [6h])",
               "refId": "A"
             }
           ],
@@ -131,7 +98,7 @@ data:
           "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", app=\"mosquitto\"} [6h])",
+              "expr": "count_over_time({namespace=\"home-automation\", pod=~\"mosquitto.*\"} [6h])",
               "refId": "A"
             }
           ],
@@ -153,7 +120,7 @@ data:
           "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "(count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\" [6h]) - count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", level=\"ERROR\"} |= \"throwingshade\" [6h])) / count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\" [6h]) * 100",
+              "expr": "(count_over_time({namespace=\"home-automation\"} |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [6h]) - count_over_time({namespace=\"home-automation\"} |~ \"(?i)(ERROR|error)\" |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [6h])) / count_over_time({namespace=\"home-automation\"} |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [6h]) * 100",
               "refId": "A"
             }
           ],
@@ -186,9 +153,9 @@ data:
           "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "sum by (operation) (count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", operation=~\"$operation\"} |= \"throwingshade\" [5m]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\"} |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [5m]))",
               "refId": "A",
-              "legendFormat": "{{operation}}"
+              "legendFormat": "Operations"
             }
           ],
           "options": {
@@ -220,9 +187,9 @@ data:
           "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
           "targets": [
             {
-              "expr": "sum by (shade_name) (count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", shade_name=~\"$shade_name\"} |= \"throwingshade\" [6h]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\"} |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\" [6h]))",
               "refId": "A",
-              "legendFormat": "{{shade_name}}"
+              "legendFormat": "All Operations"
             }
           ],
           "options": {
@@ -242,7 +209,7 @@ data:
           "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", app_name=\"home-assistant\", shade_name=~\"$shade_name\", operation=~\"$operation\"} |= \"throwingshade\"",
+              "expr": "{namespace=\"home-automation\"} |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\"",
               "refId": "A"
             }
           ],
@@ -262,7 +229,7 @@ data:
           "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", app_name=\"home-assistant\", level=\"ERROR\"} |= \"throwingshade\"",
+              "expr": "{namespace=\"home-automation\"} |~ \"(?i)(ERROR|error)\" |~ \"(?i)(throwingshade|shade.*command|cover\\\\.)\"",
               "refId": "A"
             }
           ],
@@ -282,7 +249,7 @@ data:
           "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", app=\"mosquitto\"}",
+              "expr": "{namespace=\"home-automation\", pod=~\"mosquitto.*\"}",
               "refId": "A"
             }
           ],

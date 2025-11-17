@@ -83,7 +83,7 @@ data:
           "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", container=\"troy-backup\", level=\"error\"} [24h])",
+              "expr": "count_over_time({namespace=\"home-automation\", container=\"troy-backup\"} |~ \"(?i)(error|fail)\" [24h])",
               "refId": "A"
             }
           ],
@@ -164,7 +164,7 @@ data:
           "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", container=\"troy-backup\", level=\"error\"}",
+              "expr": "{namespace=\"home-automation\", container=\"troy-backup\"} |~ \"(?i)(error|fail)\"",
               "refId": "A"
             }
           ],

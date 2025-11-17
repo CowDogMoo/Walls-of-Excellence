@@ -206,9 +206,9 @@ data:
           "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
           "targets": [
             {
-              "expr": "sum by (level) (count_over_time({namespace=\"home-automation\", level=~\".+\"} [3h]))",
+              "expr": "count_over_time({namespace=\"home-automation\"} [3h])",
               "refId": "A",
-              "legendFormat": "{{level}}"
+              "legendFormat": "All Logs"
             }
           ],
           "options": {
@@ -229,7 +229,7 @@ data:
           "gridPos": { "x": 8, "y": 16, "w": 4, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", level=~\"ERROR|error\"} [1h])",
+              "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(ERROR|error)\" [1h])",
               "refId": "A"
             }
           ],
@@ -265,7 +265,7 @@ data:
           "gridPos": { "x": 12, "y": 16, "w": 4, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", level=~\"WARNING|WARN|warning\"} [1h])",
+              "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(WARNING|WARN|warning)\" [1h])",
               "refId": "A"
             }
           ],
