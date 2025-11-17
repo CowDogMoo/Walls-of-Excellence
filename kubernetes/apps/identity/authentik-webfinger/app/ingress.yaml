@@ -1,0 +1,30 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authentik-webfinger
+  namespace: identity
+  labels:
+    app.kubernetes.io/name: authentik-webfinger
+    app.kubernetes.io/instance: authentik-webfinger
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: networking-cloudflare-only@kubernetescrd
+spec:
+  ingressClassName: ingress-traefik
+  tls:
+    - hosts:
+        - techvomit.xyz
+      secretName: techvomit-xyz-webfinger-tls
+  rules:
+    - host: techvomit.xyz
+      http:
+        paths:
+          - path: /.well-known/webfinger
+            pathType: Prefix
+            backend:
+              service:
+                name: authentik-webfinger
+                port:
+                  name: http
