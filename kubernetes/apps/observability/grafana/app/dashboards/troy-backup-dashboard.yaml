@@ -8,8 +8,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Automation"
-    dashboard-version: "2.0.0"
-    last-modified: "2025-11-16"
+    dashboard-version: "3.0.0"
+    last-modified: "2025-01-16"
 data:
   troy-backup.json: |
     {
@@ -19,20 +19,20 @@ data:
       "tags": ["home-automation", "backup", "throwingshade", "troy-backup"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 2,
+      "version": 3,
       "refresh": "30s",
       "time": {
-        "from": "now-7d",
+        "from": "now-8d",
         "to": "now"
       },
       "templating": {
         "list": [
           {
-            "name": "job",
-            "label": "Job",
+            "name": "pod",
+            "label": "Pod",
             "type": "query",
             "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", container=\"backup\"}, job)",
+            "query": "label_values({namespace=\"home-automation\", app=\"troy-backup\"}, pod)",
             "multi": true,
             "includeAll": true,
             "current": {
@@ -53,7 +53,7 @@ data:
           "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} [$__range]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} [1h]))",
               "refId": "A"
             }
           ],
@@ -83,7 +83,7 @@ data:
           "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} |~ `(?i)(error|fail|exception)` [$__range]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} |~ `(?i)(error|fail|exception)` [1h]))",
               "refId": "A"
             }
           ],
@@ -121,7 +121,7 @@ data:
           "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} |~ `(?i)(warn|warning)` [$__range]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} |~ `(?i)(warn|warning)` [1h]))",
               "refId": "A"
             }
           ],
@@ -159,7 +159,7 @@ data:
           "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} [5m]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} [5m]))",
               "refId": "A",
               "legendFormat": "Log entries"
             }
@@ -196,7 +196,7 @@ data:
           "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} |~ `(?i)(error|fail|exception)`",
+              "expr": "{namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} |~ `(?i)(error|fail|exception)`",
               "refId": "A"
             }
           ],
@@ -219,7 +219,7 @@ data:
           "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", container=\"backup\", job=~\"$job\"}",
+              "expr": "{namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"}",
               "refId": "A"
             }
           ],
