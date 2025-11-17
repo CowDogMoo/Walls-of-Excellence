@@ -7,7 +7,7 @@ metadata:
   labels:
     grafana_dashboard: "1"
   annotations:
-    grafana_folder: "Home Assistant"
+    grafana_folder: "Home Automation"
     dashboard-version: "1.0.0"
     last-modified: "2025-01-17"
 data:
