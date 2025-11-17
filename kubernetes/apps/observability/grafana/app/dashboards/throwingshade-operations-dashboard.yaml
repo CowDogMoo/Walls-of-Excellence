@@ -1,0 +1,520 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: throwingshade-operations-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Home Automation"
+    dashboard-version: "3.0.0"
+    last-modified: "2025-11-16"
+data:
+  throwingshade-operations.json: |
+    {
+      "uid": "throwingshade-operations",
+      "title": "Shade Operations",
+      "description": "Monitor shade operations, room activity, and errors across all rooms",
+      "tags": ["home-automation", "throwingshade", "shades", "monitoring"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 3,
+      "refresh": "30s",
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "pod",
+            "label": "Pod",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({namespace=\"home-automation\"}, pod)",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "refresh": 1,
+            "sort": 1
+          },
+          {
+            "name": "room",
+            "label": "Room",
+            "type": "custom",
+            "datasource": null,
+            "query": "AO,DN,FM,GT,LV,NS,OB,OBT,TH",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Shade Operations",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` [$__range]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 2,
+          "title": "Errors",
+          "type": "stat",
+          "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)` [$__range]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 5, "color": "red" }
+                ]
+              },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 3,
+          "title": "Warnings",
+          "type": "stat",
+          "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)` [$__range]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 10, "color": "orange" }
+                ]
+              },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 13,
+          "title": "Shade Movement Timeline",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `position changed` [5m]))",
+              "refId": "A",
+              "legendFormat": "Position Changes"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `Executing step` [5m]))",
+              "refId": "B",
+              "legendFormat": "Commands"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `Failed to get position` [5m]))",
+              "refId": "C",
+              "legendFormat": "Failures"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "fillOpacity": 10,
+                "showPoints": "auto"
+              },
+              "unit": "short",
+              "min": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 9,
+          "title": "Active Rooms",
+          "type": "stat",
+          "gridPos": { "x": 16, "y": 4, "w": 4, "h": 8 },
+          "targets": [
+            {
+              "expr": "count(count by (room) (count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `shade.*room` | regexp `room (?P<room>[A-Z]+)` [5m])))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 4,
+          "title": "Shade Operations Over Time",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` [5m]))",
+              "refId": "A",
+              "legendFormat": "Operations"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "fillOpacity": 20,
+                "showPoints": "auto"
+              },
+              "unit": "short",
+              "min": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 5,
+          "title": "Error & Warning Trends",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)` [5m]))",
+              "refId": "A",
+              "legendFormat": "Errors"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)` [5m]))",
+              "refId": "B",
+              "legendFormat": "Warnings"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "fillOpacity": 20,
+                "showPoints": "auto"
+              },
+              "unit": "short",
+              "min": 0
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Errors" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Warnings" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
+              }
+            ]
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 10,
+          "title": "Shade Activity by Room",
+          "type": "barchart",
+          "gridPos": { "x": 20, "y": 4, "w": 4, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (room) (count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `room [A-Z]+` | regexp `room (?P<room>[A-Z]+)` [$__range]))",
+              "refId": "A",
+              "legendFormat": "{{room}}"
+            }
+          ],
+          "options": {
+            "orientation": "vertical",
+            "displayLabels": ["name"],
+            "showLegend": false,
+            "barWidth": 0.8,
+            "groupWidth": 0.8,
+            "showValue": "auto",
+            "stacking": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "gradientMode": "scheme",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              },
+              "unit": "short"
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 11,
+          "title": "Shade Positions",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `Position:.*%`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 12,
+          "title": "Recent Command Activity",
+          "type": "logs",
+          "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(shade|cover)` |~ `(?i)(executing|command)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 15,
+          "title": "Shade Commands & Operations",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 12 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(shade|cover)` |~ `(?i)(position|executing|command)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 6,
+          "title": "Error Logs",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 48, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 7,
+          "title": "Warning Logs",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 56, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 8,
+          "title": "All Shade Logs",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 64, "w": 24, "h": 10 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        }
+      ]
+    }

@@ -1,0 +1,62 @@
+{{- $data := ds "data" | data.YAML -}}
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1beta1.json
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: guacamole-connection-{{$data.Name}}
+  namespace: guacamole
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: onepassword-connect
+  target:
+    name: guacamole-connection-{{$data.Name}}
+    template:
+      engineVersion: v2
+      data:
+        connection.yaml: |
+          name: {{ "{{" }} .name | quote {{ "}}" }}
+          protocol: {{ "{{" }} .protocol | quote {{ "}}" }}
+          parameters:
+            hostname: {{ "{{" }} .hostname | quote {{ "}}" }}
+            port: {{ "{{" }} .port | quote {{ "}}" }}
+            {{ "{{" }}- if .username {{ "}}" }}
+            username: {{ "{{" }} .username | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- if .private_key {{ "}}" }}
+            private-key: {{ "{{" }} .private_key | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- if .enable_sftp {{ "}}" }}
+            enable-sftp: {{ "{{" }} .enable_sftp | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- if .username {{ "}}" }}
+            sftp-root-directory: {{ "{{" }} printf "/home/%s" .username | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            color-scheme: "green-black"
+            font-name: "monospace"
+            font-size: "12"
+            {{ "{{" }}- if .enable_clipboard {{ "}}" }}
+            enable-clipboard: {{ "{{" }} .enable_clipboard | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+          users:
+            {{ "{{" }}- if .users {{ "}}" }}
+            {{ "{{" }}- $users := .users {{ "}}" }}
+            {{ "{{" }}- range $user := split "," $users {{ "}}" }}
+            {{ "{{" }}- if $user {{ "}}" }}
+            - {{ "{{" }} $user | trim | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+          permissions:
+            {{ "{{" }}- if .permissions {{ "}}" }}
+            {{ "{{" }}- $perms := .permissions {{ "}}" }}
+            {{ "{{" }}- range $perm := split "," $perms {{ "}}" }}
+            {{ "{{" }}- if $perm {{ "}}" }}
+            - {{ "{{" }} $perm | trim | quote {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+            {{ "{{" }}- end {{ "}}" }}
+  dataFrom:
+    - extract:
+        key: {{$data.OnePasswordKey}}

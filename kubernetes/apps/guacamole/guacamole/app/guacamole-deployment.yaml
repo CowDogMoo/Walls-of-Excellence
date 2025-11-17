@@ -17,6 +17,7 @@ spec:
         app: guacamole
     spec:
       serviceAccountName: default
+      terminationGracePeriodSeconds: 120
       containers:
         - image: flcontainers/guacamole:1.6.0
           env:
@@ -38,6 +39,20 @@ spec:
               memory: 128Mi
             limits:
               memory: 1024Mi
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
           volumeMounts:
             - mountPath: /config
               name: guacamole-pvc
@@ -51,13 +66,64 @@ spec:
                   - -c
                   - |
                     sleep 10
-                    echo "http-auth-header: X-authentik-username" >> /config/guacamole/guacamole.properties
                     # Configure PostgreSQL to listen on all interfaces
                     if ! grep -q "^listen_addresses = '\*'" /config/postgres/postgresql.conf; then
                       sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /config/postgres/postgresql.conf
                       # Restart PostgreSQL to apply changes
                       killall -HUP postgres || true
                     fi
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    # Gracefully shutdown PostgreSQL
+                    echo "Initiating graceful PostgreSQL shutdown..."
+                    su-exec postgres pg_ctl stop -D /config/postgres -m fast -t 60 || true
+                    # Wait for PostgreSQL to fully stop
+                    sleep 5
+                    # Stop Tomcat gracefully
+                    echo "Stopping Tomcat..."
+                    /opt/tomcat/bin/catalina.sh stop 30 -force || true
+                    # Stop guacd gracefully
+                    echo "Stopping guacd..."
+                    killall -TERM guacd || true
+                    sleep 2
+        - image: ghcr.io/cowdogmoo/guacamole-provisioner:latest
+          name: connection-provisioner
+          env:
+            - name: STARTUP_DELAY
+              value: "15"
+            - name: POLL_INTERVAL
+              value: "300"
+            - name: BATCH_SIZE
+              value: "100"
+          volumeMounts:
+            - mountPath: /connections/jayson-pc
+              name: connection-jayson-pc
+              readOnly: true
+            - mountPath: /connections/k8s1
+              name: connection-k8s1
+              readOnly: true
+            - mountPath: /connections/k8s2
+              name: connection-k8s2
+              readOnly: true
+            - mountPath: /connections/k8s3
+              name: connection-k8s3
+              readOnly: true
+            - mountPath: /connections/k8s4
+              name: connection-k8s4
+              readOnly: true
+            - mountPath: /config
+              name: guacamole-pvc
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
       restartPolicy: Always
       volumes:
         - name: guacamole-pvc
@@ -66,3 +132,18 @@ spec:
         - name: guacamole-config
           configMap:
             name: guacamole-config
+        - name: connection-jayson-pc
+          secret:
+            secretName: guacamole-connection-jayson-pc
+        - name: connection-k8s1
+          secret:
+            secretName: guacamole-connection-k8s1
+        - name: connection-k8s2
+          secret:
+            secretName: guacamole-connection-k8s2
+        - name: connection-k8s3
+          secret:
+            secretName: guacamole-connection-k8s3
+        - name: connection-k8s4
+          secret:
+            secretName: guacamole-connection-k8s4

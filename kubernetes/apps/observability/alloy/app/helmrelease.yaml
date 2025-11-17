@@ -53,6 +53,10 @@ spec:
               target_label  = "app"
             }
             rule {
+              source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+              target_label  = "app_name"
+            }
+            rule {
               source_labels = ["__meta_kubernetes_pod_node_name"]
               target_label  = "node"
             }
@@ -61,8 +65,59 @@ spec:
           // Scrape Kubernetes pod logs
           loki.source.kubernetes "pods" {
             targets    = discovery.relabel.pods.output
-            forward_to = [loki.write.loki.receiver]
+            forward_to = [loki.process.home_automation.receiver]
           }
+
+          // Process home-automation namespace logs
+          loki.process "home_automation" {
+            forward_to = [loki.write.loki.receiver]
+
+            // Parse JSON logs from troy-backup and throwingshade
+            stage.match {
+              selector = "{namespace=\"home-automation\", container=\"troy-backup\"}"
+              stage.json {
+                expressions = {
+                  level = "level",
+                  msg   = "msg",
+                  time  = "time",
+                }
+              }
+              stage.labels {
+                values = {
+                  level = "",
+                }
+              }
+            }
+
+            // Parse home-assistant logs
+            stage.match {
+              selector = "{namespace=\"home-automation\", app_name=\"home-assistant\"}"
+              stage.regex {
+                expression = "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<level>\\w+) (?P<component>[\\w\\.]+): (?P<message>.*)"
+              }
+              stage.labels {
+                values = {
+                  level     = "",
+                  component = "",
+                }
+              }
+            }
+
+            // Extract throwingshade operations from home-assistant logs
+            stage.match {
+              selector = "{namespace=\"home-automation\", app_name=\"home-assistant\"} |~ \"throwingshade\""
+              stage.regex {
+                expression = "(?P<operation>open|close|stop|set_position).*shade.*(?P<shade_name>[\\w-]+)"
+              }
+              stage.labels {
+                values = {
+                  operation  = "",
+                  shade_name = "",
+                }
+              }
+            }
+          }
+
           // Write logs to Loki
           loki.write "loki" {
             endpoint {

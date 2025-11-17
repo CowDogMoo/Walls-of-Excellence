@@ -1,0 +1,461 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+set: [pipefail]
+
+vars:
+  GUACAMOLE_APP_DIR: "{{.ROOT_DIR}}/kubernetes/apps/guacamole/guacamole/app"
+  KUSTOMIZATION_FILE: "{{.GUACAMOLE_APP_DIR}}/kustomization.yaml"
+  TEMPLATE_DIR: "{{.ROOT_DIR}}/.taskfiles/guacamole/templates"
+  RDP_TEMPLATE: "{{.TEMPLATE_DIR}}/connection-rdp.yaml.tmpl"
+  SSH_TEMPLATE: "{{.TEMPLATE_DIR}}/connection-ssh.yaml.tmpl"
+
+tasks:
+  add-connection:
+    desc: Create a new Guacamole connection from template
+    summary: |
+      Creates a new Guacamole connection ExternalSecret from a template and
+      automatically creates the 1Password secure note.
+
+      Required Parameters:
+        NAME            - Connection identifier (e.g., "myserver", "workstation")
+        PROTOCOL        - Connection protocol ("rdp" or "ssh")
+        ONEPASSWORD_KEY - The 1Password item key (e.g., "guacamole-myserver")
+        VAULT           - 1Password vault name
+        HOSTNAME        - Target hostname or IP
+        PORT            - Connection port
+
+      Common Parameters:
+        DISPLAY_NAME - Display name (defaults to NAME)
+        USERNAME     - Login username
+        USERS        - Comma-separated list of guacamole users
+        PERMISSIONS  - Comma-separated permissions list
+
+      RDP-specific Parameters:
+        PASSWORD - Authentication password
+        DOMAIN   - Windows domain
+        SECURITY - RDP security mode (rdp/nla/tls/any)
+
+      SSH-specific Parameters:
+        PRIVATE_KEY - SSH private key content
+
+      Usage:
+        task guacamole:add-connection NAME=myserver PROTOCOL=ssh VAULT=homelab HOSTNAME=192.168.1.10 PORT=22 USERNAME=admin
+        task guacamole:add-connection NAME=win11 PROTOCOL=rdp VAULT=homelab HOSTNAME=192.168.1.20 PORT=3389 USERNAME=admin PASSWORD=secret
+    vars:
+      NAME: "{{.NAME}}"
+      PROTOCOL: "{{.PROTOCOL}}"
+      ONEPASSWORD_KEY: "{{.ONEPASSWORD_KEY}}"
+      VAULT: "{{.VAULT}}"
+      OUTPUT_FILE: "{{.GUACAMOLE_APP_DIR}}/externalsecret-{{.NAME}}.yaml"
+
+      # Common fields
+      DISPLAY_NAME: "{{.DISPLAY_NAME | default .NAME}}"
+      HOSTNAME: '{{.HOSTNAME | default ""}}'
+      PORT: '{{.PORT | default ""}}'
+      USERNAME: '{{.USERNAME | default ""}}'
+      USERS: '{{.USERS | default ""}}'
+      PERMISSIONS: '{{.PERMISSIONS | default ""}}'
+
+      # RDP fields
+      PASSWORD: '{{.PASSWORD | default ""}}'
+      DOMAIN: '{{.DOMAIN | default ""}}'
+      SECURITY: '{{.SECURITY | default ""}}'
+
+      # SSH fields
+      PRIVATE_KEY: '{{.PRIVATE_KEY | default ""}}'
+    cmds:
+      - |
+        # Validate required parameters
+        if [ -z "{{.NAME}}" ]; then
+          echo "❌ Error: NAME parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.PROTOCOL}}" ]; then
+          echo "❌ Error: PROTOCOL parameter is required (rdp or ssh)"
+          exit 1
+        fi
+
+        if [ "{{.PROTOCOL}}" != "rdp" ] && [ "{{.PROTOCOL}}" != "ssh" ]; then
+          echo "❌ Error: PROTOCOL must be either 'rdp' or 'ssh'"
+          exit 1
+        fi
+
+        if [ -z "{{.ONEPASSWORD_KEY}}" ]; then
+          echo "❌ Error: ONEPASSWORD_KEY parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.VAULT}}" ]; then
+          echo "❌ Error: VAULT parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.HOSTNAME}}" ]; then
+          echo "❌ Error: HOSTNAME parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.PORT}}" ]; then
+          echo "❌ Error: PORT parameter is required"
+          exit 1
+        fi
+
+        # Check if connection already exists
+        if [ -f "{{.OUTPUT_FILE}}" ]; then
+          echo "❌ Error: Connection '{{.NAME}}' already exists"
+          echo "   File: {{.OUTPUT_FILE}}"
+          exit 1
+        fi
+
+        echo "Creating new Guacamole {{.PROTOCOL | upper}} connection: {{.NAME}}"
+        echo ""
+
+        # Create temporary YAML file for the template data
+        TEMP_DATA=$(mktemp)
+        trap "rm -f $TEMP_DATA" EXIT
+
+        cat > "$TEMP_DATA" << EOF
+        Name: "{{.NAME}}"
+        OnePasswordKey: "{{.ONEPASSWORD_KEY}}"
+        EOF
+
+        # Select template based on protocol
+        if [ "{{.PROTOCOL}}" = "rdp" ]; then
+          TEMPLATE_FILE="{{.RDP_TEMPLATE}}"
+        else
+          TEMPLATE_FILE="{{.SSH_TEMPLATE}}"
+        fi
+
+        # Check if Docker is available
+        if command -v docker >/dev/null 2>&1; then
+          docker run --rm \
+            -v "{{.ROOT_DIR}}:{{.ROOT_DIR}}" \
+            -v "$TEMP_DATA:$TEMP_DATA" \
+            -w "{{.ROOT_DIR}}" \
+            hairyhenderson/gomplate:latest \
+            -f "$TEMPLATE_FILE" \
+            -d data=file://"$TEMP_DATA" \
+            -o "{{.OUTPUT_FILE}}"
+        elif command -v go >/dev/null 2>&1; then
+          echo "⚠️  Docker not found, using Go to run gomplate..."
+          go run -mod=readonly github.com/hairyhenderson/gomplate/v3/cmd/gomplate@latest \
+            -f "$TEMPLATE_FILE" \
+            -d data=file://"$TEMP_DATA" \
+            -o "{{.OUTPUT_FILE}}"
+        else
+          echo "❌ Neither Docker nor Go is available!"
+          echo "   Please install Docker or Go"
+          exit 1
+        fi
+
+        echo "✅ Created: {{.OUTPUT_FILE}}"
+        echo ""
+
+        # Add to kustomization.yaml if not already present
+        if ! grep -q "externalsecret-{{.NAME}}.yaml" "{{.KUSTOMIZATION_FILE}}"; then
+          echo "Adding to kustomization.yaml..."
+
+          # Find the line number of the last externalsecret entry
+          LAST_ES_LINE=$(grep -n "externalsecret-.*\.yaml" "{{.KUSTOMIZATION_FILE}}" | tail -1 | cut -d: -f1)
+
+          if [ -n "$LAST_ES_LINE" ]; then
+            # Add after the last externalsecret entry
+            sed -i.bak "${LAST_ES_LINE}a\\
+          - ./externalsecret-{{.NAME}}.yaml
+        " "{{.KUSTOMIZATION_FILE}}" && rm "{{.KUSTOMIZATION_FILE}}.bak"
+          else
+            # No externalsecret entries yet, add before labels section
+            sed -i.bak '/^labels:/i\
+          - ./externalsecret-{{.NAME}}.yaml
+        ' "{{.KUSTOMIZATION_FILE}}" && rm "{{.KUSTOMIZATION_FILE}}.bak"
+          fi
+
+          echo "✅ Added to kustomization.yaml"
+        else
+          echo "⚠️  Already present in kustomization.yaml"
+        fi
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ ExternalSecret created successfully!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        # Build fields string for 1Password (using || as delimiter to allow commas in values)
+        FIELDS="name={{.DISPLAY_NAME}}||protocol={{.PROTOCOL}}||hostname={{.HOSTNAME}}||port={{.PORT}}"
+
+        if [ -n "{{.USERNAME}}" ]; then
+          FIELDS="$FIELDS||username={{.USERNAME}}"
+        fi
+
+        if [ -n "{{.USERS}}" ]; then
+          FIELDS="$FIELDS||users={{.USERS}}"
+        fi
+
+        if [ -n "{{.PERMISSIONS}}" ]; then
+          FIELDS="$FIELDS||permissions={{.PERMISSIONS}}"
+        fi
+
+        # Add protocol-specific fields
+        if [ "{{.PROTOCOL}}" = "rdp" ]; then
+          if [ -n "{{.PASSWORD}}" ]; then
+            FIELDS="$FIELDS||password={{.PASSWORD}}:password"
+          fi
+          # Always add domain field (empty if not provided)
+          FIELDS="$FIELDS||domain={{.DOMAIN}}"
+          if [ -n "{{.SECURITY}}" ]; then
+            FIELDS="$FIELDS||security={{.SECURITY}}"
+          fi
+          # Always add RDP optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_audio=true"
+        else
+          if [ -n "{{.PRIVATE_KEY}}" ]; then
+            FIELDS="$FIELDS||private_key={{.PRIVATE_KEY}}:password"
+          fi
+          # Always add SSH optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_sftp=true"
+        fi
+
+        echo "Creating 1Password secure note..."
+        echo ""
+
+        # Call the onepassword task to create the secure note
+        task onepassword:create-secure-note \
+          ITEM_TITLE="{{.ONEPASSWORD_KEY}}" \
+          VAULT_NAME="{{.VAULT}}" \
+          FIELDS="$FIELDS"
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ 1Password item created successfully!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        # Update deployment.yaml with new volume mount and definition
+        {{.TASKFILE_DIR}}/scripts/add-connection-volumes.sh \
+          "{{.GUACAMOLE_APP_DIR}}/guacamole-deployment.yaml" \
+          "{{.NAME}}" \
+          "guacamole-connection-{{.NAME}}"
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ Connection '{{.NAME}}' created successfully!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Next step:"
+        echo "  Apply: kubectl apply -k {{.GUACAMOLE_APP_DIR}}"
+    silent: true
+
+  create-1password-item:
+    desc: Create a 1Password secure note for a Guacamole connection
+    summary: |
+      Creates a 1Password secure note with fields for a Guacamole connection.
+
+      Required Parameters:
+        NAME     - Connection name (must match the connection created with add-connection)
+        PROTOCOL - Connection protocol (rdp or ssh)
+        VAULT    - 1Password vault name
+
+      Common Parameters:
+        HOSTNAME - Target hostname or IP
+        PORT     - Connection port
+        USERNAME - Login username
+
+      RDP-specific Parameters:
+        PASSWORD - Authentication password
+        DOMAIN   - Windows domain
+        SECURITY - RDP security mode (rdp/nla/tls/any)
+
+      SSH-specific Parameters:
+        PRIVATE_KEY - SSH private key content
+
+      Usage:
+        task guacamole:create-1password-item NAME=myserver PROTOCOL=ssh VAULT=homelab HOSTNAME=192.168.1.10 PORT=22 USERNAME=admin
+        task guacamole:create-1password-item NAME=win11 PROTOCOL=rdp VAULT=homelab HOSTNAME=192.168.1.20 PORT=3389 USERNAME=admin PASSWORD=secret
+    vars:
+      NAME: "{{.NAME}}"
+      PROTOCOL: "{{.PROTOCOL}}"
+      VAULT: "{{.VAULT}}"
+      ITEM_TITLE: "guacamole-{{.NAME}}"
+
+      # Common fields
+      DISPLAY_NAME: "{{.DISPLAY_NAME | default .NAME}}"
+      HOSTNAME: '{{.HOSTNAME | default ""}}'
+      PORT: '{{.PORT | default ""}}'
+      USERNAME: '{{.USERNAME | default ""}}'
+      USERS: '{{.USERS | default ""}}'
+      PERMISSIONS: '{{.PERMISSIONS | default ""}}'
+
+      # RDP fields
+      PASSWORD: '{{.PASSWORD | default ""}}'
+      DOMAIN: '{{.DOMAIN | default ""}}'
+      SECURITY: '{{.SECURITY | default ""}}'
+
+      # SSH fields
+      PRIVATE_KEY: '{{.PRIVATE_KEY | default ""}}'
+    cmds:
+      - |
+        # Validate required parameters
+        if [ -z "{{.NAME}}" ]; then
+          echo "❌ Error: NAME parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.PROTOCOL}}" ]; then
+          echo "❌ Error: PROTOCOL parameter is required"
+          exit 1
+        fi
+
+        if [ "{{.PROTOCOL}}" != "rdp" ] && [ "{{.PROTOCOL}}" != "ssh" ]; then
+          echo "❌ Error: PROTOCOL must be either 'rdp' or 'ssh'"
+          exit 1
+        fi
+
+        if [ -z "{{.VAULT}}" ]; then
+          echo "❌ Error: VAULT parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.HOSTNAME}}" ]; then
+          echo "❌ Error: HOSTNAME parameter is required"
+          exit 1
+        fi
+
+        if [ -z "{{.PORT}}" ]; then
+          echo "❌ Error: PORT parameter is required"
+          exit 1
+        fi
+
+        # Build fields string (using || as delimiter to allow commas in values)
+        FIELDS="name={{.DISPLAY_NAME}}||protocol={{.PROTOCOL}}||hostname={{.HOSTNAME}}||port={{.PORT}}"
+
+        if [ -n "{{.USERNAME}}" ]; then
+          FIELDS="$FIELDS||username={{.USERNAME}}"
+        fi
+
+        if [ -n "{{.USERS}}" ]; then
+          FIELDS="$FIELDS||users={{.USERS}}"
+        fi
+
+        if [ -n "{{.PERMISSIONS}}" ]; then
+          FIELDS="$FIELDS||permissions={{.PERMISSIONS}}"
+        fi
+
+        # Add protocol-specific fields
+        if [ "{{.PROTOCOL}}" = "rdp" ]; then
+          if [ -n "{{.PASSWORD}}" ]; then
+            FIELDS="$FIELDS||password={{.PASSWORD}}:password"
+          fi
+          # Always add domain field (empty if not provided)
+          FIELDS="$FIELDS||domain={{.DOMAIN}}"
+          if [ -n "{{.SECURITY}}" ]; then
+            FIELDS="$FIELDS||security={{.SECURITY}}"
+          fi
+          # Always add RDP optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_audio=true"
+        else
+          if [ -n "{{.PRIVATE_KEY}}" ]; then
+            FIELDS="$FIELDS||private_key={{.PRIVATE_KEY}}:password"
+          fi
+          # Always add SSH optional fields
+          FIELDS="$FIELDS||enable_clipboard=true"
+          FIELDS="$FIELDS||enable_sftp=true"
+        fi
+
+        # Call the onepassword task to create the secure note
+        task onepassword:create-secure-note \
+          ITEM_TITLE="{{.ITEM_TITLE}}" \
+          VAULT_NAME="{{.VAULT}}" \
+          FIELDS="$FIELDS"
+
+        echo ""
+        echo "✅ 1Password item created!"
+        echo ""
+        echo "Next step:"
+        echo "  Apply: kubectl apply -k {{.GUACAMOLE_APP_DIR}}"
+    silent: true
+
+  remove-connection:
+    desc: Remove a Guacamole connection
+    summary: |
+      Removes a Guacamole connection by deleting its ExternalSecret file
+      and removing it from kustomization.yaml.
+
+      Usage:
+        task guacamole:remove-connection NAME=myserver
+    vars:
+      NAME: "{{.NAME}}"
+      FILE_TO_REMOVE: "{{.GUACAMOLE_APP_DIR}}/externalsecret-{{.NAME}}.yaml"
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ]; then
+          echo "❌ Error: NAME parameter is required"
+          exit 1
+        fi
+
+        if [ ! -f "{{.FILE_TO_REMOVE}}" ]; then
+          echo "❌ Error: Connection '{{.NAME}}' does not exist"
+          exit 1
+        fi
+
+        echo "Removing Guacamole connection: {{.NAME}}"
+        echo ""
+
+        # Remove file
+        rm "{{.FILE_TO_REMOVE}}"
+        echo "✅ Deleted: {{.FILE_TO_REMOVE}}"
+
+        # Remove from kustomization.yaml
+        if grep -q "externalsecret-{{.NAME}}.yaml" "{{.KUSTOMIZATION_FILE}}"; then
+          sed -i.bak '/externalsecret-{{.NAME}}.yaml/d' "{{.KUSTOMIZATION_FILE}}" && rm "{{.KUSTOMIZATION_FILE}}.bak"
+          echo "✅ Removed from kustomization.yaml"
+        fi
+
+        echo ""
+        echo "✅ Connection '{{.NAME}}' removed successfully!"
+    silent: true
+
+  list-connections:
+    desc: List all Guacamole connections
+    summary: |
+      Lists all configured Guacamole connections.
+
+      Usage:
+        task guacamole:list-connections
+    cmds:
+      - |
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Guacamole Connections"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        COUNT=0
+        for file in {{.GUACAMOLE_APP_DIR}}/externalsecret-*.yaml; do
+          if [ -f "$file" ]; then
+            NAME=$(basename "$file" | sed 's/externalsecret-//; s/\.yaml$//')
+            ONEPASSWORD_KEY=$(grep "key:" "$file" | tail -1 | awk '{print $2}')
+
+            echo "  • $NAME"
+            echo "    File: $(basename "$file")"
+            echo "    1Password Key: $ONEPASSWORD_KEY"
+            echo ""
+
+            COUNT=$((COUNT + 1))
+          fi
+        done
+
+        if [ $COUNT -eq 0 ]; then
+          echo "  No connections found"
+          echo ""
+        fi
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Total: $COUNT connection(s)"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    silent: true
