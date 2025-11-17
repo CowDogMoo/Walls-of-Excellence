@@ -8,8 +8,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Automation"
-    dashboard-version: "2.0.0"
-    last-modified: "2025-01-16"
+    dashboard-version: "3.0.0"
+    last-modified: "2025-11-16"
 data:
   home-automation-logs.json: |
     {
@@ -19,7 +19,7 @@ data:
       "tags": ["home-automation", "logs", "debugging", "home-assistant"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 2,
+      "version": 3,
       "refresh": "30s",
       "time": {
         "from": "now-6h",
@@ -93,18 +93,165 @@ data:
               "text": "All",
               "value": "$__all"
             }
+          },
+          {
+            "name": "search",
+            "label": "Search",
+            "type": "textbox",
+            "current": {
+              "selected": false,
+              "text": "",
+              "value": ""
+            }
           }
         ]
       },
       "panels": [
         {
           "id": 1,
-          "title": "Log Volume by Service",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+          "title": "Total Log Entries",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [5m]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} [$__range]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 2,
+          "title": "Errors (Last Hour)",
+          "type": "stat",
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(error|exception|fatal)` [1h]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 10, "color": "orange" },
+                  { "value": 50, "color": "red" }
+                ]
+              },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 3,
+          "title": "Warnings (Last Hour)",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(warn|warning)` [1h]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 20, "color": "orange" }
+                ]
+              },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 4,
+          "title": "Active Services",
+          "type": "stat",
+          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "count(sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [5m])))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 5,
+          "title": "Log Volume by Service",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} [5m]))",
               "refId": "A",
               "legendFormat": "{{app_name}}"
             }
@@ -117,45 +264,8 @@ data:
               "calcs": ["last", "max"]
             },
             "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "drawStyle": "line",
-                "lineInterpolation": "smooth",
-                "fillOpacity": 20,
-                "showPoints": "auto",
-                "stacking": {
-                  "mode": "normal"
-                }
-              },
-              "unit": "logs"
-            }
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 2,
-          "title": "Error Rate (per second)",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-          "targets": [
-            {
-              "expr": "sum by (pod) (rate({namespace=\"home-automation\", pod=~\"$pod\"} |= \"error\" [5m]))",
-              "refId": "A",
-              "legendFormat": "{{pod}}"
-            }
-          ],
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi"
+              "mode": "multi",
+              "sort": "desc"
             }
           },
           "fieldConfig": {
@@ -164,24 +274,25 @@ data:
                 "drawStyle": "line",
                 "lineInterpolation": "smooth",
                 "fillOpacity": 10,
-                "showPoints": "auto"
+                "showPoints": "never",
+                "stacking": {
+                  "mode": "none"
+                }
               },
-              "unit": "errors/sec",
-              "color": {
-                "mode": "palette-classic"
-              }
+              "unit": "short",
+              "min": 0
             }
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 3,
+          "id": 6,
           "title": "Top Log Sources",
           "type": "bargauge",
-          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 12, "w": 8, "h": 8 },
           "targets": [
             {
-              "expr": "topk(10, sum by (app_name) (count_over_time({namespace=\"home-automation\"} [3h])))",
+              "expr": "topk(10, sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [$__range])))",
               "refId": "A",
               "legendFormat": "{{app_name}}"
             }
@@ -193,22 +304,38 @@ data:
           },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
-              "unit": "logs"
+              "color": { "mode": "continuous-GrYlRd" },
+              "unit": "short",
+              "decimals": 0
             }
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 4,
+          "id": 7,
           "title": "Log Level Distribution",
           "type": "piechart",
-          "gridPos": { "x": 0, "y": 16, "w": 6, "h": 8 },
+          "gridPos": { "x": 8, "y": 12, "w": 8, "h": 8 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\"} [3h])",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)error` [1h]))",
               "refId": "A",
-              "legendFormat": "All Logs"
+              "legendFormat": "Error"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)warn` [1h]))",
+              "refId": "B",
+              "legendFormat": "Warning"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)info` [1h]))",
+              "refId": "C",
+              "legendFormat": "Info"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)debug` [1h]))",
+              "refId": "D",
+              "legendFormat": "Debug"
             }
           ],
           "options": {
@@ -218,129 +345,121 @@ data:
               "showLegend": true,
               "values": ["value", "percent"]
             },
-            "pieType": "donut"
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 5,
-          "title": "Recent Errors (All Services)",
-          "type": "stat",
-          "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
-          "targets": [
-            {
-              "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(ERROR|error)\" [1h])",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "orientation": "auto",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
+            "pieType": "donut",
+            "tooltip": {
+              "mode": "single"
             }
           },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": null, "color": "green" },
-                  { "value": 10, "color": "yellow" },
-                  { "value": 50, "color": "red" }
-                ]
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Error" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
               },
-              "unit": "errors"
-            }
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 6,
-          "title": "Warnings (Last Hour)",
-          "type": "stat",
-          "gridPos": { "x": 12, "y": 16, "w": 6, "h": 4 },
-          "targets": [
-            {
-              "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(WARNING|WARN|warning)\" [1h])",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "orientation": "auto",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": null, "color": "green" },
-                  { "value": 20, "color": "yellow" },
-                  { "value": 100, "color": "orange" }
-                ]
+              {
+                "matcher": { "id": "byName", "options": "Warning" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
               },
-              "unit": "warnings"
-            }
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 7,
-          "title": "Total Log Entries",
-          "type": "stat",
-          "gridPos": { "x": 18, "y": 16, "w": 6, "h": 4 },
-          "targets": [
-            {
-              "expr": "sum(count_over_time({namespace=\"home-automation\"} [3h]))",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "orientation": "auto",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "unit": "logs"
-            }
+              {
+                "matcher": { "id": "byName", "options": "Info" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Debug" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }]
+              }
+            ]
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
           "id": 8,
-          "title": "Service Health Status",
-          "type": "table",
-          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+          "title": "Error Rate Over Time",
+          "type": "timeseries",
+          "gridPos": { "x": 16, "y": 12, "w": 8, "h": 8 },
           "targets": [
             {
-              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\"} [5m]))",
+              "expr": "sum by (app_name) (rate({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(error|exception|fatal)` [5m]))",
               "refId": "A",
-              "legendFormat": ""
+              "legendFormat": "{{app_name}}"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "fillOpacity": 20,
+                "showPoints": "auto"
+              },
+              "unit": "short",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "min": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 9,
+          "title": "Service Health Status",
+          "type": "table",
+          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [5m]))",
+              "refId": "A",
+              "legendFormat": "",
+              "instant": true
+            },
+            {
+              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} |~ `(?i)error` [5m]))",
+              "refId": "B",
+              "legendFormat": "",
+              "instant": true
+            },
+            {
+              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} |~ `(?i)warn` [5m]))",
+              "refId": "C",
+              "legendFormat": "",
+              "instant": true
             }
           ],
           "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
             {
               "id": "organize",
               "options": {
                 "renameByName": {
                   "app_name": "Service",
-                  "Value": "Log Rate (5m)"
+                  "Value #A": "Total Logs (5m)",
+                  "Value #B": "Errors (5m)",
+                  "Value #C": "Warnings (5m)"
+                },
+                "indexByName": {
+                  "app_name": 0,
+                  "Value #A": 1,
+                  "Value #B": 2,
+                  "Value #C": 3
                 }
               }
             }
@@ -349,21 +468,65 @@ data:
             "showHeader": true,
             "sortBy": [
               {
-                "displayName": "Log Rate (5m)",
+                "displayName": "Errors (5m)",
                 "desc": true
+              }
+            ]
+          },
+          "fieldConfig": {
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Errors (5m)" },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": { "type": "color-background" }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "value": null, "color": "green" },
+                        { "value": 1, "color": "yellow" },
+                        { "value": 10, "color": "red" }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Warnings (5m)" },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": { "type": "color-background" }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "value": null, "color": "green" },
+                        { "value": 1, "color": "yellow" },
+                        { "value": 20, "color": "orange" }
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 9,
-          "title": "Recent Errors (All Services)",
+          "id": 10,
+          "title": "Error Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", pod=~\"$pod\", container=~\"$container\"} |= \"error\"",
+              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(error|exception|fatal)` $search",
               "refId": "A"
             }
           ],
@@ -380,96 +543,13 @@ data:
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 10,
-          "title": "Recent Warnings",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 42, "w": 24, "h": 6 },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\", pod=~\"$pod\", container=~\"$container\"} |= \"warning\"",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "showTime": true,
-            "showLabels": false,
-            "showCommonLabels": false,
-            "wrapLogMessage": true,
-            "sortOrder": "Descending",
-            "dedupStrategy": "none",
-            "enableLogDetails": true
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
           "id": 11,
-          "title": "Home Assistant Custom Components",
+          "title": "Warning Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 48, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\"} |= \"custom_components\"",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "showTime": true,
-            "showLabels": false,
-            "showCommonLabels": false,
-            "wrapLogMessage": true,
-            "sortOrder": "Descending",
-            "dedupStrategy": "none",
-            "enableLogDetails": true
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 12,
-          "title": "Log Volume Rate (logs/sec)",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 56, "w": 24, "h": 8 },
-          "targets": [
-            {
-              "expr": "sum by (app_name) (rate({namespace=\"home-automation\", app_name=~\"$app\"} [5m]))",
-              "refId": "A",
-              "legendFormat": "{{app_name}}"
-            }
-          ],
-          "options": {
-            "legend": {
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true,
-              "calcs": ["last", "mean", "max"]
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "drawStyle": "line",
-                "lineInterpolation": "smooth",
-                "fillOpacity": 20,
-                "showPoints": "auto"
-              },
-              "unit": "logs/sec",
-              "color": {
-                "mode": "palette-classic"
-              }
-            }
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 13,
-          "title": "All Logs (Live Stream)",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 64, "w": 24, "h": 12 },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"}",
+              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(warn|warning)` $search",
               "refId": "A"
             }
           ],
@@ -480,7 +560,31 @@ data:
             "wrapLogMessage": true,
             "sortOrder": "Descending",
             "dedupStrategy": "none",
-            "enableLogDetails": true
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 12,
+          "title": "All Logs (Filtered)",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 44, "w": 24, "h": 12 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} $search",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
           },
           "datasource": { "type": "loki", "uid": "loki" }
         }
