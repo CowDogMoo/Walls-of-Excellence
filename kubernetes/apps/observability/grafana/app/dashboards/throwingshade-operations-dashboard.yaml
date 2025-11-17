@@ -1,0 +1,300 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: throwingshade-operations-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Home Automation"
+    dashboard-version: "1.0.0"
+    last-modified: "2025-01-16"
+data:
+  throwingshade-operations.json: |
+    {
+      "uid": "throwingshade-operations",
+      "title": "Throwingshade Shade Operations",
+      "description": "Monitor shade commands, operations, and MQTT activity for throwingshade",
+      "tags": ["home-automation", "throwingshade", "shades", "mqtt"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "shade_name",
+            "label": "Shade",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\", shade_name)",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "refresh": 1,
+            "sort": 1
+          },
+          {
+            "name": "operation",
+            "label": "Operation",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\", operation)",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "refresh": 1,
+            "sort": 1
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Shade Operations (Last 6h)",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\" [6h])",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 2,
+          "title": "Errors (Last 6h)",
+          "type": "stat",
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", level=\"ERROR\"} |= \"throwingshade\" [6h])",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 5, "color": "red" }
+                ]
+              }
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 3,
+          "title": "MQTT Messages",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "count_over_time({namespace=\"home-automation\", app=\"mosquitto\"} [6h])",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 4,
+          "title": "Success Rate",
+          "type": "gauge",
+          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "(count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\" [6h]) - count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", level=\"ERROR\"} |= \"throwingshade\" [6h])) / count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\"} |= \"throwingshade\" [6h]) * 100",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "red" },
+                  { "value": 80, "color": "yellow" },
+                  { "value": 95, "color": "green" }
+                ]
+              }
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 5,
+          "title": "Operations Over Time",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (operation) (count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", operation=~\"$operation\"} |= \"throwingshade\" [5m]))",
+              "refId": "A",
+              "legendFormat": "{{operation}}"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "fillOpacity": 10,
+                "showPoints": "auto"
+              }
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 6,
+          "title": "Operations by Shade",
+          "type": "barchart",
+          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (shade_name) (count_over_time({namespace=\"home-automation\", app_name=\"home-assistant\", shade_name=~\"$shade_name\"} |= \"throwingshade\" [6h]))",
+              "refId": "A",
+              "legendFormat": "{{shade_name}}"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true
+            },
+            "orientation": "horizontal"
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 7,
+          "title": "Recent Shade Commands",
+          "type": "logs",
+          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", app_name=\"home-assistant\", shade_name=~\"$shade_name\", operation=~\"$operation\"} |= \"throwingshade\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending"
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 8,
+          "title": "Error Logs",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", app_name=\"home-assistant\", level=\"ERROR\"} |= \"throwingshade\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending"
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 9,
+          "title": "MQTT Activity",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", app=\"mosquitto\"}",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none"
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        }
+      ]
+    }
