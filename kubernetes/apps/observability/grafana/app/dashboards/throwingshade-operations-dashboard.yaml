@@ -167,10 +167,95 @@ data:
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
+          "id": 12,
+          "title": "Canceled Operations",
+          "type": "stat",
+          "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(shade|cover)` |~ `(?i)(cancel|terminated)` [$__range]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 3 },
+                  { "color": "orange", "value": 10 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 13,
+          "title": "Shade Movement Timeline",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 4, "w": 16, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `position changed` [5m]))",
+              "refId": "A",
+              "legendFormat": "Position Changes"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `Executing step` [5m]))",
+              "refId": "B",
+              "legendFormat": "Commands"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `Failed to get position` [5m]))",
+              "refId": "C",
+              "legendFormat": "Failures"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "fillOpacity": 10,
+                "showPoints": "auto"
+              },
+              "unit": "short",
+              "min": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
           "id": 9,
           "title": "Active Rooms",
           "type": "stat",
-          "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+          "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
           "targets": [
             {
               "expr": "count(count by (room) (count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `shade.*room` | regexp `room (?P<room>[A-Z]+)` [5m])))",
@@ -179,7 +264,7 @@ data:
           ],
           "options": {
             "colorMode": "value",
-            "graphMode": "none",
+            "graphMode": "area",
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
@@ -200,7 +285,7 @@ data:
           "id": 4,
           "title": "Shade Operations Over Time",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` [5m]))",
@@ -237,7 +322,7 @@ data:
           "id": 5,
           "title": "Error & Warning Trends",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)` [5m]))",
@@ -289,7 +374,7 @@ data:
           "id": 10,
           "title": "Room Activity by Code",
           "type": "barchart",
-          "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
           "targets": [
             {
               "expr": "sum by (room) (count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `room [A-Z]+` | regexp `room (?P<room>[A-Z]+)` [$__range]))",
@@ -338,7 +423,7 @@ data:
           "id": 11,
           "title": "Shade Positions",
           "type": "logs",
-          "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+          "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `Position:.*%`",
@@ -358,10 +443,56 @@ data:
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
+          "id": 14,
+          "title": "Shade Configuration Changes",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 36, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(Added new room|Updated/Added shade|Configuration updated)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "sortOrder": "Descending",
+            "dedupStrategy": "signature",
+            "enableLogDetails": false,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 15,
+          "title": "Shade Commands & Operations",
+          "type": "logs",
+          "gridPos": { "x": 12, "y": 36, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(shade|cover)` |~ `(?i)(position|executing|command)`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
           "id": 6,
           "title": "Error Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 44, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)`",
@@ -384,7 +515,7 @@ data:
           "id": 7,
           "title": "Warning Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 52, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)`",
@@ -407,7 +538,7 @@ data:
           "id": 8,
           "title": "All Shade Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 44, "w": 24, "h": 10 },
+          "gridPos": { "x": 0, "y": 60, "w": 24, "h": 10 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)`",
