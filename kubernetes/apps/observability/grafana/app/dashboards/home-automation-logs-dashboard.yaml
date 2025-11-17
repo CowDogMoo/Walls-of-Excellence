@@ -8,18 +8,18 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Automation"
-    dashboard-version: "3.0.0"
+    dashboard-version: "3.1.0"
     last-modified: "2025-11-16"
 data:
   home-automation-logs.json: |
     {
       "uid": "home-automation-logs-overview",
       "title": "Home Automation Logs & Debugging",
-      "description": "Centralized logging and debugging for all home-automation namespace services",
+      "description": "Simplified logging dashboard focusing on working visualizations and log exploration",
       "tags": ["home-automation", "logs", "debugging", "home-assistant"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 3,
+      "version": 4,
       "refresh": "30s",
       "time": {
         "from": "now-6h",
@@ -92,16 +92,6 @@ data:
               "selected": true,
               "text": "All",
               "value": "$__all"
-            }
-          },
-          {
-            "name": "search",
-            "label": "Search",
-            "type": "textbox",
-            "current": {
-              "selected": false,
-              "text": "",
-              "value": ""
             }
           }
         ]
@@ -313,79 +303,19 @@ data:
         },
         {
           "id": 7,
-          "title": "Log Level Distribution",
-          "type": "piechart",
-          "gridPos": { "x": 8, "y": 12, "w": 8, "h": 8 },
-          "targets": [
-            {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)error` [1h]))",
-              "refId": "A",
-              "legendFormat": "Error"
-            },
-            {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)warn` [1h]))",
-              "refId": "B",
-              "legendFormat": "Warning"
-            },
-            {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)info` [1h]))",
-              "refId": "C",
-              "legendFormat": "Info"
-            },
-            {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)debug` [1h]))",
-              "refId": "D",
-              "legendFormat": "Debug"
-            }
-          ],
-          "options": {
-            "legend": {
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true,
-              "values": ["value", "percent"]
-            },
-            "pieType": "donut",
-            "tooltip": {
-              "mode": "single"
-            }
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "decimals": 0
-            },
-            "overrides": [
-              {
-                "matcher": { "id": "byName", "options": "Error" },
-                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
-              },
-              {
-                "matcher": { "id": "byName", "options": "Warning" },
-                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
-              },
-              {
-                "matcher": { "id": "byName", "options": "Info" },
-                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }]
-              },
-              {
-                "matcher": { "id": "byName", "options": "Debug" },
-                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }]
-              }
-            ]
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 8,
-          "title": "Error Rate Over Time",
+          "title": "Error & Warning Trends",
           "type": "timeseries",
-          "gridPos": { "x": 16, "y": 12, "w": 8, "h": 8 },
+          "gridPos": { "x": 8, "y": 12, "w": 16, "h": 8 },
           "targets": [
             {
-              "expr": "sum by (app_name) (rate({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(error|exception|fatal)` [5m]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(error|exception|fatal)` [5m]))",
               "refId": "A",
-              "legendFormat": "{{app_name}}"
+              "legendFormat": "Errors"
+            },
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(warn|warning)` [5m]))",
+              "refId": "B",
+              "legendFormat": "Warnings"
             }
           ],
           "options": {
@@ -408,125 +338,29 @@ data:
                 "showPoints": "auto"
               },
               "unit": "short",
-              "color": {
-                "mode": "palette-classic"
-              },
               "min": 0
-            }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Errors" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+              },
+              {
+                "matcher": { "id": "byName", "options": "Warnings" },
+                "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
+              }
+            ]
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 9,
-          "title": "Service Health Status",
-          "type": "table",
+          "id": 8,
+          "title": "Error Logs",
+          "type": "logs",
           "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [5m]))",
-              "refId": "A",
-              "legendFormat": "",
-              "instant": true
-            },
-            {
-              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} |~ `(?i)error` [5m]))",
-              "refId": "B",
-              "legendFormat": "",
-              "instant": true
-            },
-            {
-              "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} |~ `(?i)warn` [5m]))",
-              "refId": "C",
-              "legendFormat": "",
-              "instant": true
-            }
-          ],
-          "transformations": [
-            {
-              "id": "merge",
-              "options": {}
-            },
-            {
-              "id": "organize",
-              "options": {
-                "renameByName": {
-                  "app_name": "Service",
-                  "Value #A": "Total Logs (5m)",
-                  "Value #B": "Errors (5m)",
-                  "Value #C": "Warnings (5m)"
-                },
-                "indexByName": {
-                  "app_name": 0,
-                  "Value #A": 1,
-                  "Value #B": 2,
-                  "Value #C": 3
-                }
-              }
-            }
-          ],
-          "options": {
-            "showHeader": true,
-            "sortBy": [
-              {
-                "displayName": "Errors (5m)",
-                "desc": true
-              }
-            ]
-          },
-          "fieldConfig": {
-            "overrides": [
-              {
-                "matcher": { "id": "byName", "options": "Errors (5m)" },
-                "properties": [
-                  {
-                    "id": "custom.cellOptions",
-                    "value": { "type": "color-background" }
-                  },
-                  {
-                    "id": "thresholds",
-                    "value": {
-                      "mode": "absolute",
-                      "steps": [
-                        { "value": null, "color": "green" },
-                        { "value": 1, "color": "yellow" },
-                        { "value": 10, "color": "red" }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": { "id": "byName", "options": "Warnings (5m)" },
-                "properties": [
-                  {
-                    "id": "custom.cellOptions",
-                    "value": { "type": "color-background" }
-                  },
-                  {
-                    "id": "thresholds",
-                    "value": {
-                      "mode": "absolute",
-                      "steps": [
-                        { "value": null, "color": "green" },
-                        { "value": 1, "color": "yellow" },
-                        { "value": 20, "color": "orange" }
-                      ]
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 10,
-          "title": "Error Logs",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(error|exception|fatal)` $search",
+              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(error|exception|fatal)`",
               "refId": "A"
             }
           ],
@@ -546,10 +380,10 @@ data:
           "id": 11,
           "title": "Warning Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(warn|warning)` $search",
+              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(warn|warning)`",
               "refId": "A"
             }
           ],
@@ -567,12 +401,12 @@ data:
         },
         {
           "id": 12,
-          "title": "All Logs (Filtered)",
+          "title": "All Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 44, "w": 24, "h": 12 },
+          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 12 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} $search",
+              "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"}",
               "refId": "A"
             }
           ],
