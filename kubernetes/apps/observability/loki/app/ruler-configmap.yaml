@@ -12,18 +12,18 @@ data:
       - name: troy-backup-alerts
         interval: 5m
         rules:
-          # Alert if no successful backup in the last 25 hours
+          # Alert if no successful backup in the last 8 days (weekly backup runs Sunday 2 AM)
           - alert: TroyBackupNoSuccessfulBackup
             expr: |
-              (count_over_time({namespace="home-automation", container="troy-backup"} |= "Backup completed successfully" [25h]) OR on() vector(0)) == 0
+              (count_over_time({namespace="home-automation", container="troy-backup"} |= "Backup completed successfully" [8d]) OR on() vector(0)) == 0
             for: 1h
             labels:
               severity: critical
               service: troy-backup
               namespace: home-automation
             annotations:
-              summary: "Troy backup has not completed successfully in 25+ hours"
-              description: "No successful backup completion message found in the last 25 hours for troy-backup container."
+              summary: "Troy backup has not completed successfully in 8+ days"
+              description: "No successful backup completion message found in the last 8 days for troy-backup container. Backup runs weekly on Sundays at 2 AM."
               dashboard: "https://grafana.techvomit.xyz/d/troy-backup-monitoring"
 
           # Alert on backup failures/errors
