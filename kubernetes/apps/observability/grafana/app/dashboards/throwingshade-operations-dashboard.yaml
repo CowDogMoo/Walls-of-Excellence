@@ -167,44 +167,6 @@ data:
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 12,
-          "title": "Canceled Operations",
-          "type": "stat",
-          "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
-          "targets": [
-            {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(shade|cover)` |~ `(?i)(cancel|terminated)` [$__range]))",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "orientation": "auto",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            },
-            "textMode": "auto"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "yellow", "value": 3 },
-                  { "color": "orange", "value": 10 }
-                ]
-              },
-              "unit": "short",
-              "decimals": 0
-            }
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
           "id": 13,
           "title": "Shade Movement Timeline",
           "type": "timeseries",
@@ -372,7 +334,7 @@ data:
         },
         {
           "id": 10,
-          "title": "Room Activity by Code",
+          "title": "Shade Activity by Room",
           "type": "barchart",
           "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
           "targets": [
@@ -443,33 +405,10 @@ data:
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
-          "id": 14,
-          "title": "Shade Configuration Changes",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 36, "w": 12, "h": 8 },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(Added new room|Updated/Added shade|Configuration updated)`",
-              "refId": "A"
-            }
-          ],
-          "options": {
-            "showTime": true,
-            "showLabels": false,
-            "showCommonLabels": false,
-            "wrapLogMessage": false,
-            "sortOrder": "Descending",
-            "dedupStrategy": "signature",
-            "enableLogDetails": false,
-            "prettifyLogMessage": false
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
           "id": 15,
           "title": "Shade Commands & Operations",
           "type": "logs",
-          "gridPos": { "x": 12, "y": 36, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 10 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(shade|cover)` |~ `(?i)(position|executing|command)`",
@@ -492,7 +431,7 @@ data:
           "id": 6,
           "title": "Error Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 44, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 46, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)`",
@@ -515,7 +454,7 @@ data:
           "id": 7,
           "title": "Warning Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 52, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 54, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)`",
@@ -538,7 +477,7 @@ data:
           "id": 8,
           "title": "All Shade Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 60, "w": 24, "h": 10 },
+          "gridPos": { "x": 0, "y": 62, "w": 24, "h": 10 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)`",
