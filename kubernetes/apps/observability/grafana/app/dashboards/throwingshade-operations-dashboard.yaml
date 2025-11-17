@@ -8,19 +8,19 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Automation"
-    dashboard-version: "2.0.0"
+    dashboard-version: "3.0.0"
     last-modified: "2025-11-16"
 data:
   throwingshade-operations.json: |
     {
       "uid": "throwingshade-operations",
-      "title": "Throwingshade Shade Operations",
-      "description": "Simplified dashboard monitoring shade operations and errors",
-      "tags": ["home-automation", "throwingshade", "shades", "mqtt"],
+      "title": "Shade Operations",
+      "description": "Monitor shade operations, room activity, and errors across all rooms",
+      "tags": ["home-automation", "throwingshade", "shades", "monitoring"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 2,
-      "refresh": "10s",
+      "version": 3,
+      "refresh": "30s",
       "time": {
         "from": "now-6h",
         "to": "now"
@@ -42,6 +42,20 @@ data:
             },
             "refresh": 1,
             "sort": 1
+          },
+          {
+            "name": "room",
+            "label": "Room",
+            "type": "custom",
+            "datasource": null,
+            "query": "AO,DN,FM,GT,LV,NS,OB,OBT,TH",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
           }
         ]
       },
@@ -118,7 +132,7 @@ data:
           "id": 3,
           "title": "Warnings",
           "type": "stat",
-          "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+          "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)` [$__range]))",
@@ -146,6 +160,36 @@ data:
                   { "value": 10, "color": "orange" }
                 ]
               },
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 9,
+          "title": "Active Rooms",
+          "type": "stat",
+          "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+          "targets": [
+            {
+              "expr": "count(count by (room) (count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `shade.*room` | regexp `room (?P<room>[A-Z]+)` [5m])))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
               "unit": "short",
               "decimals": 0
             }
@@ -242,10 +286,82 @@ data:
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
+          "id": 10,
+          "title": "Room Activity by Code",
+          "type": "barchart",
+          "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (room) (count_over_time({namespace=\"home-automation\", pod=~\"$pod\"} |~ `room [A-Z]+` | regexp `room (?P<room>[A-Z]+)` [$__range]))",
+              "refId": "A",
+              "legendFormat": "{{room}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "displayLabels": ["name", "value"],
+            "showLegend": false,
+            "barWidth": 0.7,
+            "groupWidth": 0.8,
+            "showValue": "always",
+            "stacking": "none",
+            "text": {
+              "valueSize": 12
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Operations",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "hue",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              },
+              "unit": "short"
+            }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 11,
+          "title": "Shade Positions",
+          "type": "logs",
+          "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `Position:.*%`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
           "id": 6,
           "title": "Error Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(error|exception|fatal)`",
@@ -268,7 +384,7 @@ data:
           "id": 7,
           "title": "Warning Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)` |~ `(?i)(warn|warning)`",
@@ -291,7 +407,7 @@ data:
           "id": 8,
           "title": "All Shade Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 36, "w": 24, "h": 10 },
+          "gridPos": { "x": 0, "y": 44, "w": 24, "h": 10 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\"} |~ `(?i)(throwingshade|shade|cover)`",
