@@ -8,82 +8,52 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Automation"
-    dashboard-version: "1.0.0"
-    last-modified: "2025-01-16"
+    dashboard-version: "2.0.0"
+    last-modified: "2025-11-16"
 data:
   troy-backup.json: |
     {
       "uid": "troy-backup-monitoring",
       "title": "Troy Backup Monitoring",
-      "description": "Monitor throwingshade backup jobs, success/failure rates, and backup operations",
+      "description": "Monitor throwingshade backup CronJob execution and logs",
       "tags": ["home-automation", "backup", "throwingshade", "troy-backup"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "30s",
       "time": {
-        "from": "now-24h",
+        "from": "now-7d",
         "to": "now"
       },
       "templating": {
         "list": [
           {
-            "name": "pod",
-            "label": "Pod",
+            "name": "job",
+            "label": "Job",
             "type": "query",
             "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", container=\"troy-backup\"}, pod)",
-            "multi": false,
-            "includeAll": false,
+            "query": "label_values({namespace=\"home-automation\", container=\"backup\"}, job)",
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
             "refresh": 1,
-            "sort": 2
+            "sort": 1
           }
         ]
       },
       "panels": [
         {
           "id": 1,
-          "title": "Backup Job Status",
+          "title": "Total Backup Jobs",
           "type": "stat",
           "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", container=\"troy-backup\"} |= \"Backup completed successfully\" [24h])",
-              "refId": "A",
-              "legendFormat": "Successful Backups"
-            }
-          ],
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "orientation": "auto",
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "value": null, "color": "red" },
-                  { "value": 1, "color": "green" }
-                ]
-              }
-            }
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 2,
-          "title": "Failed Backups (24h)",
-          "type": "stat",
-          "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
-          "targets": [
-            {
-              "expr": "count_over_time({namespace=\"home-automation\", container=\"troy-backup\"} |~ \"(?i)(error|fail)\" [24h])",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} [$__range]))",
               "refId": "A"
             }
           ],
@@ -94,7 +64,38 @@ data:
             "reduceOptions": {
               "values": false,
               "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "short",
+              "decimals": 0
             }
+          },
+          "datasource": { "type": "loki", "uid": "loki" }
+        },
+        {
+          "id": 2,
+          "title": "Errors",
+          "type": "stat",
+          "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} |~ `(?i)(error|fail|exception)` [$__range]))",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"]
+            },
+            "textMode": "auto"
           },
           "fieldConfig": {
             "defaults": {
@@ -103,57 +104,88 @@ data:
                 "mode": "absolute",
                 "steps": [
                   { "value": null, "color": "green" },
-                  { "value": 1, "color": "red" }
+                  { "value": 1, "color": "yellow" },
+                  { "value": 5, "color": "red" }
                 ]
-              }
+              },
+              "unit": "short",
+              "decimals": 0
             }
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
           "id": 3,
-          "title": "Last Backup Time",
+          "title": "Warnings",
           "type": "stat",
           "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", container=\"troy-backup\"} |= \"Backup completed\"",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} |~ `(?i)(warn|warning)` [$__range]))",
               "refId": "A"
             }
           ],
           "options": {
             "colorMode": "value",
-            "graphMode": "none",
+            "graphMode": "area",
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
               "calcs": ["lastNotNull"]
-            }
+            },
+            "textMode": "auto"
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "dateTimeFromNow"
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "yellow" },
+                  { "value": 10, "color": "orange" }
+                ]
+              },
+              "unit": "short",
+              "decimals": 0
             }
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
           "id": 4,
-          "title": "Backup Logs (All Levels)",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 10 },
+          "title": "Backup Job Activity Over Time",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", container=\"troy-backup\", pod=~\"$pod\"}",
-              "refId": "A"
+              "expr": "sum(count_over_time({namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} [5m]))",
+              "refId": "A",
+              "legendFormat": "Log entries"
             }
           ],
           "options": {
-            "showTime": true,
-            "showLabels": false,
-            "showCommonLabels": false,
-            "wrapLogMessage": true,
-            "sortOrder": "Descending"
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "lineInterpolation": "linear",
+                "fillOpacity": 80,
+                "showPoints": "never"
+              },
+              "unit": "short",
+              "min": 0
+            }
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
@@ -161,10 +193,10 @@ data:
           "id": 5,
           "title": "Error Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", container=\"troy-backup\"} |~ \"(?i)(error|fail)\"",
+              "expr": "{namespace=\"home-automation\", container=\"backup\", job=~\"$job\"} |~ `(?i)(error|fail|exception)`",
               "refId": "A"
             }
           ],
@@ -173,31 +205,33 @@ data:
             "showLabels": true,
             "showCommonLabels": false,
             "wrapLogMessage": true,
-            "sortOrder": "Descending"
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
           },
           "datasource": { "type": "loki", "uid": "loki" }
         },
         {
           "id": 6,
-          "title": "Backup Job Execution Timeline",
-          "type": "bargauge",
-          "gridPos": { "x": 0, "y": 22, "w": 24, "h": 6 },
+          "title": "All Backup Logs",
+          "type": "logs",
+          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
           "targets": [
             {
-              "expr": "count_over_time({namespace=\"home-automation\", container=\"troy-backup\"} [1h])",
-              "refId": "A",
-              "legendFormat": "Log entries per hour"
+              "expr": "{namespace=\"home-automation\", container=\"backup\", job=~\"$job\"}",
+              "refId": "A"
             }
           ],
           "options": {
-            "orientation": "horizontal",
-            "displayMode": "gradient",
-            "showUnfilled": true
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" }
-            }
+            "showTime": true,
+            "showLabels": true,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false
           },
           "datasource": { "type": "loki", "uid": "loki" }
         }
