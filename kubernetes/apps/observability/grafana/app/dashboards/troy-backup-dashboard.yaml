@@ -20,7 +20,7 @@ data:
       "timezone": "browser",
       "schemaVersion": 39,
       "version": 3,
-      "refresh": "30s",
+      "refresh": "5m",
       "time": {
         "from": "now-8d",
         "to": "now"
@@ -159,7 +159,7 @@ data:
           "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} [5m]))",
+              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} [2d]))",
               "refId": "A",
               "legendFormat": "Log entries"
             }
@@ -180,7 +180,8 @@ data:
               "custom": {
                 "drawStyle": "bars",
                 "lineInterpolation": "linear",
-                "fillOpacity": 80,
+                "barAlignment": 0,
+                "fillOpacity": 100,
                 "showPoints": "never"
               },
               "unit": "short",
