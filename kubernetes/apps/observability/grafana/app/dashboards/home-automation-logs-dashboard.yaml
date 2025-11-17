@@ -203,7 +203,7 @@ data:
           "id": 4,
           "title": "Log Level Distribution",
           "type": "piechart",
-          "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
+          "gridPos": { "x": 0, "y": 16, "w": 6, "h": 8 },
           "targets": [
             {
               "expr": "count_over_time({namespace=\"home-automation\"} [3h])",
@@ -226,7 +226,7 @@ data:
           "id": 5,
           "title": "Recent Errors (All Services)",
           "type": "stat",
-          "gridPos": { "x": 8, "y": 16, "w": 4, "h": 4 },
+          "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(ERROR|error)\" [1h])",
@@ -262,7 +262,7 @@ data:
           "id": 6,
           "title": "Warnings (Last Hour)",
           "type": "stat",
-          "gridPos": { "x": 12, "y": 16, "w": 4, "h": 4 },
+          "gridPos": { "x": 12, "y": 16, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "count_over_time({namespace=\"home-automation\"} |~ \"(?i)(WARNING|WARN|warning)\" [1h])",
@@ -298,7 +298,7 @@ data:
           "id": 7,
           "title": "Total Log Entries",
           "type": "stat",
-          "gridPos": { "x": 16, "y": 16, "w": 8, "h": 4 },
+          "gridPos": { "x": 18, "y": 16, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\"} [3h]))",
@@ -326,7 +326,7 @@ data:
           "id": 8,
           "title": "Service Health Status",
           "type": "table",
-          "gridPos": { "x": 8, "y": 20, "w": 16, "h": 4 },
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
           "targets": [
             {
               "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\"} [5m]))",
@@ -360,7 +360,7 @@ data:
           "id": 9,
           "title": "Recent Errors (All Services)",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\", container=~\"$container\"} |= \"error\"",
@@ -383,7 +383,7 @@ data:
           "id": 10,
           "title": "Recent Warnings",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 32, "w": 24, "h": 6 },
+          "gridPos": { "x": 0, "y": 42, "w": 24, "h": 6 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", pod=~\"$pod\", container=~\"$container\"} |= \"warning\"",
@@ -405,7 +405,7 @@ data:
           "id": 11,
           "title": "Home Assistant Custom Components",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 38, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 48, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\"} |= \"custom_components\"",
@@ -427,7 +427,7 @@ data:
           "id": 12,
           "title": "Log Volume Rate (logs/sec)",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 46, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 56, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "sum by (app_name) (rate({namespace=\"home-automation\", app_name=~\"$app\"} [5m]))",
@@ -466,7 +466,7 @@ data:
           "id": 13,
           "title": "All Logs (Live Stream)",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 54, "w": 24, "h": 12 },
+          "gridPos": { "x": 0, "y": 64, "w": 24, "h": 12 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"}",
