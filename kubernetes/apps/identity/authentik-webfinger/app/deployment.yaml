@@ -33,16 +33,14 @@ spec:
             - name: WEBFINGER_DOMAIN
               value: "techvomit.xyz"
           livenessProbe:
-            httpGet:
-              path: /.well-known/webfinger?resource=acct:test@techvomit.xyz
+            tcpSocket:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
-            httpGet:
-              path: /.well-known/webfinger?resource=acct:test@techvomit.xyz
+            tcpSocket:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -51,7 +49,7 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 64Mi
+              memory: 256Mi
             limits:
               cpu: 200m
-              memory: 128Mi
+              memory: 512Mi
