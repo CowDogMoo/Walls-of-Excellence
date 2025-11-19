@@ -15,7 +15,7 @@ data:
           # Alert if no successful backup in the last 8 days (weekly backup runs Sunday 2 AM)
           - alert: TroyBackupNoSuccessfulBackup
             expr: |
-              (count_over_time({namespace="home-automation", container="troy-backup"} |= "Backup completed successfully" [8d]) OR on() vector(0)) == 0
+              (count_over_time({namespace="home-automation", app="troy-backup"} |= "Backup job completed successfully" [8d]) OR on() vector(0)) == 0
             for: 1h
             labels:
               severity: critical
@@ -29,7 +29,7 @@ data:
           # Alert on backup failures/errors
           - alert: TroyBackupFailure
             expr: |
-              rate({namespace="home-automation", container="troy-backup", level="error"} [10m]) > 0
+              rate({namespace="home-automation", app="troy-backup"} |~ "(?i)error|fail" [10m]) > 0
             for: 5m
             labels:
               severity: critical
