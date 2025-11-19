@@ -44,7 +44,7 @@ spec:
     image:
       registry: ghcr.io
       repository: traefik/traefik
-      tag: v3.6.1
+      tag: v3.6.2
       pullPolicy: IfNotPresent
 
     ingressClass:
