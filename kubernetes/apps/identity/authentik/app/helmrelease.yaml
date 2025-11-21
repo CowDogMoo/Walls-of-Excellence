@@ -54,6 +54,10 @@ spec:
       name: authentik-secrets
       valuesKey: TAILSCALE_CLIENT_SECRET
       targetPath: blueprints.context.tailscale_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: HOMEASSISTANT_TEST_CLIENT_SECRET
+      targetPath: blueprints.context.homeassistant_test_client_secret
   values:
     global:
       image: {}
@@ -90,7 +94,7 @@ spec:
             name: authentik-secrets
       resources:
         requests:
-          memory: 512Mi
+          memory: 768Mi
           cpu: 500m
         limits:
           memory: 2Gi
@@ -150,7 +154,7 @@ spec:
 
       resources:
         requests:
-          memory: 256Mi
+          memory: 512Mi
           cpu: 500m
         limits:
           memory: 1Gi
@@ -158,19 +162,21 @@ spec:
       startupProbe:
         exec:
           command:
-            - ak
-            - healthcheck
-        initialDelaySeconds: 90
+            - sh
+            - -c
+            - test -f /dev/shm/authentik-worker.pid && kill -0 $(cat /dev/shm/authentik-worker.pid)
+        initialDelaySeconds: 120
         periodSeconds: 10
         timeoutSeconds: 10
-        failureThreshold: 60
+        failureThreshold: 90
         successThreshold: 1
 
       livenessProbe:
         exec:
           command:
-            - ak
-            - healthcheck
+            - sh
+            - -c
+            - test -f /dev/shm/authentik-worker.pid && kill -0 $(cat /dev/shm/authentik-worker.pid)
         initialDelaySeconds: 60
         periodSeconds: 10
         timeoutSeconds: 10
@@ -180,8 +186,9 @@ spec:
       readinessProbe:
         exec:
           command:
-            - ak
-            - healthcheck
+            - sh
+            - -c
+            - test -f /dev/shm/authentik-worker.pid && kill -0 $(cat /dev/shm/authentik-worker.pid)
         initialDelaySeconds: 30
         periodSeconds: 10
         timeoutSeconds: 10

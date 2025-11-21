@@ -465,7 +465,7 @@ task reset-nodes
 The project uses [Task](https://taskfile.dev/) with the following categories:
 
 | Category | Description | Example Tasks |
-|----------|-------------|---------------|
+| -------- | ----------- | ------------- |
 | **Root tasks** | Core cluster operations | `provision`, `ping` |
 | `ansible:*` | Ansible automation/testing | `ansible:lint-ansible` |
 | `k8s:*` | Kubernetes management | `k8s:destroy-stuck-ns` |

@@ -95,7 +95,7 @@ task test:destroy
 ### Core Operations
 
 | Command | Description |
-|---------|-------------|
+| ------- | ----------- |
 | `task test:create` | Create test cluster |
 | `task test:destroy` | Destroy test cluster |
 | `task test:reset` | Destroy and recreate |
@@ -189,7 +189,7 @@ Production differences:
 The following apps can be tested in kind clusters (no external dependencies):
 
 | Application | Namespace | Purpose |
-|-------------|-----------|---------|
+| ----------- | --------- | ------- |
 | cert-manager | cert-manager | TLS certificate management |
 | external-secrets | external-secrets | Secret synchronization (mock mode) |
 | nfs-subdir-external-provisioner | kube-system | Dynamic PV provisioning |

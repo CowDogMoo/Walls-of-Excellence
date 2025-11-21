@@ -140,7 +140,7 @@ flux get kustomizations -A
 Store the following secrets in 1Password vault `kubernetes`:
 
 | Item | Field | Description |
-|------|-------|-------------|
+| ---- | ----- | ----------- |
 | `1password` | `OP_CREDENTIALS_JSON` | 1Password Connect credentials |
 | `1password` | `OP_CONNECT_TOKEN` | 1Password Connect API token |
 | `sops` | `SOPS_PRIVATE_KEY` | age private key for SOPS encryption |

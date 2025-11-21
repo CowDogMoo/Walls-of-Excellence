@@ -1,0 +1,230 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: home-assistant-test
+  namespace: home-automation
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: home-assistant-test
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      home-assistant-test:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        # Init container to setup the initial ts configuration
+        initContainers:
+          install-oidc-component:
+            image:
+              repository: alpine/git
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                echo "$(date): Installing hass-oidc-auth custom component"
+
+                # Clone the repository
+                cd /tmp
+                git clone --depth 1 https://github.com/christiaangoossens/hass-oidc-auth.git
+
+                # Create custom_components directory and copy files
+                mkdir -p /config/custom_components
+                cp -r /tmp/hass-oidc-auth/custom_components/auth_oidc /config/custom_components/
+
+                echo "$(date): OIDC component installed successfully"
+                ls -la /config/custom_components/auth_oidc/
+          setup-ts:
+            image:
+              repository: busybox
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                mkdir -p /config/.ts
+                chmod 777 /config/.ts || true
+
+                if [ -x /config/ts ] && [ ! -f /config/.ts/config.yaml ]; then
+                  echo "$(date): Initial config creation"
+                  HOME=/config /config/ts room list
+                  chmod 666 /config/.ts/config.yaml || true
+                fi
+          setup-oidc:
+            image:
+              repository: busybox
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                echo "$(date): Setting up OIDC configuration"
+
+                # Create secrets.yaml for OIDC client secret
+                cat > /config/secrets.yaml << EOF
+                # Authentik OIDC Client Secret
+                authentik_client_secret: "${AUTHENTIK_CLIENT_SECRET}"
+                EOF
+
+                # Add HTTP reverse proxy configuration if not already present
+                if ! grep -q "^http:" /config/configuration.yaml; then
+                  echo "" >> /config/configuration.yaml
+                  echo "# HTTP Reverse Proxy Configuration" >> /config/configuration.yaml
+                  echo "http:" >> /config/configuration.yaml
+                  echo "  use_x_forwarded_for: true" >> /config/configuration.yaml
+                  echo "  trusted_proxies:" >> /config/configuration.yaml
+                  echo "    - 10.42.0.0/16" >> /config/configuration.yaml
+                  echo "    - 192.168.0.0/16" >> /config/configuration.yaml
+                  echo "$(date): Added HTTP reverse proxy configuration to configuration.yaml"
+                else
+                  echo "$(date): HTTP configuration already present"
+                fi
+            env:
+              - name: AUTHENTIK_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-test-secrets
+                    key: AUTHENTIK_CLIENT_SECRET
+        containers:
+          app:
+            image:
+              repository: ghcr.io/home-operations/home-assistant
+              tag: 2025.11.2@sha256:ff7eb7c296bb514704804a6d68d67e6858edb4366ee38d1c3089e837230a9172
+            env:
+              # -- Set the container timezone
+              TZ: "America/Denver"
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 100m
+              limits:
+                memory: 2Gi
+          ts-config-monitor:
+            securityContext:
+              runAsUser: 65534
+              runAsGroup: 65534
+              allowPrivilegeEscalation: false
+            image:
+              repository: alpine
+              tag: latest
+            env:
+              HOME: /config
+            command:
+              - sh
+              - -c
+              - |
+                echo "$(date): Starting throwingshade config monitor"
+                echo "$(date): Monitoring /config/.ts/config.yaml"
+                CFG=/config/.ts/config.yaml
+
+                # Monitor loop
+                while true; do
+                  # Check if ts binary exists
+                  if [ ! -x /config/ts ]; then
+                    echo "$(date): Waiting for /config/ts binary..."
+                    sleep 60
+                    continue
+                  fi
+
+                  # If config.yaml is a broken/looped symlink, remove it
+                  if [ -L "$CFG" ] && ! readlink -f "$CFG" >/dev/null 2>&1; then
+                    echo "$(date): Detected broken symlink at $CFG; fixing..."
+                    rm -f "$CFG"
+                  fi
+
+                  # Run ts; capture output and exit code
+                  OUTPUT=$(/config/ts room list 2>&1); STATUS=$?
+                  if echo "$OUTPUT" | grep -qi "Failed to load configuration" || { [ "$STATUS" -ne 0 ] && [ ! -f "$CFG" ]; }; then
+                    echo "$(date): Config corruption detected!"
+                    echo "$(date): Error output: $OUTPUT"
+
+                    # Remove corrupted config
+                    echo "$(date): Removing corrupted config..."
+                    rm -f "$CFG"
+
+                    # Regenerate config
+                    echo "$(date): Regenerating config..."
+                    if /config/ts room list; then
+                      chmod 666 /config/.ts/config.yaml || true
+                      echo "$(date): Config regenerated successfully"
+                    else
+                      echo "$(date): Regen failed; will retry in 60s"
+                    fi
+                  else
+                    # Only log periodically to avoid spam
+                    if [ $(($(date +%s) % 300)) -lt 60 ]; then
+                      echo "$(date): Config is valid"
+                    fi
+                  fi
+
+                  # Check every 60 seconds
+                  sleep 60
+                done
+            resources:
+              requests:
+                cpu: 20m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
+        pod:
+          # Disable hostNetwork for test instance to avoid conflicts
+          hostNetwork: false
+    service:
+      app:
+        controller: home-assistant-test
+        type: ClusterIP
+        ports:
+          http:
+            port: 8123
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: ha-test.techvomit.xyz
+        hosts:
+          - host: &host ha-test.techvomit.xyz
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+    logs:
+      general:
+        format: json
+        level: DEBUG
+    # Mount path running on nfs server to /config (uses nfs-client to auto-create)
+    persistence:
+      config:
+        enabled: true
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        storageClass: nfs-client
+        globalMounts:
+          - path: /config
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /config/logs
