@@ -22,58 +22,53 @@ Also add the same value to the `authentik-secrets` item in 1Password:
 
 - `HOMEASSISTANT_TEST_CLIENT_SECRET`: The same generated secret
 
-### 3. Configure Home Assistant
+### 3. Configure Home Assistant OIDC Authentication
 
-Once the pod is running, you'll need to configure Home Assistant to use
-Authentik for authentication.
+The deployment automatically installs the
+[hass-oidc-auth](https://github.com/christiaangoossens/hass-oidc-auth) custom
+component and configures the necessary secrets. Once the pod is running, you
+need to add the OIDC auth provider to your Home Assistant configuration.
 
-Add the following to your Home Assistant `configuration.yaml`:
+#### Automatic Configuration (Applied by Init Containers)
+
+The following are automatically configured:
+
+- **OIDC Component**: The `install-oidc-component` init container installs
+  the `auth_oidc` custom component to `/config/custom_components/auth_oidc/`
+- **Secrets**: The `setup-oidc` init container creates
+  `/config/secrets.yaml` with your Authentik client secret
+- **HTTP Proxy Settings**: Reverse proxy configuration for Traefik is
+  automatically added to `configuration.yaml`
+
+#### Manual Configuration Required
+
+Add the OIDC auth provider to your Home Assistant `configuration.yaml`:
 
 ```yaml
 homeassistant:
   auth_providers:
     - type: homeassistant
-    - type: command_line
-      command: /config/auth_external.sh
-      meta: true
-
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 10.42.0.0/16 # Adjust to your cluster pod network CIDR
+    - type: auth_oidc
+      id: authentik
+      name: Authentik
+      domain: auth.techvomit.xyz
+      client_id: home-assistant-test
+      client_secret: !secret authentik_client_secret
+      auth_url: https://auth.techvomit.xyz/application/o/authorize/
+      token_url: https://auth.techvomit.xyz/application/o/token/
+      userinfo_url: https://auth.techvomit.xyz/application/o/userinfo/
+      scopes:
+        - openid
+        - email
+        - profile
+        - groups
 ```
 
-Create `/config/auth_external.sh`:
+**Note**: The `http` configuration for reverse proxy trust is automatically
+added if not present, so you don't need to manually configure it unless
+customizing the trusted proxy CIDRs.
 
-```bash
-#!/bin/bash
-# This script validates authentication from Authentik
-# The authentik integration will pass user info via environment variables
-
-# For now, just echo success - customize as needed
-echo "Authentication successful"
-exit 0
-```
-
-### 4. Configure Authentik OIDC in Home Assistant
-
-In Home Assistant, you'll need to manually configure the Authentik provider:
-
-1. Go to Settings > People > Users
-2. Add a new user or edit an existing one
-3. Enable "Allow person to login"
-4. Configure the authentication provider:
-   - Provider: Generic OAuth2
-   - Client ID: `home-assistant-test`
-   - Client Secret: (use the secret you generated)
-   - Authorize URL: `https://auth.techvomit.xyz/application/o/authorize/`
-   - Token URL: `https://auth.techvomit.xyz/application/o/token/`
-   - Userinfo URL: `https://auth.techvomit.xyz/application/o/userinfo/`
-   - Scopes: `openid email profile`
-
-Alternatively, you can use the Home Assistant Authentik integration if available.
-
-### 5. Add Users to Authentik Group
+### 4. Add Users to Authentik Group
 
 To grant users access to the test Home Assistant instance:
 
@@ -112,7 +107,8 @@ The Authentik OIDC provider is configured via the blueprint at:
 Key details:
 
 - Client ID: `home-assistant-test`
-- Redirect URI: `https://ha-test.techvomit.xyz/auth/external/callback`
-- Scopes: `openid`, `email`, `profile`
+- Redirect URI: `https://ha-test.techvomit.xyz/auth/oidc/callback`
+- Scopes: `openid`, `email`, `profile`, `groups`
 - Authentication Flow: Passwordless WebAuthn
 - Authorization Flow: Explicit Consent
+- Custom Scope Mapping: Provides `is_admin` and `groups` fields for authorization
