@@ -58,6 +58,10 @@ spec:
       name: authentik-secrets
       valuesKey: HOMEASSISTANT_TEST_CLIENT_SECRET
       targetPath: blueprints.context.homeassistant_test_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: HOMEASSISTANT_CLIENT_SECRET
+      targetPath: blueprints.context.homeassistant_client_secret
   values:
     global:
       image: {}

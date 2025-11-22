@@ -20,6 +20,7 @@ data:
       guacamole_client_secret: !Env GUACAMOLE_CLIENT_SECRET
       tailscale_client_secret: !Env TAILSCALE_CLIENT_SECRET
       homeassistant_test_client_secret: !Env HOMEASSISTANT_TEST_CLIENT_SECRET
+      homeassistant_client_secret: !Env HOMEASSISTANT_CLIENT_SECRET
     entries:
       # Groups for role mapping
       - model: authentik_core.group
@@ -86,6 +87,22 @@ data:
         attrs:
           name: Home Assistant Test Admins
 
+      - model: authentik_core.group
+        id: homeassistant-users
+        identifiers:
+          name: Home Assistant Users
+        state: present
+        attrs:
+          name: Home Assistant Users
+
+      - model: authentik_core.group
+        id: homeassistant-admins
+        identifiers:
+          name: Home Assistant Admins
+        state: present
+        attrs:
+          name: Home Assistant Admins
+
       # Custom Scope Mapping for Home Assistant groups and admin status
       - model: authentik_providers_oauth2.scopemapping
         id: homeassistant-groups-scope
@@ -99,7 +116,7 @@ data:
           description: "Provides group membership and admin status for Home Assistant"
           expression: |
             return {
-              "is_admin": ak_is_group_member(request.user, name="Home Assistant Test Admins"),
+              "is_admin": ak_is_group_member(request.user, name="Home Assistant Test Admins") or ak_is_group_member(request.user, name="Home Assistant Admins"),
               "groups": [group.name for group in request.user.ak_groups.all()]
             }
 
@@ -249,6 +266,34 @@ data:
           access_token_validity: "minutes=5"
           refresh_token_validity: "days=30"
 
+      # OAuth2 Provider for Home Assistant
+      - model: authentik_providers_oauth2.oauth2provider
+        id: homeassistant-provider
+        identifiers:
+          name: Home Assistant
+        state: present
+        attrs:
+          name: Home Assistant
+          client_id: home-assistant
+          client_secret: !Context homeassistant_client_secret
+          client_type: confidential
+          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
+          redirect_uris:
+            - matching_mode: strict
+              url: "https://ha.techvomit.xyz/auth/oidc/callback"
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+            - !KeyOf homeassistant-groups-scope
+          sub_mode: hashed_user_id
+          access_code_validity: "minutes=1"
+          access_token_validity: "minutes=5"
+          refresh_token_validity: "days=30"
+
       # Application for Grafana
       - model: authentik_core.application
         id: grafana-app
@@ -333,6 +378,20 @@ data:
           meta_description: "Home Assistant Test Instance - Smart Home Testing"
           policy_engine_mode: any
 
+      # Application for Home Assistant
+      - model: authentik_core.application
+        id: homeassistant-app
+        identifiers:
+          slug: home-assistant
+        state: present
+        attrs:
+          name: Home Assistant
+          slug: home-assistant
+          provider: !KeyOf homeassistant-provider
+          meta_launch_url: "https://ha.techvomit.xyz"
+          meta_description: "Home Assistant - Smart Home Automation"
+          policy_engine_mode: any
+
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
@@ -384,6 +443,16 @@ data:
           expression: |
             return ak_is_group_member(request.user, name="Home Assistant Test Users")
 
+      - model: authentik_policies_expression.expressionpolicy
+        id: homeassistant-user-policy
+        identifiers:
+          name: homeassistant-user-policy
+        state: present
+        attrs:
+          name: homeassistant-user-policy
+          expression: |
+            return ak_is_group_member(request.user, name="Home Assistant Users")
+
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
         identifiers:
@@ -433,6 +502,17 @@ data:
         identifiers:
           target: !KeyOf homeassistant-test-app
           policy: !KeyOf homeassistant-test-user-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Home Assistant application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf homeassistant-app
+          policy: !KeyOf homeassistant-user-policy
           order: 0
         state: present
         attrs:

@@ -10,3 +10,4 @@ namespace: home-automation
 resources:
   - ./helmrelease.yaml
   - ./ocirepository.yaml
+  - ./externalsecret.yaml

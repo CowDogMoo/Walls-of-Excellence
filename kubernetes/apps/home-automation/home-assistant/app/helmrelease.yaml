@@ -26,6 +26,26 @@ spec:
           reloader.stakater.com/auto: "true"
         # Init container to setup the initial ts configuration
         initContainers:
+          install-oidc-component:
+            image:
+              repository: alpine/git
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                echo "$(date): Installing hass-oidc-auth custom component"
+
+                # Clone the repository
+                cd /tmp
+                git clone --depth 1 https://github.com/christiaangoossens/hass-oidc-auth.git
+
+                # Create custom_components directory and copy files
+                mkdir -p /config/custom_components
+                cp -r /tmp/hass-oidc-auth/custom_components/auth_oidc /config/custom_components/
+
+                echo "$(date): OIDC component installed successfully"
+                ls -la /config/custom_components/auth_oidc/
           setup-ts:
             image:
               repository: busybox
@@ -42,6 +62,41 @@ spec:
                   HOME=/config /config/ts room list
                   chmod 666 /config/.ts/config.yaml || true
                 fi
+          setup-oidc:
+            image:
+              repository: busybox
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                echo "$(date): Setting up OIDC configuration"
+
+                # Add or update Authentik client secret in secrets.yaml
+                if [ -f /config/secrets.yaml ]; then
+                  # Check if the key already exists
+                  if grep -q "^authentik_client_secret:" /config/secrets.yaml; then
+                    echo "$(date): Authentik client secret already configured"
+                  else
+                    echo "" >> /config/secrets.yaml
+                    echo "# Authentik OIDC Client Secret" >> /config/secrets.yaml
+                    echo "authentik_client_secret: \"${AUTHENTIK_CLIENT_SECRET}\"" >> /config/secrets.yaml
+                    echo "$(date): Added Authentik client secret to existing secrets.yaml"
+                  fi
+                else
+                  # Create new secrets.yaml
+                  cat > /config/secrets.yaml << EOF
+                # Authentik OIDC Client Secret
+                authentik_client_secret: "${AUTHENTIK_CLIENT_SECRET}"
+                EOF
+                  echo "$(date): Created secrets.yaml with Authentik client secret"
+                fi
+            env:
+              - name: AUTHENTIK_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-secrets
+                    key: AUTHENTIK_CLIENT_SECRET
         containers:
           app:
             image:
