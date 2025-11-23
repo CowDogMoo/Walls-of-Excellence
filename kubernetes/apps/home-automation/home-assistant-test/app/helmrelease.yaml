@@ -11,10 +11,12 @@ spec:
     kind: OCIRepository
     name: home-assistant-test
   install:
+    timeout: 10m
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
+    timeout: 10m
     remediation:
       retries: 3
   uninstall:
