@@ -47,12 +47,30 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 6
           livenessProbe:
-            tcpSocket:
-              port: 8080
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check if supervisord is running
+                  if ! pgrep -f supervisord > /dev/null; then
+                    exit 1
+                  fi
+                  # Check if PostgreSQL is running
+                  if ! pgrep -f "^postgres" > /dev/null; then
+                    echo "PostgreSQL not running, attempting restart..."
+                    kill -HUP 1 || exit 1
+                    sleep 5
+                    if ! pgrep -f "^postgres" > /dev/null; then
+                      exit 1
+                    fi
+                  fi
+                  # Check if port 8080 is listening
+                  nc -z localhost 8080 || exit 1
             initialDelaySeconds: 90
             periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 5
+            timeoutSeconds: 10
+            failureThreshold: 3
           volumeMounts:
             - mountPath: /config
               name: guacamole-pvc
