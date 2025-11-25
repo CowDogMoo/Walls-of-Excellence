@@ -150,6 +150,8 @@ spec:
         - pods=[*]
         - deployments=[*]
         - persistentvolumeclaims=[*]
+      # Use Recreate strategy to prevent duplicate metrics during updates
+      updateStrategy: Recreate
       prometheus:
         monitor:
           enabled: true
