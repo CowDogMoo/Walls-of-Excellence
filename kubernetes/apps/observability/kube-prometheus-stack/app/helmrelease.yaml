@@ -114,6 +114,10 @@ spec:
         serviceMonitorSelectorNilUsesHelmValues: false
         retention: 14d
         retentionSize: 50GB
+        walCompression: true
+        # TSDB settings to prevent overlapping blocks
+        tsdb:
+          outOfOrderTimeWindow: 0s
         resources:
           requests:
             cpu: 500m
