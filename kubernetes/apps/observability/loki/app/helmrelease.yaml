@@ -194,7 +194,7 @@ spec:
     sidecar:
       image:
         repository: ghcr.io/home-operations/k8s-sidecar
-        tag: 2.1.2
+        tag: 2.1.4
       enableUniqueFilenames: true
       rules:
         searchNamespace: ALL
