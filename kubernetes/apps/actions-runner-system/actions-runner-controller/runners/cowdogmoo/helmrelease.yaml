@@ -12,6 +12,8 @@ spec:
   values:
     githubConfigUrl: https://github.com/CowDogMoo
     githubConfigSecret: cowdogmoo-runner-secret
+    runnerScaleSetName: cowdogmoo-ubuntu-k8s-arm64
+    runnerGroup: default
     minRunners: 1
     maxRunners: 3
     containerMode:

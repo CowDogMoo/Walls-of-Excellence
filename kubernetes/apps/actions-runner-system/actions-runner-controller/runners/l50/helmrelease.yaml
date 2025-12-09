@@ -12,6 +12,8 @@ spec:
   values:
     githubConfigUrl: https://github.com/l50/warpgate-templates
     githubConfigSecret: l50-runner-secret
+    runnerScaleSetName: l50-ubuntu-k8s-arm64
+    runnerGroup: default
     minRunners: 1
     maxRunners: 3
     containerMode:
