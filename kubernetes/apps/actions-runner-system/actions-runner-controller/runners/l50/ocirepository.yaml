@@ -3,7 +3,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: gha-runner-scale-set
+  name: gha-runner-scale-set-l50
 spec:
   interval: 15m
   layerSelector:

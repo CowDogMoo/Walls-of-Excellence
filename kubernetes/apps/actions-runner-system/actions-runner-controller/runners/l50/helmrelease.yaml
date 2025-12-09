@@ -7,7 +7,7 @@ metadata:
 spec:
   chartRef:
     kind: OCIRepository
-    name: gha-runner-scale-set
+    name: gha-runner-scale-set-l50
   interval: 1h
   values:
     githubConfigUrl: https://github.com/l50
