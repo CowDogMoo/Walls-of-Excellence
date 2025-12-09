@@ -10,7 +10,7 @@ spec:
     name: gha-runner-scale-set-l50
   interval: 1h
   values:
-    githubConfigUrl: https://github.com/l50
+    githubConfigUrl: https://github.com/l50/warpgate-templates
     githubConfigSecret: l50-runner-secret
     minRunners: 1
     maxRunners: 3
