@@ -40,6 +40,7 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    revisionHistoryLimit: 3
     # Core configs
     image:
       registry: ghcr.io

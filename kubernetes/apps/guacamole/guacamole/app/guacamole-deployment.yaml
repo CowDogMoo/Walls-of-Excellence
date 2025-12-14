@@ -6,6 +6,7 @@ metadata:
   namespace: guacamole
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: guacamole

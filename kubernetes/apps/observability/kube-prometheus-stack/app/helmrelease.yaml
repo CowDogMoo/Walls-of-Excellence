@@ -25,6 +25,7 @@ spec:
       # Both must remain enabled as the operator requires at least one to function.
       kubeletEndpointsEnabled: true
       kubeletEndpointSliceEnabled: true
+      revisionHistoryLimit: 3
     defaultRules:
       rules:
         kubeApiserverAvailability: false

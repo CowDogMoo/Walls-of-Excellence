@@ -27,16 +27,19 @@ spec:
   values:
     installCRDs: true
     replicaCount: 1
+    revisionHistoryLimit: 3
     grafana:
       enabled: true
     serviceMonitor:
       enabled: true
       interval: 1m
     webhook:
+      revisionHistoryLimit: 3
       serviceMonitor:
         enabled: true
         interval: 1m
     certController:
+      revisionHistoryLimit: 3
       serviceMonitor:
         enabled: true
         interval: 1m

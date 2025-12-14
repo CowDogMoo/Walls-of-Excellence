@@ -17,6 +17,7 @@ spec:
         namespace: kube-system
       interval: 5m
   values:
+    revisionHistoryLimit: 3
     configuration:
       logging:
         minimumLevel: Information
