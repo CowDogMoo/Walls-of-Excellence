@@ -16,6 +16,16 @@ spec:
         name: emberstack
         namespace: kube-system
       interval: 5m
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: reflector
+            patch: |
+              - op: add
+                path: /spec/revisionHistoryLimit
+                value: 3
   values:
     revisionHistoryLimit: 3
     configuration:

@@ -18,6 +18,16 @@ spec:
         namespace: networking
   interval: 15m
   maxHistory: 3
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: ingress-traefik
+            patch: |
+              - op: add
+                path: /spec/revisionHistoryLimit
+                value: 3
   install:
     timeout: 10m
     replace: true
