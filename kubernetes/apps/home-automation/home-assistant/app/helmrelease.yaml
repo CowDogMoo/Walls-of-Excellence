@@ -143,7 +143,7 @@ spec:
                   failureThreshold: 60
             resources:
               requests:
-                cpu: 100m
+                cpu: 200m
               limits:
                 memory: 2Gi
           ts-config-monitor:
@@ -263,7 +263,7 @@ spec:
     logs:
       general:
         format: json
-        level: DEBUG
+        level: INFO
     # Mount path running on nfs server to /config (default storageClass)
     persistence:
       config:
