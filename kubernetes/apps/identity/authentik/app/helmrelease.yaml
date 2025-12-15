@@ -230,25 +230,4 @@ spec:
             cpu: 2000m
 
     redis:
-      enabled: true
-      image:
-        registry: docker.io
-        repository: library/redis
-        tag: "8.4.0"
-
-      architecture: standalone
-      auth:
-        enabled: false
-
-      master:
-        persistence:
-          enabled: true
-          storageClass: nfs-client
-          size: 1Gi
-        resources:
-          requests:
-            memory: 128Mi
-            cpu: 200m
-          limits:
-            memory: 512Mi
-            cpu: 500m
+      enabled: false
