@@ -7,7 +7,6 @@ resources:
   - ./namespace.yaml
   # Flux-Kustomizations
   - ./home-assistant/ks.yaml
-  - ./home-assistant-test/ks.yaml
   - ./mosquitto/ks.yaml
   - ./music-assistant/ks.yaml
   - ./printer-monitor/ks.yaml
