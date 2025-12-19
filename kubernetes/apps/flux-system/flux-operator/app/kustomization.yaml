@@ -6,3 +6,8 @@ namespace: flux-system
 resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
+patches:
+  - path: networkpolicy-patch.yaml
+    target:
+      kind: NetworkPolicy
+      name: flux-operator-web
