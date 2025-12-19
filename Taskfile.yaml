@@ -55,18 +55,29 @@ tasks:
     cmds:
       - |
         if [ -z "{{.CMD}}" ]; then
-          echo -e "Error: no command provided"
+          echo "Error: no command provided"
+          echo ""
           echo "Usage: task run-cmd-all -- 'your command here'"
+          echo ""
+          echo "Examples:"
+          echo "  task run-cmd-all -- 'echo \"hello\"'"
+          echo "  task run-cmd-all -- 'ip addr | grep 192'"
+          echo "  task run-cmd-all -- 'uptime'"
+          echo "  task run-cmd-all -- 'sudo reboot'"
           exit 1
         fi
 
         for node in {{.K8S_NODES}}; do
-          echo -e "Now running command on $node"
+          echo "==================================="
+          echo "Node: $node"
+          echo "==================================="
           ssh $node "{{.CMD}}" || {
-            echo -e "Error on $node: command failed"
+            echo "Error on $node: command failed"
             exit 1
           }
+          echo ""
         done
+        echo "Command completed on all nodes."
     silent: true
 
   run-cmd:
@@ -167,6 +178,93 @@ tasks:
       - task: reboot
         vars:
           NODE: all
+    silent: true
+
+  shutdown-cluster:
+    desc: Gracefully shutdown the entire k8s cluster
+    summary: |
+      Performs a graceful shutdown of the k8s cluster for planned power outages.
+
+      Process:
+      1. Drains all worker nodes (evacuates pods)
+      2. Drains master nodes
+      3. Shuts down worker nodes first
+      4. Shuts down master nodes last
+
+      Set QUICK=true to skip draining (emergency shutdown):
+        task shutdown-cluster QUICK=true
+    prompt: This will SHUTDOWN ALL k8s nodes. Are you sure?
+    vars:
+      QUICK: '{{.QUICK | default "false"}}'
+      WORKER_NODES: "k8s2 k8s3 k8s4 k8s5 k8s6 k8s7"
+      MASTER_NODES: "k8s1"
+    cmds:
+      - |
+        if [ "{{.QUICK}}" = "false" ]; then
+          echo "Starting graceful cluster shutdown..."
+          echo ""
+
+          # Drain worker nodes
+          echo "Step 1/4: Draining worker nodes..."
+          for node in {{.WORKER_NODES}}; do
+            echo "  Draining $node..."
+            kubectl drain $node --ignore-daemonsets --delete-emptydir-data --force --timeout=60s 2>/dev/null || {
+              echo "  Warning: Failed to drain $node (continuing anyway)"
+            }
+          done
+          echo ""
+
+          # Drain master nodes
+          echo "Step 2/4: Draining master nodes..."
+          for node in {{.MASTER_NODES}}; do
+            echo "  Draining $node..."
+            kubectl drain $node --ignore-daemonsets --delete-emptydir-data --force --timeout=60s 2>/dev/null || {
+              echo "  Warning: Failed to drain $node (continuing anyway)"
+            }
+          done
+          echo ""
+
+          # Wait a bit for pods to terminate
+          echo "Waiting 10 seconds for pods to terminate..."
+          sleep 10
+          echo ""
+        else
+          echo "Starting QUICK emergency shutdown (skipping drain)..."
+          echo ""
+        fi
+
+        # Shutdown worker nodes
+        echo "Step 3/4: Shutting down worker nodes..."
+        for node in {{.WORKER_NODES}}; do
+          echo "  Shutting down $node..."
+          ssh $node "sudo shutdown -h now" 2>/dev/null || true
+        done
+        echo ""
+
+        # Wait a bit before shutting down masters
+        echo "Waiting 5 seconds..."
+        sleep 5
+        echo ""
+
+        # Shutdown master nodes
+        echo "Step 4/4: Shutting down master nodes..."
+        for node in {{.MASTER_NODES}}; do
+          echo "  Shutting down $node..."
+          ssh $node "sudo shutdown -h now" 2>/dev/null || true
+        done
+        echo ""
+
+        echo "Cluster shutdown initiated!"
+        echo "All nodes should be powered off within 1-2 minutes."
+    silent: true
+
+  emergency-shutdown:
+    desc: Emergency shutdown of all k8s nodes (skips draining)
+    prompt: This will IMMEDIATELY SHUTDOWN ALL k8s nodes without draining. Are you sure?
+    cmds:
+      - task: shutdown-cluster
+        vars:
+          QUICK: "true"
     silent: true
 
   ping:
