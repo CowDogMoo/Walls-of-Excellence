@@ -181,55 +181,55 @@ tasks:
     silent: true
 
   shutdown-cluster:
-    desc: Gracefully shutdown the entire k8s cluster
+    desc: Shutdown the entire k8s cluster (gracefully or emergency)
     summary: |
-      Performs a graceful shutdown of the k8s cluster for planned power outages.
+      Shuts down the k8s cluster for power outages or planned maintenance.
 
-      Process:
-      1. Drains all worker nodes (evacuates pods)
-      2. Drains master nodes
+      By default, performs graceful shutdown:
+      1. Gracefully terminates all pods (except DaemonSets)
+      2. Waits for pods to finish shutting down
       3. Shuts down worker nodes first
       4. Shuts down master nodes last
 
-      Set QUICK=true to skip draining (emergency shutdown):
-        task shutdown-cluster QUICK=true
+      This does NOT cordon nodes, so they will be ready when they boot back up.
+
+      Set EMERGENCY=true for immediate shutdown (power outages):
+        task shutdown-cluster EMERGENCY=true
     prompt: This will SHUTDOWN ALL k8s nodes. Are you sure?
     vars:
-      QUICK: '{{.QUICK | default "false"}}'
+      EMERGENCY: '{{.EMERGENCY | default "false"}}'
       WORKER_NODES: "k8s2 k8s3 k8s4 k8s5 k8s6 k8s7"
       MASTER_NODES: "k8s1"
     cmds:
       - |
-        if [ "{{.QUICK}}" = "false" ]; then
+        if [ "{{.EMERGENCY}}" = "false" ]; then
           echo "Starting graceful cluster shutdown..."
           echo ""
 
-          # Drain worker nodes
-          echo "Step 1/4: Draining worker nodes..."
-          for node in {{.WORKER_NODES}}; do
-            echo "  Draining $node..."
-            kubectl drain $node --ignore-daemonsets --delete-emptydir-data --force --timeout=60s 2>/dev/null || {
-              echo "  Warning: Failed to drain $node (continuing anyway)"
-            }
-          done
+          # Gracefully terminate all non-DaemonSet pods
+          echo "Step 1/4: Gracefully terminating all pods (except DaemonSets)..."
+          kubectl get pods -A --field-selector=status.phase=Running -o json | \
+            jq -r '.items[] | select(.metadata.ownerReferences[0].kind != "DaemonSet") | "\(.metadata.namespace) \(.metadata.name)"' | \
+            while read ns pod; do
+              kubectl delete pod -n "$ns" "$pod" --grace-period=30 --ignore-not-found=true 2>/dev/null || true
+            done
           echo ""
 
-          # Drain master nodes
-          echo "Step 2/4: Draining master nodes..."
-          for node in {{.MASTER_NODES}}; do
-            echo "  Draining $node..."
-            kubectl drain $node --ignore-daemonsets --delete-emptydir-data --force --timeout=60s 2>/dev/null || {
-              echo "  Warning: Failed to drain $node (continuing anyway)"
-            }
+          # Wait for pods to terminate
+          echo "Step 2/4: Waiting up to 60 seconds for pods to terminate..."
+          for i in {1..12}; do
+            remaining=$(kubectl get pods -A --field-selector=status.phase=Running -o json | \
+              jq '[.items[] | select(.metadata.ownerReferences[0].kind != "DaemonSet")] | length')
+            if [ "$remaining" -eq 0 ]; then
+              echo "  All pods terminated successfully."
+              break
+            fi
+            echo "  $remaining pods still terminating... (${i}0s elapsed)"
+            sleep 5
           done
-          echo ""
-
-          # Wait a bit for pods to terminate
-          echo "Waiting 10 seconds for pods to terminate..."
-          sleep 10
           echo ""
         else
-          echo "Starting QUICK emergency shutdown (skipping drain)..."
+          echo "Starting EMERGENCY shutdown (skipping graceful termination)..."
           echo ""
         fi
 
@@ -256,15 +256,7 @@ tasks:
 
         echo "Cluster shutdown initiated!"
         echo "All nodes should be powered off within 1-2 minutes."
-    silent: true
-
-  emergency-shutdown:
-    desc: Emergency shutdown of all k8s nodes (skips draining)
-    prompt: This will IMMEDIATELY SHUTDOWN ALL k8s nodes without draining. Are you sure?
-    cmds:
-      - task: shutdown-cluster
-        vars:
-          QUICK: "true"
+        echo "Nodes will be ready for scheduling when they boot back up (no uncordoning needed)."
     silent: true
 
   ping:
