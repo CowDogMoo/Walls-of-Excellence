@@ -104,6 +104,38 @@ spec:
           memory: 2Gi
           cpu: 2000m
 
+      # Spread authentik components across different nodes to prevent CPU saturation
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            # Avoid same component (multiple server replicas)
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: authentik
+                    app.kubernetes.io/name: authentik
+                    app.kubernetes.io/component: server
+                topologyKey: kubernetes.io/hostname
+            # Avoid worker pods
+            - weight: 90
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: authentik
+                    app.kubernetes.io/name: authentik
+                    app.kubernetes.io/component: worker
+                topologyKey: kubernetes.io/hostname
+            # Avoid postgresql pods
+            - weight: 90
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: authentik
+                    app.kubernetes.io/name: postgresql
+                    app.kubernetes.io/component: primary
+                topologyKey: kubernetes.io/hostname
+
       startupProbe:
         httpGet:
           path: /-/health/live/
@@ -163,6 +195,38 @@ spec:
         limits:
           memory: 1Gi
 
+      # Spread authentik components across different nodes to prevent CPU saturation
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            # Avoid same component (multiple worker replicas)
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: authentik
+                    app.kubernetes.io/name: authentik
+                    app.kubernetes.io/component: worker
+                topologyKey: kubernetes.io/hostname
+            # Avoid server pods
+            - weight: 90
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: authentik
+                    app.kubernetes.io/name: authentik
+                    app.kubernetes.io/component: server
+                topologyKey: kubernetes.io/hostname
+            # Avoid postgresql pods
+            - weight: 90
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: authentik
+                    app.kubernetes.io/name: postgresql
+                    app.kubernetes.io/component: primary
+                topologyKey: kubernetes.io/hostname
+
       startupProbe:
         exec:
           command:
@@ -199,10 +263,11 @@ spec:
         failureThreshold: 3
         successThreshold: 1
 
+      # Worker metrics disabled - authentik workers do not expose metrics endpoint
       metrics:
-        enabled: true
+        enabled: false
         serviceMonitor:
-          enabled: true
+          enabled: false
 
     postgresql:
       enabled: true
@@ -228,6 +293,38 @@ spec:
           limits:
             memory: 1Gi
             cpu: 2000m
+
+        # Spread authentik components across different nodes to prevent CPU saturation
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              # Avoid same component (postgresql HA replicas)
+              - weight: 1
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: authentik
+                      app.kubernetes.io/name: postgresql
+                      app.kubernetes.io/component: primary
+                  topologyKey: kubernetes.io/hostname
+              # Avoid server pods
+              - weight: 90
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: authentik
+                      app.kubernetes.io/name: authentik
+                      app.kubernetes.io/component: server
+                  topologyKey: kubernetes.io/hostname
+              # Avoid worker pods
+              - weight: 90
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: authentik
+                      app.kubernetes.io/name: authentik
+                      app.kubernetes.io/component: worker
+                  topologyKey: kubernetes.io/hostname
 
     redis:
       enabled: false
