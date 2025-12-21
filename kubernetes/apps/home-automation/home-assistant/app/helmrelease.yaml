@@ -147,6 +147,118 @@ spec:
                 cpu: 200m
               limits:
                 memory: 2Gi
+          git-pull:
+            image:
+              repository: alpine/git
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+
+                # Install required tools
+                apk add --no-cache curl jq openssl bash
+
+                echo "$(date): Starting GitHub App git-pull loop"
+
+                # Function to generate GitHub App token
+                get_github_token() {
+                  NOW=$(date +%s)
+                  IAT=$((NOW - 60))
+                  EXP=$((NOW + 600))
+
+                  HEADER='{"alg":"RS256","typ":"JWT"}'
+                  PAYLOAD="{\"iat\":${IAT},\"exp\":${EXP},\"iss\":\"${GITHUB_APP_ID}\"}"
+
+                  HEADER_B64=$(echo -n "$HEADER" | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
+                  PAYLOAD_B64=$(echo -n "$PAYLOAD" | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
+
+                  SIGNATURE=$(echo -n "${HEADER_B64}.${PAYLOAD_B64}" | \
+                    openssl dgst -sha256 -sign <(echo "$GITHUB_APP_PRIVATE_KEY") | \
+                    base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
+
+                  JWT="${HEADER_B64}.${PAYLOAD_B64}.${SIGNATURE}"
+
+                  TOKEN=$(curl -s -X POST \
+                    -H "Authorization: Bearer ${JWT}" \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    "https://api.github.com/app/installations/${GITHUB_APP_INSTALLATION_ID}/access_tokens" | \
+                    jq -r '.token')
+
+                  echo "$TOKEN"
+                }
+
+                cd /config
+
+                # Configure git
+                git config --global user.name "Home Assistant Git Sync"
+                git config --global user.email "git-sync@home-assistant.local"
+                git config --global --add safe.directory /config
+
+                # Update remote URL to remove any hardcoded credentials
+                git remote set-url origin https://github.com/CowDogMoo/homeassistant.git
+
+                # Ensure we're on the correct branch
+                echo "$(date): Configured to sync branch: ${GIT_SYNC_BRANCH}"
+
+                while true; do
+                  echo "$(date): Fetching latest changes from repository"
+
+                  # Checkout the configured branch if not already on it
+                  CURRENT_BRANCH=$(git branch --show-current)
+                  if [ "$CURRENT_BRANCH" != "$GIT_SYNC_BRANCH" ]; then
+                    echo "$(date): Switching from ${CURRENT_BRANCH} to ${GIT_SYNC_BRANCH}"
+                    git checkout ${GIT_SYNC_BRANCH} || echo "$(date): Failed to checkout ${GIT_SYNC_BRANCH}"
+                  fi
+
+                  # Get fresh GitHub App token
+                  TOKEN=$(get_github_token)
+
+                  if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+                    echo "$(date): Failed to get GitHub App token, skipping this sync"
+                  else
+                    # Configure git credential helper with token
+                    git config credential.helper '!f() { echo "username=x-access-token"; echo "password='$TOKEN'"; }; f'
+
+                    # Pull latest changes from configured branch
+                    if git pull origin ${GIT_SYNC_BRANCH}; then
+                      echo "$(date): Successfully pulled latest changes from ${GIT_SYNC_BRANCH}"
+                    else
+                      echo "$(date): Failed to pull changes from ${GIT_SYNC_BRANCH}, will retry next cycle"
+                    fi
+
+                    # Clear credential helper
+                    git config --unset credential.helper
+                  fi
+
+                  # Wait 60 seconds before next pull
+                  sleep 60
+                done
+            env:
+              - name: GIT_SYNC_BRANCH
+                value: "main"
+              - name: GITHUB_APP_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-secrets
+                    key: GITHUB_APP_ID
+              - name: GITHUB_APP_INSTALLATION_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-secrets
+                    key: GITHUB_APP_INSTALLATION_ID
+              - name: GITHUB_APP_PRIVATE_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-secrets
+                    key: GITHUB_APP_PRIVATE_KEY
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
           ts-config-monitor:
             securityContext:
               runAsUser: 65534
