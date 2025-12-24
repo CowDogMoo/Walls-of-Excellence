@@ -9,4 +9,4 @@ spec:
   interval: 12h
   url: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-instance
   ref:
-    tag: 0.37.1
+    tag: 0.38.1
