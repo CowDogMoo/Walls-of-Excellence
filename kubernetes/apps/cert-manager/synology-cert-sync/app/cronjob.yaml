@@ -1,0 +1,87 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: synology-cert-sync
+  namespace: cert-manager
+spec:
+  # Run daily at 3 AM (after cert-manager likely renewed certs)
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app: synology-cert-sync
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cert-sync
+              image: python:3.12-slim
+              env:
+                - name: HOME
+                  value: "/tmp"
+                - name: SYNOLOGY_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: synology-api-credentials
+                      key: host
+                - name: SYNOLOGY_PORT
+                  value: "5001"
+                - name: SYNOLOGY_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: synology-api-credentials
+                      key: username
+                - name: SYNOLOGY_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: synology-api-credentials
+                      key: password
+                - name: CERT_DESCRIPTION
+                  value: "techvomit-wildcard-auto"
+              volumeMounts:
+                - name: cert-secret
+                  mountPath: /certs
+                  readOnly: true
+                - name: script
+                  mountPath: /script
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -e
+                  echo "Installing dependencies..."
+                  pip install --user --no-cache-dir requests urllib3
+                  echo "Starting certificate sync..."
+                  python /script/sync-cert.py
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                runAsNonRoot: true
+                runAsUser: 65534
+                capabilities:
+                  drop:
+                    - ALL
+          volumes:
+            - name: cert-secret
+              secret:
+                secretName: techvomit-xyz-production-tls
+            - name: script
+              configMap:
+                name: synology-cert-sync-script
+                defaultMode: 0755
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault

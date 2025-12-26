@@ -1,0 +1,45 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: synology-cert-sync
+  namespace: cert-manager
+spec:
+  groups:
+    - name: synology-cert-sync
+      interval: 5m
+      rules:
+        - alert: SynologyCertSyncJobFailed
+          expr: |
+            kube_job_status_failed{namespace="cert-manager",job_name=~"synology-cert-sync.*"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            category: certificates
+          annotations:
+            summary: "Synology certificate sync job failed"
+            description: "The Synology certificate sync CronJob in namespace {{ $labels.namespace }} has failed. Certificate on NAS may be outdated."
+
+        - alert: SynologyCertSyncJobNotRunning
+          expr: |
+            time() - kube_cronjob_status_last_schedule_time{cronjob="synology-cert-sync",namespace="cert-manager"} > 90000
+          for: 10m
+          labels:
+            severity: warning
+            category: certificates
+          annotations:
+            summary: "Synology certificate sync has not run recently"
+            description: "The Synology certificate sync CronJob has not run successfully in over 25 hours. Last run was {{ $value | humanizeDuration }} ago."
+
+        - alert: SynologyCertSyncJobStuck
+          expr: |
+            kube_job_status_active{namespace="cert-manager",job_name=~"synology-cert-sync.*"} > 0
+            and
+            time() - kube_job_status_start_time{namespace="cert-manager",job_name=~"synology-cert-sync.*"} > 600
+          for: 5m
+          labels:
+            severity: warning
+            category: certificates
+          annotations:
+            summary: "Synology certificate sync job is stuck"
+            description: "The Synology certificate sync job in namespace {{ $labels.namespace }} has been running for more than 10 minutes and may be stuck."

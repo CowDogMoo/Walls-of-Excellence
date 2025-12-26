@@ -1,0 +1,329 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: synology-cert-sync-script
+  namespace: cert-manager
+data:
+  sync-cert.py: |
+    #!/usr/bin/env python3
+    import requests
+    import os
+    import sys
+    import json
+    import urllib3
+
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    def main():
+        host = os.environ.get('SYNOLOGY_HOST')
+        port = os.environ.get('SYNOLOGY_PORT', '5001')
+        username = os.environ.get('SYNOLOGY_USERNAME')
+        password = os.environ.get('SYNOLOGY_PASSWORD')
+        cert_desc = os.environ.get('CERT_DESCRIPTION', 'techvomit-wildcard')
+
+        if not all([host, username, password]):
+            print("ERROR: Missing required environment variables")
+            sys.exit(1)
+
+        try:
+            with open('/certs/tls.crt', 'r') as f:
+                full_chain = f.read()
+            with open('/certs/tls.key', 'r') as f:
+                key = f.read()
+
+            certs = full_chain.split('-----END CERTIFICATE-----')
+            certs = [c + '-----END CERTIFICATE-----' for c in certs if c.strip()]
+
+            if len(certs) >= 1:
+                cert = certs[0].strip()
+                inter_cert = '\n'.join(certs[1:]).strip() if len(certs) > 1 else ''
+                print(f"Successfully read certificate files: {len(certs)} certificate(s) in chain")
+            else:
+                print("ERROR: No valid certificates found")
+                sys.exit(1)
+        except Exception as e:
+            print(f"ERROR: Failed to read certificate files: {e}")
+            sys.exit(1)
+
+        base_url = f"https://{host}:{port}"
+
+        print(f"Logging in to {host}...")
+        login_url = f"{base_url}/webapi/auth.cgi"
+        login_params = {
+            'api': 'SYNO.API.Auth',
+            'version': '7',
+            'method': 'login',
+            'account': username,
+            'passwd': password,
+            'session': 'Core',
+            'format': 'sid',
+            'enable_syno_token': 'yes'
+        }
+
+        try:
+            response = requests.get(login_url, params=login_params, verify=False, timeout=30)
+            result = response.json()
+        except Exception as e:
+            print(f"ERROR: Failed to connect to Synology: {e}")
+            sys.exit(1)
+
+        if not result.get('success'):
+            error_code = result.get('error', {}).get('code', 'unknown')
+            print(f"ERROR: Login failed with error code: {error_code}")
+            sys.exit(1)
+
+        sid = result['data']['sid']
+        syno_token = result['data'].get('synotoken', '')
+        print(f"Login successful (SynoToken: {'present' if syno_token else 'missing'})")
+
+        print("Listing existing certificates...")
+        cert_url = f"{base_url}/webapi/entry.cgi"
+
+        list_params = {
+            'api': 'SYNO.Core.Certificate.CRT',
+            'version': '1',
+            'method': 'list',
+            '_sid': sid
+        }
+
+        list_headers = {}
+        if syno_token:
+            list_headers['X-SYNO-TOKEN'] = syno_token
+
+        existing_cert_id = None
+        matching_certs = []
+        try:
+            response = requests.get(cert_url, params=list_params, headers=list_headers, verify=False, timeout=30)
+            list_result = response.json()
+
+            if not list_result.get('success'):
+                print(f"WARNING: List API failed with error {list_result.get('error', {}).get('code', 'unknown')}")
+            else:
+                certificates = list_result.get('data', {}).get('certificates', [])
+                print(f"Found {len(certificates)} existing certificate(s)")
+
+                for existing_cert in certificates:
+                    if existing_cert.get('desc') == cert_desc:
+                        cert_info = {
+                            'id': existing_cert.get('id'),
+                            'services': existing_cert.get('services', [])
+                        }
+                        matching_certs.append(cert_info)
+                        if existing_cert.get('is_default'):
+                            existing_cert_id = existing_cert.get('id')
+                            print(f"Found default certificate with matching description, ID: {existing_cert_id}, services: {len(cert_info['services'])}")
+
+                if matching_certs and not existing_cert_id:
+                    existing_cert_id = matching_certs[0]['id']
+                    print(f"Found certificate with matching description, ID: {existing_cert_id}")
+        except Exception as e:
+            print(f"WARNING: Failed to list certificates: {e}")
+
+        upload_params = {
+            'api': 'SYNO.Core.Certificate',
+            'version': '1',
+            'method': 'import',
+            '_sid': sid,
+            'SynoToken': syno_token
+        }
+
+        data_payload = {
+            'desc': cert_desc,
+            'as_default': 'true'
+        }
+
+        if existing_cert_id:
+            print(f"Will replace existing certificate ID: {existing_cert_id} after upload")
+        else:
+            print("Creating new certificate")
+
+        files = {
+            'key': ('privkey.pem', key),
+            'cert': ('cert.pem', cert)
+        }
+
+        if inter_cert:
+            files['inter_cert'] = ('chain.pem', inter_cert)
+            print(f"Uploading certificate with {len(certs)} cert(s) in chain (including intermediate)")
+        else:
+            print(f"Uploading certificate (no intermediate chain)")
+
+        try:
+            response = requests.post(
+                cert_url,
+                params=upload_params,
+                data=data_payload,
+                files=files,
+                verify=False,
+                timeout=60
+            )
+            result = response.json()
+        except Exception as e:
+            print(f"ERROR: Failed to upload certificate: {e}")
+            logout(base_url, login_url, sid)
+            sys.exit(1)
+
+        if not result.get('success'):
+            error_code = result.get('error', {}).get('code', 'unknown')
+            print(f"ERROR: Certificate upload failed with error code: {error_code}")
+            print(f"Full API response: {result}")
+            logout(base_url, login_url, sid)
+            sys.exit(1)
+
+        print("Certificate uploaded and set as default successfully!")
+
+        cert_id = result.get('data', {}).get('id')
+        if not cert_id:
+            print("WARNING: No certificate ID in response, cannot activate")
+        else:
+            print("Activating certificate on services...")
+            set_params = {
+                'api': 'SYNO.Core.Certificate.CRT',
+                'version': '1',
+                'method': 'set',
+                '_sid': sid
+            }
+
+            set_data = {
+                'id': cert_id,
+                'desc': cert_desc
+            }
+
+            set_headers = {}
+            if syno_token:
+                set_headers['X-SYNO-TOKEN'] = syno_token
+
+            try:
+                response = requests.post(
+                    cert_url,
+                    params=set_params,
+                    data=set_data,
+                    headers=set_headers,
+                    verify=False,
+                    timeout=60
+                )
+                set_result = response.json()
+
+                if set_result.get('success'):
+                    print("Certificate activated successfully!")
+                else:
+                    error_code = set_result.get('error', {}).get('code', 'unknown')
+                    print(f"WARNING: Certificate activation failed with error {error_code}")
+            except Exception as e:
+                print(f"WARNING: Failed to activate certificate: {e}")
+
+            try:
+                response = requests.get(cert_url, params=list_params, headers=list_headers, verify=False, timeout=30)
+                verify_result = response.json()
+                if verify_result.get('success'):
+                    new_cert_is_default = False
+                    for c in verify_result.get('data', {}).get('certificates', []):
+                        if c.get('id') == cert_id and c.get('is_default'):
+                            new_cert_is_default = True
+                            print(f"Verified new certificate {cert_id} is set as default")
+                            break
+                    if not new_cert_is_default:
+                        print(f"WARNING: New certificate {cert_id} is not default yet, skipping cleanup")
+                        matching_certs = []
+            except Exception as e:
+                print(f"WARNING: Failed to verify new certificate status: {e}")
+                matching_certs = []
+
+            if matching_certs:
+                old_certs = [c for c in matching_certs if c['id'] != cert_id]
+                if old_certs:
+                    print(f"Cleaning up {len(old_certs)} old duplicate certificate(s)...")
+
+                    for old_cert in old_certs:
+                        old_id = old_cert['id']
+                        old_services = old_cert['services']
+
+                        if old_services:
+                            print(f"Reassigning {len(old_services)} service(s) from old cert {old_id} to new cert {cert_id}...")
+
+                            settings = []
+                            for svc in old_services:
+                                settings.append({
+                                    'subscriber': svc.get('subscriber'),
+                                    'service': svc.get('service'),
+                                    'id': cert_id
+                                })
+
+                            service_params = {
+                                'api': 'SYNO.Core.Certificate.Service',
+                                'version': '1',
+                                'method': 'set',
+                                '_sid': sid,
+                                'SynoToken': syno_token
+                            }
+
+                            service_data = {
+                                'settings': json.dumps(settings)
+                            }
+
+                            try:
+                                response = requests.post(
+                                    cert_url,
+                                    params=service_params,
+                                    data=service_data,
+                                    verify=False,
+                                    timeout=30
+                                )
+                                service_result = response.json()
+                                if service_result.get('success'):
+                                    print(f"Successfully reassigned {len(old_services)} service(s) to new certificate")
+                                else:
+                                    error_code = service_result.get('error', {}).get('code', 'unknown')
+                                    print(f"WARNING: Failed to reassign services, error {error_code}")
+                                    print(f"Skipping deletion of certificate {old_id}")
+                                    continue
+                            except Exception as e:
+                                print(f"WARNING: Failed to reassign services: {e}")
+                                continue
+
+                        try:
+                            delete_params = {
+                                'api': 'SYNO.Core.Certificate.CRT',
+                                'version': '1',
+                                'method': 'delete',
+                                '_sid': sid,
+                                'SynoToken': syno_token
+                            }
+                            delete_data = {'ids': json.dumps([old_id])}
+
+                            response = requests.post(
+                                cert_url,
+                                params=delete_params,
+                                data=delete_data,
+                                verify=False,
+                                timeout=30
+                            )
+                            delete_result = response.json()
+                            if delete_result.get('success'):
+                                print(f"Deleted old certificate ID: {old_id}")
+                            else:
+                                error_code = delete_result.get('error', {}).get('code', 'unknown')
+                                print(f"WARNING: Failed to delete certificate {old_id}, error {error_code}")
+                        except Exception as e:
+                            print(f"WARNING: Failed to delete old certificate {old_id}: {e}")
+
+        logout(base_url, login_url, sid)
+        print("Certificate sync completed successfully")
+
+    def logout(base_url, login_url, sid):
+        logout_params = {
+            'api': 'SYNO.API.Auth',
+            'version': '7',
+            'method': 'logout',
+            'session': 'Core',
+            '_sid': sid
+        }
+        try:
+            requests.get(login_url, params=logout_params, verify=False, timeout=10)
+            print("Logged out successfully")
+        except Exception as e:
+            print(f"WARNING: Failed to logout: {e}")
+
+    if __name__ == '__main__':
+        main()
