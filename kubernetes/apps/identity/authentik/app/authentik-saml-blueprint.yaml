@@ -96,7 +96,7 @@ data:
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
           # Use Authentik's internal certificate for SAML signing
           signing_kp: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
-          verification_kp: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
+          # Synology does not sign SAML requests, so we don't set verification_kp
           # ACS URL - will need to be updated after DSM configuration
           # Format: https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php
           acs_url: "https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php"
