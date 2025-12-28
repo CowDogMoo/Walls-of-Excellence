@@ -92,7 +92,7 @@ data:
         attrs:
           name: Synology NAS
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
           # Use Authentik's internal certificate for SAML signing
           signing_kp: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
