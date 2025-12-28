@@ -118,7 +118,9 @@ data:
           session_valid_not_on_or_after: "minutes=86400"  # 60 days
           assertion_valid_not_before: "minutes=5"
           assertion_valid_not_on_or_after: "minutes=5"
-          # Sign assertions
+          # Signing configuration
+          sign_assertion: true
+          sign_response: false
           signing_kp_refresh: false
           digest_algorithm: "http://www.w3.org/2001/04/xmlenc#sha256"
           signature_algorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
