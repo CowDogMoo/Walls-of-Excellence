@@ -120,7 +120,7 @@ data:
           assertion_valid_not_on_or_after: "minutes=5"
           # Signing configuration
           sign_assertion: true
-          sign_response: false
+          sign_response: true
           signing_kp_refresh: false
           digest_algorithm: "http://www.w3.org/2001/04/xmlenc#sha256"
           signature_algorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"

@@ -1,0 +1,61 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: authentik-saml-setup
+  namespace: identity
+  annotations:
+    description: "One-time job to configure SAML SSO between Authentik and Synology DSM"
+spec:
+  ttlSecondsAfterFinished: 86400 # Keep job for 24 hours after completion
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: authentik-saml-setup
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: setup-saml
+          image: python:3.14-slim
+          command:
+            - /bin/sh
+            - -c
+            - |
+              pip install --no-cache-dir requests urllib3 && \
+              python3 /scripts/setup-saml.py
+          env:
+            - name: SYNOLOGY_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: synology-api-credentials
+                  key: host
+            - name: SYNOLOGY_PORT
+              value: "5001"
+            - name: SYNOLOGY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: synology-api-credentials
+                  key: username
+            - name: SYNOLOGY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: synology-api-credentials
+                  key: password
+            - name: AUTHENTIK_URL
+              value: "https://auth.techvomit.xyz"
+            - name: AUTHENTIK_PROVIDER_SLUG
+              value: "synology-nas"
+            - name: NAS_ENTITY_ID
+              value: "https://nas.techvomit.xyz"
+            - name: NAS_ACS_URL
+              value: "https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php"
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: authentik-saml-setup-script
+            defaultMode: 0755
