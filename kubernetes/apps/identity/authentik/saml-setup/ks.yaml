@@ -11,13 +11,13 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: identity-authentik
+    - name: authentik
     - name: external-secrets-stores
   path: ./kubernetes/apps/identity/authentik/saml-setup/app
   prune: true
   sourceRef:
     kind: GitRepository
-    name: homelab
+    name: flux-system
   wait: true
   interval: 30m
   retryInterval: 1m
