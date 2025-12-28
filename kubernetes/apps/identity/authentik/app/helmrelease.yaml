@@ -90,6 +90,7 @@ spec:
       configMaps:
         - authentik-oauth-blueprint
         - authentik-passkeys-blueprint
+        - authentik-saml-blueprint
 
     server:
       replicas: 1
