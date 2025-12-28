@@ -1,0 +1,164 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-saml-blueprint
+  namespace: identity
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+data:
+  saml-providers.yaml: |
+    version: 1
+    metadata:
+      name: SAML Providers Configuration
+      labels:
+        blueprints.goauthentik.io/instantiate: "true"
+    entries:
+      # Groups for NAS access control
+      - model: authentik_core.group
+        id: nas-admins
+        identifiers:
+          name: NAS Admins
+        state: present
+        attrs:
+          name: NAS Admins
+
+      - model: authentik_core.group
+        id: nas-users
+        identifiers:
+          name: NAS Users
+        state: present
+        attrs:
+          name: NAS Users
+
+      # SAML Property Mapping for username
+      - model: authentik_providers_saml.samlpropertymapping
+        id: saml-username-mapping
+        identifiers:
+          name: SAML Username
+        state: present
+        attrs:
+          name: SAML Username
+          saml_name: username
+          friendly_name: username
+          expression: |
+            return request.user.username
+
+      # SAML Property Mapping for email
+      - model: authentik_providers_saml.samlpropertymapping
+        id: saml-email-mapping
+        identifiers:
+          name: SAML Email
+        state: present
+        attrs:
+          name: SAML Email
+          saml_name: email
+          friendly_name: email
+          expression: |
+            return request.user.email
+
+      # SAML Property Mapping for groups
+      - model: authentik_providers_saml.samlpropertymapping
+        id: saml-groups-mapping
+        identifiers:
+          name: SAML Groups
+        state: present
+        attrs:
+          name: SAML Groups
+          saml_name: groups
+          friendly_name: groups
+          expression: |
+            return [group.name for group in request.user.ak_groups.all()]
+
+      # SAML Property Mapping for admin status
+      - model: authentik_providers_saml.samlpropertymapping
+        id: saml-admin-mapping
+        identifiers:
+          name: SAML Admin Status
+        state: present
+        attrs:
+          name: SAML Admin Status
+          saml_name: is_admin
+          friendly_name: is_admin
+          expression: |
+            return "true" if ak_is_group_member(request.user, name="NAS Admins") else "false"
+
+      # SAML Provider for Synology NAS
+      - model: authentik_providers_saml.samlprovider
+        id: synology-nas-provider
+        identifiers:
+          name: Synology NAS
+        state: present
+        attrs:
+          name: Synology NAS
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          # Use Authentik's internal certificate for SAML signing
+          signing_kp: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
+          verification_kp: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
+          # ACS URL - will need to be updated after DSM configuration
+          # Format: https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php
+          acs_url: "https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php"
+          # Audience - typically the NAS URL
+          audience: "https://nas.techvomit.xyz"
+          # Issuer - identifies Authentik as the IdP
+          issuer: "https://auth.techvomit.xyz"
+          # Service Provider Binding - POST is standard for Synology
+          sp_binding: post
+          # NameID format - email is most compatible with Synology
+          name_id_mapping: !Find [authentik_providers_saml.samlpropertymapping, [saml_name, email]]
+          # Property mappings to send to SP
+          property_mappings:
+            - !KeyOf saml-username-mapping
+            - !KeyOf saml-email-mapping
+            - !KeyOf saml-groups-mapping
+            - !KeyOf saml-admin-mapping
+          # Session validity
+          session_valid_not_on_or_after: "minutes=86400"  # 60 days
+          assertion_valid_not_before: "minutes=5"
+          assertion_valid_not_on_or_after: "minutes=5"
+          # Sign assertions
+          signing_kp_refresh: false
+          digest_algorithm: "http://www.w3.org/2001/04/xmlenc#sha256"
+          signature_algorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+          url_sso_post: "https://auth.techvomit.xyz/application/saml/synology-nas/sso/binding/post/"
+          url_sso_redirect: "https://auth.techvomit.xyz/application/saml/synology-nas/sso/binding/redirect/"
+
+      # Application for Synology NAS
+      - model: authentik_core.application
+        id: synology-nas-app
+        identifiers:
+          slug: synology-nas
+        state: present
+        attrs:
+          name: Synology NAS
+          slug: synology-nas
+          provider: !KeyOf synology-nas-provider
+          meta_launch_url: "https://nas.techvomit.xyz"
+          meta_description: "Synology NAS - Network Attached Storage"
+          meta_icon: "https://www.synology.com/img/company/branding/synology_logo_icon_only.png"
+          policy_engine_mode: any
+
+      # Expression policy for NAS access
+      - model: authentik_policies_expression.expressionpolicy
+        id: nas-user-policy
+        identifiers:
+          name: nas-user-policy
+        state: present
+        attrs:
+          name: nas-user-policy
+          expression: |
+            # Allow access if user is in either NAS Admins or NAS Users group
+            return ak_is_group_member(request.user, name="NAS Admins") or ak_is_group_member(request.user, name="NAS Users")
+
+      # Policy binding for NAS application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf synology-nas-app
+          policy: !KeyOf nas-user-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
