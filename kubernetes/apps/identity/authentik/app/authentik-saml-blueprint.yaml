@@ -100,8 +100,8 @@ data:
           verification_kp: null
           # ACS URL - Synology's SAML assertion consumer service endpoint
           acs_url: "https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php"
-          # Audience - typically the NAS URL
-          audience: "https://nas.techvomit.xyz"
+          # Audience - must match SP entity ID that Synology sends
+          audience: "https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php"
           # Issuer - identifies Authentik as the IdP
           issuer: "https://auth.techvomit.xyz"
           # Service Provider Binding - POST is standard for Synology
