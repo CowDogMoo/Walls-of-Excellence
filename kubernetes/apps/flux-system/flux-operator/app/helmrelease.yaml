@@ -17,6 +17,18 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: NetworkPolicy
+              name: flux-operator-web
+            patch: |
+              - op: add
+                path: /spec/ingress/0/ports/-
+                value:
+                  port: 8080
+                  protocol: TCP
   values:
     revisionHistoryLimit: 3
     serviceMonitor:
