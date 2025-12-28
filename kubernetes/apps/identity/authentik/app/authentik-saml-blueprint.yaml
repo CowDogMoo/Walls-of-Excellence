@@ -98,9 +98,8 @@ data:
           signing_kp: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
           # Synology does not sign SAML requests, so we explicitly set verification_kp to null
           verification_kp: null
-          # ACS URL - Synology uses SP entity ID as the ACS URL
-          # Synology automatically appends /webman/3rdparty/SAML/acs.php internally
-          acs_url: "https://nas.techvomit.xyz"
+          # ACS URL - Synology's SAML assertion consumer service endpoint
+          acs_url: "https://nas.techvomit.xyz/webman/3rdparty/SAML/acs.php"
           # Audience - typically the NAS URL
           audience: "https://nas.techvomit.xyz"
           # Issuer - identifies Authentik as the IdP
