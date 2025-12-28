@@ -21,7 +21,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: cert-sync
-              image: python:3.12-slim
+              image: python:3.14-slim
               env:
                 - name: HOME
                   value: "/tmp"
