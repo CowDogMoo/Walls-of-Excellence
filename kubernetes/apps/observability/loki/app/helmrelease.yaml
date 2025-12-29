@@ -58,9 +58,10 @@ spec:
         max_query_parallelism: 32
         split_queries_by_interval: 15m
         max_cache_freshness_per_query: 10m
-        max_entries_limit_per_query: 5000
-        query_timeout: 5m
+        max_entries_limit_per_query: 10000
+        query_timeout: 10m
         max_concurrent_tail_requests: 10
+        max_query_length: 721h # 30 days
       server:
         grpc_server_max_recv_msg_size: 10485760 # 10 MiB
         grpc_server_max_send_msg_size: 10485760 # 10 MiB
