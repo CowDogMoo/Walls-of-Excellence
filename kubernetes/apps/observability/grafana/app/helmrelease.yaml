@@ -91,6 +91,8 @@ spec:
         oauth_allow_insecure_email_lookup: true
         disable_login_form: false
         disable_signout_menu: false
+        login_maximum_inactive_lifetime_duration: 7d
+        login_maximum_lifetime_duration: 30d
 
       server:
         root_url: https://grafana.techvomit.xyz
