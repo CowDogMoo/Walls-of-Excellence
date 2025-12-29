@@ -418,7 +418,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (src) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+)` [1h])))",
+              "expr": "topk(10, sum by (src) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `SRC=(?P<src>[0-9.]+)` [30m])))",
               "legendFormat": "{{src}}",
               "refId": "A"
             }
@@ -450,7 +450,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (dst) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `DST=(?P<dst>[0-9.]+)` [1h])))",
+              "expr": "topk(10, sum by (dst) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `DST=(?P<dst>[0-9.]+)` [30m])))",
               "legendFormat": "{{dst}}",
               "refId": "A"
             }
@@ -482,7 +482,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (proto) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `PROTO=(?P<proto>\\w+)` [1h]))",
+              "expr": "sum by (proto) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `PROTO=(?P<proto>\\w+)` [30m]))",
               "legendFormat": "{{proto}}",
               "refId": "A"
             }
@@ -521,7 +521,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (src_ip) (count_over_time({source=\"unifi\"} | json | line_format \"{{.message}}\" |= \"SRC=\" | pattern `<_>SRC=<src_ip> DST=<_>` | src_ip != \"\" [1h])))",
+              "expr": "topk(10, sum by (src_ip) (count_over_time({source=\"unifi\"} | json | line_format \"{{.message}}\" |= \"SRC=\" | pattern `<_>SRC=<src_ip> DST=<_>` | src_ip != \"\" [30m])))",
               "legendFormat": "{{src_ip}}",
               "refId": "A"
             }
@@ -610,7 +610,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (syslog_hostname) (count_over_time({source=\"unifi\"} | json | syslog_severity=~\"err|warning\" [1h]))",
+              "expr": "sum by (syslog_hostname) (count_over_time({source=\"unifi\"} | json | syslog_severity=~\"err|warning\" [30m]))",
               "legendFormat": "{{syslog_hostname}}",
               "refId": "A"
             }
@@ -692,7 +692,8 @@ data:
             "prettifyLogMessage": false,
             "enableLogDetails": true,
             "dedupStrategy": "numbers",
-            "sortOrder": "Descending"
+            "sortOrder": "Descending",
+            "maxLines": 100
           },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 }
         },
@@ -715,7 +716,8 @@ data:
             "prettifyLogMessage": false,
             "enableLogDetails": true,
             "dedupStrategy": "none",
-            "sortOrder": "Descending"
+            "sortOrder": "Descending",
+            "maxLines": 100
           },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 }
         },
@@ -738,7 +740,8 @@ data:
             "prettifyLogMessage": false,
             "enableLogDetails": true,
             "dedupStrategy": "numbers",
-            "sortOrder": "Descending"
+            "sortOrder": "Descending",
+            "maxLines": 100
           },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
         },
@@ -761,7 +764,8 @@ data:
             "prettifyLogMessage": false,
             "enableLogDetails": true,
             "dedupStrategy": "numbers",
-            "sortOrder": "Descending"
+            "sortOrder": "Descending",
+            "maxLines": 100
           },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
         }
