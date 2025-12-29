@@ -21,6 +21,7 @@ data:
       tailscale_client_secret: !Env TAILSCALE_CLIENT_SECRET
       homeassistant_test_client_secret: !Env HOMEASSISTANT_TEST_CLIENT_SECRET
       homeassistant_client_secret: !Env HOMEASSISTANT_CLIENT_SECRET
+      synology_nas_client_secret: !Env SYNOLOGY_NAS_CLIENT_SECRET
     entries:
       # Groups for role mapping
       - model: authentik_core.group
@@ -103,16 +104,31 @@ data:
         attrs:
           name: Home Assistant Admins
 
+      - model: authentik_core.group
+        id: nas-admins
+        identifiers:
+          name: NAS Admins
+        state: present
+        attrs:
+          name: NAS Admins
+
+      - model: authentik_core.group
+        id: nas-users
+        identifiers:
+          name: NAS Users
+        state: present
+        attrs:
+          name: NAS Users
+
       # Custom Scope Mapping for Home Assistant groups and admin status
       - model: authentik_providers_oauth2.scopemapping
         id: homeassistant-groups-scope
         identifiers:
-          scope_name: groups
-          name: Home Assistant Groups and Admin
+          scope_name: homeassistant_groups
         state: present
         attrs:
           name: Home Assistant Groups and Admin
-          scope_name: groups
+          scope_name: homeassistant_groups
           description: "Provides group membership and admin status for Home Assistant"
           expression: |
             return {
@@ -294,6 +310,33 @@ data:
           access_token_validity: "minutes=5"
           refresh_token_validity: "days=30"
 
+      # OAuth2 Provider for Synology NAS
+      - model: authentik_providers_oauth2.oauth2provider
+        id: synology-nas-provider
+        identifiers:
+          name: Synology NAS
+        state: present
+        attrs:
+          name: Synology NAS
+          client_id: synology-nas
+          client_secret: !Context synology_nas_client_secret
+          client_type: confidential
+          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
+          redirect_uris:
+            - matching_mode: strict
+              url: "https://nas.techvomit.xyz/#/signin"
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+          sub_mode: user_username
+          access_code_validity: "minutes=1"
+          access_token_validity: "minutes=5"
+          refresh_token_validity: "days=30"
+
       # Application for Grafana
       - model: authentik_core.application
         id: grafana-app
@@ -392,6 +435,20 @@ data:
           meta_description: "Home Assistant - Smart Home Automation"
           policy_engine_mode: any
 
+      # Application for Synology NAS
+      - model: authentik_core.application
+        id: synology-nas-app
+        identifiers:
+          slug: synology-nas
+        state: present
+        attrs:
+          name: Synology NAS
+          slug: synology-nas
+          provider: !KeyOf synology-nas-provider
+          meta_launch_url: "https://nas.techvomit.xyz"
+          meta_description: "Synology NAS - Network Attached Storage"
+          policy_engine_mode: any
+
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
@@ -453,6 +510,16 @@ data:
           expression: |
             return ak_is_group_member(request.user, name="Home Assistant Users")
 
+      - model: authentik_policies_expression.expressionpolicy
+        id: nas-user-policy
+        identifiers:
+          name: nas-user-policy
+        state: present
+        attrs:
+          name: nas-user-policy
+          expression: |
+            return ak_is_group_member(request.user, name="NAS Admins") or ak_is_group_member(request.user, name="NAS Users")
+
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
         identifiers:
@@ -513,6 +580,17 @@ data:
         identifiers:
           target: !KeyOf homeassistant-app
           policy: !KeyOf homeassistant-user-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Synology NAS application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf synology-nas-app
+          policy: !KeyOf nas-user-policy
           order: 0
         state: present
         attrs:

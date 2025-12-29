@@ -1,17 +1,24 @@
-# Authentik SSO Configuration
+# Identity - Authentik SSO
 
-This directory contains the configuration for Authentik, an open-source
-Identity Provider (IdP) that provides SSO, OAuth2, SAML, and forward
-authentication for applications in the cluster.
+Open-source Identity Provider providing Single Sign-On, OAuth2/OIDC, and
+forward authentication for cluster applications.
 
 ## Overview
 
-Authentik is configured to provide authentication for:
+Authentik serves as the central authentication gateway for all services in
+this Kubernetes cluster. It provides secure, group-based access control using
+OAuth2, OIDC, and forward auth protocols while maintaining a seamless single
+sign-on experience.
 
-- **Weave GitOps** - OIDC/OAuth2 authentication
-- **Apache Guacamole** - Forward auth with header authentication
-- **Traefik Dashboard** - Forward auth
-- **Grafana** - OAuth2 authentication
+## Features
+
+- **Single Sign-On (SSO)** - One login for all cluster services
+- **Multiple Auth Protocols** - OAuth2, OIDC, and forward authentication
+- **Group-Based Access Control** - Fine-grained permissions via group membership
+- **Declarative Configuration** - Blueprint-based setup with Infrastructure as Code
+- **Embedded Outpost** - No separate proxy deployment needed for forward auth
+- **Automated Secret Management** - Integration with 1Password via External
+  Secrets Operator
 
 ## Architecture
 
@@ -32,349 +39,248 @@ Authentik is configured to provide authentication for:
 │  Outpost        │
 └────────┬────────┘
          │
-    ┌────┴─────┬─────────────┬──────────────┐
-    ▼          ▼             ▼              ▼
-┌─────────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐
-│ Grafana │ │ Traefik  │ │ Guacamole  │ │  Weave   │
-│ (OAuth) │ │ (Forward)│ │  (Forward) │ │  GitOps  │
-│         │ │          │ │            │ │  (OIDC)  │
-└─────────┘ └──────────┘ └────────────┘ └──────────┘
+    ┌────┴─────┬─────────────┬──────────────┬──────────────┐
+    ▼          ▼             ▼              ▼              ▼
+┌─────────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────┐
+│ Grafana │ │ Traefik  │ │ Guacamole  │ │  Weave   │ │Synology │
+│ (OAuth) │ │ (Forward)│ │  (Forward) │ │  GitOps  │ │   NAS   │
+│         │ │          │ │            │ │  (OIDC)  │ │ (OIDC)  │
+└─────────┘ └──────────┘ └────────────┘ └──────────┘ └─────────┘
 ```
 
-## Blueprint Configuration
+## Configuration
 
-Authentik uses "blueprints" to declaratively configure providers,
-applications, groups, and policies. The main blueprint is located at:
+### 1Password Setup
 
-- `kubernetes/apps/identity/authentik/app/authentik-oauth-blueprint.yaml`
+The deployment expects these secrets in the `authentik` 1Password item:
 
-### Blueprint Structure
+- **grafana-client-secret**: OAuth2 client secret for Grafana
+- **weave-gitops-client-secret**: OAuth2 client secret for Weave GitOps
+- **synology-oidc-client-secret**: OIDC client secret for Synology NAS
+- **AUTHENTIK_BOOTSTRAP_PASSWORD**: Admin password for initial setup
+- **AUTHENTIK_BOOTSTRAP_TOKEN**: API token for automation
+- **AUTHENTIK_SECRET_KEY**: Django secret key
 
-```yaml
-context:
-  # Client secrets loaded from environment variables
-  grafana_client_secret: !Env GRAFANA_CLIENT_SECRET
-  weave_gitops_client_secret: !Env WEAVE_GITOPS_CLIENT_SECRET
-  # ... etc
+### Blueprint Configuration
 
-entries:
-  # Groups for access control
-  - model: authentik_core.group
-    id: weave-gitops-admins
-    # ...
+Authentik uses blueprints to declaratively configure providers, applications,
+groups, and policies:
 
-  # OAuth2/Proxy Providers
-  - model: authentik_providers_oauth2.oauth2provider
-    id: weave-gitops-provider
-    # ...
+- **Location**: `kubernetes/apps/identity/authentik/app/authentik-oauth-blueprint.yaml`
+- **Auto-applied**: On deployment by authentik-worker
+- **Manual trigger**:
 
-  # Applications
-  - model: authentik_core.application
-    id: weave-gitops-app
-    # ...
+  ```bash
+  kubectl exec -n identity deploy/authentik-worker -- \
+    ak apply_blueprint /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
+  ```
 
-  # Access Policies
-  - model: authentik_policies_expression.expressionpolicy
-    id: weave-gitops-admin-policy
-    # ...
+### User Groups
 
-  # Policy Bindings
-  - model: authentik_policies.policybinding
-    # ...
+Navigate to https://auth.techvomit.xyz/if/admin/ and create/verify groups:
 
-  # Outpost Configuration
-  - model: authentik_outposts.outpost
-    identifiers:
-      name: authentik Embedded Outpost
-    attrs:
-      providers:
-        - !KeyOf traefik-provider
-        - !KeyOf guacamole-provider
-```
-
-## Manual Configuration Steps
-
-After the Flux deployment, the following manual steps are required in
-the Authentik UI:
-
-### 1. Access Authentik Admin Interface
-
-Navigate to: https://auth.techvomit.xyz/if/admin/
-
-### 2. Create User Groups
-
-Go to **Directory** → **Groups** and verify/create the following
-groups:
-
-- **Grafana Admins** - Full admin access to Grafana
+- **Grafana Admins** - Full Grafana access
 - **Grafana Editors** - Editor access to Grafana
-- **Traefik Admins** - Access to Traefik dashboard
-- **Weave GitOps Admins** - Access to Weave GitOps dashboard
-- **Guacamole Users** - Access to Guacamole remote desktop
+- **Traefik Admins** - Traefik dashboard access
+- **Weave GitOps Admins** - GitOps dashboard access
+- **Guacamole Users** - Remote desktop access
+- **Synology NAS Users** - NAS access
 
-### 3. Add Users to Groups
+## Deployment
 
-For each user that needs access:
+### Prerequisites
 
-1. Go to **Directory** → **Users**
-2. Select the user (e.g., your email address)
-3. Click the **Groups** tab
-4. Add the user to appropriate groups:
-   - Add yourself to **Weave GitOps Admins** for GitOps dashboard
-     access
-   - Add yourself to **Guacamole Users** for remote desktop access
-   - Add yourself to **Traefik Admins** for Traefik dashboard access
-   - Add yourself to **Grafana Admins** for full Grafana access
+- Kubernetes cluster (v1.29+)
+- Flux GitOps deployed and configured
+- Traefik ingress controller
+- External Secrets Operator with 1Password integration
+- Valid TLS certificates for auth.techvomit.xyz
 
-### 4. Verify Blueprint Application
+### Installation
 
-The blueprint should be automatically applied by the Authentik worker.
-To manually trigger:
+Deploy via Flux (automatic):
 
 ```bash
-kubectl exec -n identity deploy/authentik-worker -- \
-  ak apply_blueprint \
-  /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
+flux reconcile ks cluster-apps --with-source -n flux-system
 ```
 
-### 5. Verify Providers
+Or manually apply:
 
-Go to **Applications** → **Providers** and verify:
+```bash
+kubectl apply -f kubernetes/apps/identity/authentik/app/
+```
 
-- ✅ **Grafana** (OAuth2 Provider)
-- ✅ **Weave GitOps** (OAuth2 Provider)
-- ✅ **Traefik Dashboard** (Proxy Provider)
-- ✅ **Guacamole** (Proxy Provider)
+### Verification
 
-### 6. Verify Applications
+```bash
+# Check pods are running
+kubectl get pods -n identity
 
-Go to **Applications** → **Applications** and verify:
+# Verify blueprint applied
+kubectl logs -n identity deploy/authentik-worker --tail=50 | grep blueprint
+```
 
-- ✅ **Grafana** - OAuth2 app with launch URL
-- ✅ **Weave GitOps** - OAuth2 app with launch URL
-- ✅ **Traefik Dashboard** - Proxy app with launch URL
-- ✅ **Guacamole** - Proxy app with launch URL
-
-### 7. Verify Policies
-
-Go to **Applications** → **Applications** → Select each app →
-**Policy / Group / User Bindings** tab:
-
-- **Traefik Dashboard**: Bound to `traefik-admin-policy` (requires
-  Traefik Admins group)
-- **Weave GitOps**: Bound to `weave-gitops-admin-policy` (requires
-  Weave GitOps Admins group)
-- **Guacamole**: Bound to `guacamole-user-policy` (requires
-  Guacamole Users group)
-
-### 8. Verify Embedded Outpost
-
-Go to **Applications** → **Outposts** →
-**authentik Embedded Outpost**:
-
-Verify providers are assigned:
-
-- ✅ Traefik Dashboard
-- ✅ Guacamole
-
-## Service-Specific Configuration
+## Service Integration
 
 ### Weave GitOps (OIDC)
 
-Weave GitOps uses native OIDC authentication.
+- **Issuer URL**: `https://auth.techvomit.xyz/application/o/weave-gitops/`
+  (trailing slash required)
+- **Client ID**: `weave-gitops`
+- **Redirect URL**: `https://weave.techvomit.xyz/oauth2/callback`
+- **Signing Algorithm**: RS256 with "authentik Internal JWT Certificate"
 
-**Key Configuration**:
-
-- Issuer URL: `https://auth.techvomit.xyz/application/o/weave-gitops/`
-  (trailing slash required!)
-- Client ID: `weave-gitops`
-- Redirect URL: `https://weave.techvomit.xyz/oauth2/callback`
-- Signing Algorithm: RS256 with "authentik Internal JWT Certificate"
-
-**Additional Kubernetes RBAC**:
-Users authenticated via OIDC need Kubernetes RBAC permissions. A
-ClusterRoleBinding is created to grant OIDC users access to Flux
-resources:
+**Additional RBAC Required**: Edit
+`kubernetes/apps/flux-system/weave-gitops/app/oidc-user-clusterrolebinding.yaml`
+and add your email:
 
 ```yaml
-# File path:
-# kubernetes/apps/flux-system/weave-gitops/app/
-#   oidc-user-clusterrolebinding.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: weave-gitops-oidc-users
-roleRef:
-  kind: ClusterRole
-  name: wego-admin-cluster-role
 subjects:
   - kind: User
-    name: jayson.e.grace@gmail.com  # Replace with your email
+    name: your-email@example.com
 ```
 
-**Testing**:
-
-1. Navigate to https://weave.techvomit.xyz
-2. Click "Login with OIDC"
-3. Authenticate with Authentik
-4. Should land on Weave GitOps dashboard with Flux resources
-   visible
-
 ### Guacamole (Forward Auth + Header Auth)
-
-Guacamole uses Traefik forward auth combined with header-based
-authentication.
 
 **Forward Auth Flow**:
 
 1. User requests https://guacamole.techvomit.xyz
 2. Traefik forwards auth request to Authentik outpost
 3. Authentik validates user and group membership
-4. If authorized, Authentik returns headers including
-   `X-authentik-username`
+4. If authorized, Authentik returns headers including `X-authentik-username`
 5. Traefik forwards request to Guacamole with headers
-6. Guacamole reads `X-authentik-username` header and auto-logs in
-   user
+6. Guacamole reads header and auto-logs in user
 
-**Header Authentication Configuration**:
+**Header Configuration**: Automatically set via postStart lifecycle hook in deployment
 
-```properties
-# /config/guacamole/guacamole.properties
-http-auth-header: X-authentik-username
-```
+### Synology NAS (OIDC)
 
-This is automatically configured via a postStart lifecycle hook in the
-deployment.
+**Provider Settings**:
 
-**Testing**:
+- **Client ID**: `synology-nas`
+- **Redirect URI**: `https://nas.techvomit.xyz/#/signin`
+- **Token Validity**: Access Code (1m), Access Token (5m), Refresh Token (30d)
 
-1. Navigate to https://guacamole.techvomit.xyz
-2. Automatically redirected to Authentik
-3. After authentication, automatically logged into Guacamole (no
-   login form)
+**DSM Setup**:
+
+1. Log into DSM: https://nas.techvomit.xyz
+2. Go to **Control Panel** → **Domain/LDAP** → **SSO Client**
+3. Click **Add** → **OpenID Connect**
+4. Configure:
+   - Profile: Custom
+   - Name: Authentik SSO
+   - Authorization Endpoint: `https://auth.techvomit.xyz/application/o/authorize/`
+   - Token Endpoint: `https://auth.techvomit.xyz/application/o/token/`
+   - UserInfo Endpoint: `https://auth.techvomit.xyz/application/o/userinfo/`
+   - Client ID: `synology-nas`
+   - Client Secret: (from 1Password)
+   - Redirect URL: `https://nas.techvomit.xyz/#/signin`
+   - Username Claim: `preferred_username`
+5. Enable **Auto-create users**
+6. Test the connection
 
 ### Traefik Dashboard (Forward Auth)
 
-Similar to Guacamole, uses forward authentication.
+Uses forward authentication similar to Guacamole. Access at https://traefik.techvomit.xyz
 
-**Testing**:
+### Grafana (OAuth2)
 
-1. Navigate to https://traefik.techvomit.xyz
-2. Authenticate with Authentik
-3. Access Traefik dashboard
+OAuth2 authentication with role mapping from Authentik groups. Access at https://grafana.techvomit.xyz
 
-## Secrets Management
+## Operations
 
-Client secrets are stored in 1Password and synced via External Secrets
-Operator:
+### View Logs
 
-```yaml
-# kubernetes/apps/identity/authentik/app/externalsecret.yaml
-spec:
-  data:
-    - secretKey: GRAFANA_CLIENT_SECRET
-      remoteRef:
-        key: authentik
-        property: grafana-client-secret
-    - secretKey: WEAVE_GITOPS_CLIENT_SECRET
-      remoteRef:
-        key: authentik
-        property: weave-gitops-client-secret
-    # ... etc
+```bash
+# Server logs
+kubectl logs -n identity deploy/authentik-server -f
+
+# Worker logs
+kubectl logs -n identity deploy/authentik-worker -f
 ```
 
-### Adding New Client Secrets
+### Check Blueprint Status
 
-1. Generate secret: `openssl rand -base64 32`
-2. Add to 1Password vault under `authentik` item
-3. Add to `externalsecret.yaml`
-4. Add to `authentik-oauth-blueprint.yaml` context
-5. Add valuesFrom to `helmrelease.yaml` (if needed)
+```bash
+kubectl logs -n identity deploy/authentik-worker | grep blueprint
+```
+
+### Add Users to Groups
+
+1. Navigate to https://auth.techvomit.xyz/if/admin/
+2. Go to **Directory** → **Users**
+3. Select user
+4. Click **Groups** tab
+5. Add to appropriate groups
+
+### Generate Client Secret
+
+```bash
+openssl rand -base64 32
+```
+
+Then add to 1Password under the `authentik` item.
 
 ## Troubleshooting
 
 ### Blueprint Not Applied
 
-Check worker logs:
+Check worker logs and manually apply:
 
 ```bash
 kubectl logs -n identity deploy/authentik-worker --tail=100
-```
 
-Manually apply blueprint:
-
-```bash
 kubectl exec -n identity deploy/authentik-worker -- \
-  ak apply_blueprint \
-  /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
+  ak apply_blueprint /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
 ```
 
 ### Weave GitOps: "No Data" After Login
 
-**Issue**: User authenticated but dashboard shows no data.
-
-**Cause**: OIDC user lacks Kubernetes RBAC permissions.
-
-**Fix**: Add user to `oidc-user-clusterrolebinding.yaml`:
-
-```yaml
-subjects:
-  - kind: User
-    name: your-email@example.com  # Add your email
-```
+User lacks Kubernetes RBAC permissions. Add user email to `oidc-user-clusterrolebinding.yaml`.
 
 ### Guacamole: Still Shows Login Form
 
-**Issue**: Guacamole shows login form after Authentik auth.
-
-**Causes**:
-
-1. Header auth not configured in guacamole.properties
-2. Not in "Guacamole Users" group
-
-**Fix**:
+Verify header auth is configured:
 
 ```bash
-# Verify header auth is configured
 kubectl exec -n guacamole deploy/guacamole -- \
   cat /config/guacamole/guacamole.properties | grep http-auth-header
-
-# Should show: http-auth-header: X-authentik-username
 ```
+
+Expected output: `http-auth-header: X-authentik-username`
+
+### Synology NAS: SSO Connection Failed
+
+Verify OIDC provider configuration:
+
+```bash
+kubectl exec -n identity deploy/authentik-server -- \
+  ak list providers oauth2 | grep synology-nas
+```
+
+Check redirect URI matches exactly: `https://nas.techvomit.xyz/#/signin`
 
 ### OIDC Token Signing Errors
 
-**Error**: `oidc: id token signed with unsupported algorithm, expected
-["RS256"] got "HS256"`
+Error: `oidc: id token signed with unsupported algorithm, expected ["RS256"]
+got "HS256"`
 
-**Fix**: Ensure OAuth2 provider uses `signing_key` pointing to
-"authentik Internal JWT Certificate":
-
-```yaml
-- model: authentik_providers_oauth2.oauth2provider
-  attrs:
-    signing_key: !Find [
-      authentik_crypto.certificatekeypair,
-      [name, authentik Internal JWT Certificate]
-    ]
-```
+Ensure OAuth2 provider uses `signing_key` pointing to "authentik Internal JWT
+Certificate" in the blueprint.
 
 ## Security Considerations
 
 ### Forward Auth Header Sanitization
 
-**CRITICAL**: When using forward auth with header authentication (like
-Guacamole), ensure the `X-authentik-*` headers are stripped from
-untrusted requests. Traefik's forward auth middleware handles this
-automatically - the headers are ONLY added after successful Authentik
-authentication.
+**CRITICAL**: When using forward auth with header authentication, ensure the
+`X-authentik-*` headers are stripped from untrusted requests. Traefik's
+forward auth middleware handles this automatically - headers are ONLY added
+after successful Authentik authentication.
 
-**Never** expose services directly without the middleware, as users
-could manually add headers to bypass authentication.
+**Never** expose services directly without the middleware, as users could
+manually add headers to bypass authentication.
 
 ### Certificate Types
-
-Authentik has two certificate types:
 
 - **authentik Internal JWT Certificate** - For RS256 JWT signing (OAuth2/OIDC)
 - **authentik Self-signed Certificate** - For TLS
@@ -383,21 +289,17 @@ Use the correct certificate for each purpose.
 
 ### Group-Based Access Control
 
-All applications use group-based policies. Users must be in the
-appropriate group to access each service:
+All applications use group-based policies:
 
 - No group membership = No access (401/403)
 - Wrong group = No access
 - Correct group = Authenticated and authorized
 
-## References
+## Resources
 
 - [Authentik Documentation](https://docs.goauthentik.io/)
-- [Authentik Blueprints]
-  (https://docs.goauthentik.io/docs/terminology/blueprints)
-- [Weave GitOps OIDC Auth]
-  (https://docs.gitops.weave.works/docs/configuration/oidc-access/)
-- [Apache Guacamole Header Auth]
-  (https://guacamole.apache.org/doc/gug/header-auth.html)
-- [Traefik ForwardAuth]
-  (https://doc.traefik.io/traefik/middlewares/http/forwardauth/)
+- [Authentik Blueprints](https://docs.goauthentik.io/docs/terminology/blueprints)
+- [Weave GitOps OIDC Auth](https://docs.gitops.weave.works/docs/configuration/oidc-access/)
+- [Apache Guacamole Header Auth](https://guacamole.apache.org/doc/gug/header-auth.html)
+- [Traefik ForwardAuth](https://doc.traefik.io/traefik/middlewares/http/forwardauth/)
+- [Synology OIDC Configuration](https://kb.synology.com/en-br/DSM/tutorial/How_to_configure_SSO_Client)

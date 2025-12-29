@@ -62,6 +62,10 @@ spec:
       name: authentik-secrets
       valuesKey: HOMEASSISTANT_CLIENT_SECRET
       targetPath: blueprints.context.homeassistant_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: SYNOLOGY_NAS_CLIENT_SECRET
+      targetPath: blueprints.context.synology_nas_client_secret
   values:
     global:
       image: {}
