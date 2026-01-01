@@ -103,10 +103,10 @@ spec:
       resources:
         requests:
           memory: 768Mi
-          cpu: 500m
+          cpu: 200m
         limits:
           memory: 2Gi
-          cpu: 2000m
+          cpu: 500m
 
       # Spread authentik components across different nodes to prevent CPU saturation
       affinity:
@@ -195,9 +195,10 @@ spec:
       resources:
         requests:
           memory: 512Mi
-          cpu: 500m
+          cpu: 100m
         limits:
           memory: 1Gi
+          cpu: 500m
 
       # Spread authentik components across different nodes to prevent CPU saturation
       affinity:
@@ -293,10 +294,10 @@ spec:
         resources:
           requests:
             memory: 256Mi
-            cpu: 500m
+            cpu: 100m
           limits:
-            memory: 1Gi
-            cpu: 2000m
+            memory: 512Mi
+            cpu: 250m
 
         # Spread authentik components across different nodes to prevent CPU saturation
         affinity:

@@ -39,11 +39,11 @@ spec:
               TZ: "America/Denver"
             resources:
               requests:
-                cpu: 100m
-                memory: 128Mi
+                cpu: 50m
+                memory: 64Mi
               limits:
-                cpu: 2000m
-                memory: 4096Mi
+                cpu: 200m
+                memory: 256Mi
 
     pod:
       hostNetwork: true

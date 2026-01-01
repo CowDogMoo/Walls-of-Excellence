@@ -33,3 +33,10 @@ spec:
     revisionHistoryLimit: 3
     serviceMonitor:
       create: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 128Mi

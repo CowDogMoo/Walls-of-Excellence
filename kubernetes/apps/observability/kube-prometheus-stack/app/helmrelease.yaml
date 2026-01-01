@@ -89,16 +89,6 @@ spec:
       prometheusSpec:
         # Configure Prometheus to use EndpointSlice instead of deprecated Endpoints for Kubernetes service discovery
         serviceDiscoveryRole: EndpointSlice
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: In
-                      values:
-                        - k8s6
-                        - k8s7
         image:
           registry: docker.io
           repository: prompp/prompp

@@ -19,16 +19,6 @@ spec:
       retries: 3
   values:
     revisionHistoryLimit: 3
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values:
-                    - k8s6
-                    - k8s7
     deploymentStrategy:
       type: Recreate
     admin:
@@ -261,11 +251,26 @@ spec:
           resources: ["configmaps", "secrets"]
           verbs: ["get", "list", "watch"]
 
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
     sidecar:
       image:
         registry: ghcr.io
         repository: home-operations/k8s-sidecar
         tag: 2.1.4
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
       dashboards:
         enabled: true
         searchNamespace: ALL

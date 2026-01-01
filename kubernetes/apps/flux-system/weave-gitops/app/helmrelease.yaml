@@ -37,6 +37,13 @@ spec:
   values:
     image:
       tag: "0.38.0"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
     adminUser:

@@ -54,7 +54,7 @@ spec:
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
-          - # Increase the memory limits
+          - # Set resource limits
             patch: |-
               apiVersion: apps/v1
               kind: Deployment
@@ -66,8 +66,12 @@ spec:
                     containers:
                       - name: manager
                         resources:
+                          requests:
+                            cpu: 100m
+                            memory: 128Mi
                           limits:
-                            memory: 2Gi
+                            cpu: 500m
+                            memory: 1Gi
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
