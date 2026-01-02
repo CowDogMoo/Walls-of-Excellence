@@ -270,10 +270,10 @@ spec:
           memory: 128Mi
         limits:
           cpu: 200m
-          memory: 256Mi
+          memory: 512Mi
       dashboards:
         enabled: true
-        searchNamespace: ALL
+        searchNamespace: observability
         label: grafana_dashboard
         folderAnnotation: grafana_folder
         provider:
@@ -281,7 +281,7 @@ spec:
           foldersFromFilesStructure: true
       datasources:
         enabled: true
-        searchNamespace: ALL
+        searchNamespace: observability
         labelValue: ""
 
     plugins:
