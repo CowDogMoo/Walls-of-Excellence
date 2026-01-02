@@ -294,13 +294,23 @@ spec:
         resources:
           requests:
             memory: 256Mi
-            cpu: 100m
+            cpu: 150m
           limits:
             memory: 512Mi
-            cpu: 250m
+            cpu: 750m
 
         # Spread authentik components across different nodes to prevent CPU saturation
         affinity:
+          # Prefer k8s5 which has lower CPU usage (55%)
+          nodeAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                preference:
+                  matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: In
+                      values:
+                        - k8s5
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
               # Avoid same component (postgresql HA replicas)
