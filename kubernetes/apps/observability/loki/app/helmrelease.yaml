@@ -198,12 +198,12 @@ spec:
         tag: 2.1.4
       enableUniqueFilenames: true
       rules:
-        searchNamespace: ALL
+        searchNamespace: observability
         folder: /rules/fake
         resources:
           requests:
             cpu: 50m
             memory: 64Mi
           limits:
-            cpu: 200m
+            cpu: 500m
             memory: 256Mi
