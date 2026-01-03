@@ -197,13 +197,13 @@ spec:
         repository: ghcr.io/home-operations/k8s-sidecar
         tag: 2.1.4
       enableUniqueFilenames: true
+      resources:
+        requests:
+          cpu: 250m
+          memory: 192Mi
+        limits:
+          cpu: 750m
+          memory: 384Mi
       rules:
         searchNamespace: observability
         folder: /rules/fake
-        resources:
-          requests:
-            cpu: 250m
-            memory: 192Mi
-          limits:
-            cpu: 750m
-            memory: 384Mi
