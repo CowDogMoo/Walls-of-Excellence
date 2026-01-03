@@ -44,6 +44,22 @@ spec:
       limits:
         cpu: 200m
         memory: 512Mi
+    livenessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
     env:
       WEAVE_GITOPS_FEATURE_TELEMETRY: "true"
     adminUser:
