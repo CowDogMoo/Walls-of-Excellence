@@ -146,6 +146,7 @@ spec:
               requests:
                 cpu: 200m
               limits:
+                cpu: 2000m
                 memory: 2Gi
           git-pull:
             image:
