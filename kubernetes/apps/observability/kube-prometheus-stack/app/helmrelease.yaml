@@ -114,8 +114,8 @@ spec:
             cpu: 500m
             memory: 750Mi
           limits:
-            cpu: 2000m
-            memory: 2000Mi
+            cpu: 1000m
+            memory: 1500Mi
         storageSpec:
           volumeClaimTemplate:
             spec:

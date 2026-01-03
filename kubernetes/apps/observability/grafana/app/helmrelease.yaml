@@ -266,11 +266,11 @@ spec:
         tag: 2.1.4
       resources:
         requests:
-          cpu: 50m
-          memory: 128Mi
+          cpu: 650m
+          memory: 384Mi
         limits:
-          cpu: 200m
-          memory: 512Mi
+          cpu: 1000m
+          memory: 768Mi
       dashboards:
         enabled: true
         searchNamespace: observability

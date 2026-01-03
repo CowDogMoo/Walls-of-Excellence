@@ -202,8 +202,8 @@ spec:
         folder: /rules/fake
         resources:
           requests:
-            cpu: 50m
-            memory: 64Mi
+            cpu: 250m
+            memory: 192Mi
           limits:
-            cpu: 500m
-            memory: 256Mi
+            cpu: 750m
+            memory: 384Mi
