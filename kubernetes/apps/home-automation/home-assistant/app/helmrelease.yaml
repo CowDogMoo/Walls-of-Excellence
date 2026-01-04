@@ -299,7 +299,6 @@ spec:
                     echo "$(date): Config corruption detected!"
                     echo "$(date): Error output: $OUTPUT"
 
-                    # Remove corrupted config
                     echo "$(date): Removing corrupted config..."
                     rm -f "$CFG"
 
