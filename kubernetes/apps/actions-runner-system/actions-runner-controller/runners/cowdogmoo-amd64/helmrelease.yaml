@@ -3,19 +3,19 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &name cowdogmoo-runner
+  name: &name cowdogmoo-runner-amd64
 spec:
   chartRef:
     kind: OCIRepository
-    name: gha-runner-scale-set-cowdogmoo
+    name: gha-runner-scale-set-cowdogmoo-amd64
   interval: 1h
   values:
     githubConfigUrl: https://github.com/CowDogMoo
-    githubConfigSecret: cowdogmoo-runner-secret
-    runnerScaleSetName: cowdogmoo-ubuntu-k8s-arm64
+    githubConfigSecret: cowdogmoo-runner-amd64-secret
+    runnerScaleSetName: cowdogmoo-ubuntu-k8s-amd64
     runnerGroup: default
     minRunners: 1
-    maxRunners: 3
+    maxRunners: 2
     containerMode:
       type: kubernetes
       kubernetesModeWorkVolumeClaim:
@@ -31,7 +31,7 @@ spec:
     template:
       spec:
         nodeSelector:
-          kubernetes.io/arch: arm64
+          kubernetes.io/arch: amd64
         containers:
           - name: runner
             image: ghcr.io/actions/actions-runner:latest
