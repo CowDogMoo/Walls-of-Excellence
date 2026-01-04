@@ -98,6 +98,15 @@ spec:
           runAsUser: 64535
           runAsGroup: 64535
           fsGroup: 64535
+        nodeSelector:
+          kubernetes.io/arch: arm64
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: prometheus
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         ruleSelectorNilUsesHelmValues: false

@@ -301,8 +301,14 @@ spec:
 
         # Spread authentik components across different nodes to prevent CPU saturation
         affinity:
-          # Prefer k8s5 which has lower CPU usage (55%)
           nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/arch
+                      operator: In
+                      values:
+                        - arm64
             preferredDuringSchedulingIgnoredDuringExecution:
               - weight: 100
                 preference:
@@ -340,6 +346,14 @@ spec:
                       app.kubernetes.io/name: authentik
                       app.kubernetes.io/component: worker
                   topologyKey: kubernetes.io/hostname
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: postgresql
+                app.kubernetes.io/component: primary
 
     redis:
       enabled: false

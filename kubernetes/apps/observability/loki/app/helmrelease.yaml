@@ -124,6 +124,16 @@ spec:
         enabled: true
         storageClass: nfs-client
         size: 50Gi
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: loki
+              app.kubernetes.io/component: single-binary
       resources:
         requests:
           cpu: 500m
