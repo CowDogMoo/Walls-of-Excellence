@@ -644,7 +644,6 @@ tasks:
         echo "  Available: ${MEMORY_FREE_GB} GB RAM, ${STORAGE_FREE_GB} GB storage, $CPU_COUNT CPU cores"
         echo "  Requested: ${VM_MEMORY_GB} GB RAM, ${VM_DISK} GB storage, $VM_CORES CPU cores"
 
-        # Check for issues
         MEMORY_FREE_MB=$(awk "BEGIN {printf \"%.0f\", $MEMORY_FREE/1024/1024}")
         RESOURCE_OK=true
 

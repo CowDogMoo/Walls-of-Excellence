@@ -39,11 +39,10 @@ spec:
       tag: "0.38.0"
     resources:
       requests:
-        cpu: 200m
+        cpu: 300m
         memory: 256Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        memory: 256Mi
     livenessProbe:
       httpGet:
         path: /

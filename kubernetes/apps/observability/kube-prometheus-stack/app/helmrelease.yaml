@@ -89,6 +89,13 @@ spec:
       prometheusSpec:
         # Configure Prometheus to use EndpointSlice instead of deprecated Endpoints for Kubernetes service discovery
         serviceDiscoveryRole: EndpointSlice
+        # Disable HTTP/2 to mitigate CVE risks (strategic merge patch on prometheus container)
+        # See: https://github.com/kubernetes-sigs/controller-runtime/issues/3096
+        containers:
+          - name: prometheus
+            env:
+              - name: DISABLE_HTTP2
+                value: "true"
         image:
           registry: docker.io
           repository: prompp/prompp
@@ -115,9 +122,10 @@ spec:
         retention: 14d
         retentionSize: 50GB
         walCompression: true
-        # TSDB settings to prevent overlapping blocks
+        # TSDB settings - allow out-of-order samples within 30m window to prevent block overlaps
+        # This is necessary for distributed systems where metrics may arrive slightly out of order
         tsdb:
-          outOfOrderTimeWindow: 0s
+          outOfOrderTimeWindow: 30m
         resources:
           requests:
             cpu: 500m
@@ -128,6 +136,8 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
+              # Note: NFS is not recommended for Prometheus TSDB but used in homelab
+              # May experience performance issues or data inconsistencies
               storageClassName: nfs-client
               resources:
                 requests:

@@ -8,6 +8,7 @@ resources:
   - externalsecret.yaml
   - ocirepository.yaml
   - oidc-user-clusterrolebinding.yaml
+  - poddisruptionbudget.yaml
 patches:
   - path: clusterrole-patch.yaml
     target:

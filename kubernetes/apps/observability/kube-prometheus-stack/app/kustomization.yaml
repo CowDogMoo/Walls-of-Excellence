@@ -8,4 +8,5 @@ resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./ocirepository.yaml
+  - ./poddisruptionbudget.yaml
   - ./scrapeconfig.yaml

@@ -6,6 +6,67 @@ metadata:
   namespace: kube-system
 spec:
   interval: 30m
+  postRenderers:
+    - kustomize:
+        patches:
+          - patch: |-
+              - op: remove
+                path: /data/policy.yaml
+            target:
+              kind: ConfigMap
+              name: descheduler
+          - patch: |-
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: descheduler
+                namespace: kube-system
+              data:
+                policy.yaml: |
+                  apiVersion: "descheduler/v1alpha2"
+                  kind: "DeschedulerPolicy"
+                  evictLocalStoragePods: true
+                  nodeSelector: node-role.kubernetes.io/master!=
+                  profiles:
+                  - name: default
+                    pluginConfig:
+                    - args:
+                        podProtections:
+                          defaultDisabled:
+                          - PodsWithLocalStorage
+                          extraEnabled:
+                          - PodsWithPVC
+                      name: DefaultEvictor
+                    - args:
+                        includingInitContainers: true
+                        podRestartThreshold: 100
+                      name: RemovePodsHavingTooManyRestarts
+                    - args:
+                        nodeAffinityType:
+                        - requiredDuringSchedulingIgnoredDuringExecution
+                      name: RemovePodsViolatingNodeAffinity
+                    - args:
+                        constraints:
+                        - DoNotSchedule
+                        - ScheduleAnyway
+                      name: RemovePodsViolatingTopologySpreadConstraint
+                    - name: RemoveDuplicates
+                    - name: RemovePodsViolatingNodeTaints
+                    - name: RemovePodsViolatingInterPodAntiAffinity
+                    plugins:
+                      balance:
+                        enabled:
+                        - RemoveDuplicates
+                        - RemovePodsViolatingTopologySpreadConstraint
+                      deschedule:
+                        enabled:
+                        - RemovePodsHavingTooManyRestarts
+                        - RemovePodsViolatingNodeTaints
+                        - RemovePodsViolatingNodeAffinity
+                        - RemovePodsViolatingInterPodAntiAffinity
+            target:
+              kind: ConfigMap
+              name: descheduler
   chart:
     spec:
       chart: descheduler
@@ -25,24 +86,41 @@ spec:
   values:
     kind: Deployment
     schedule: "*/5 * * * *"
+    deschedulerPolicyAPIVersion: "descheduler/v1alpha2"
     deschedulerPolicy:
       nodeSelector: "node-role.kubernetes.io/master!="
       evictLocalStoragePods: true
-      strategies:
-        RemovePodsViolatingTopologySpreadConstraint:
-          enabled: true
-          params:
-            includeSoftConstraints: true
-        LowNodeUtilization:
-          enabled: false
-        RemoveDuplicates:
-          enabled: true
-        RemovePodsViolatingNodeTaints:
-          enabled: true
-        RemovePodsViolatingNodeAffinity:
-          enabled: true
-          params:
-            nodeAffinityType:
-              - requiredDuringSchedulingIgnoredDuringExecution
-        RemovePodsViolatingInterPodAntiAffinity:
-          enabled: true
+      profiles:
+        - name: default
+          pluginConfig:
+            - name: DefaultEvictor
+              args:
+                podProtections:
+                  defaultDisabled:
+                    - PodsWithLocalStorage
+                  extraEnabled:
+                    - PodsWithPVC
+            - name: RemovePodsHavingTooManyRestarts
+              args:
+                includingInitContainers: true
+                podRestartThreshold: 100
+            - name: RemovePodsViolatingNodeAffinity
+              args:
+                nodeAffinityType:
+                  - requiredDuringSchedulingIgnoredDuringExecution
+            - name: RemovePodsViolatingTopologySpreadConstraint
+              args:
+                constraints:
+                  - DoNotSchedule
+                  - ScheduleAnyway
+          plugins:
+            balance:
+              enabled:
+                - RemoveDuplicates
+                - RemovePodsViolatingTopologySpreadConstraint
+            deschedule:
+              enabled:
+                - RemovePodsHavingTooManyRestarts
+                - RemovePodsViolatingNodeTaints
+                - RemovePodsViolatingNodeAffinity
+                - RemovePodsViolatingInterPodAntiAffinity
