@@ -46,7 +46,9 @@ spec:
                         - requiredDuringSchedulingIgnoredDuringExecution
                       name: RemovePodsViolatingNodeAffinity
                     - args:
-                        includeSoftConstraints: true
+                        constraints:
+                        - DoNotSchedule
+                        - ScheduleAnyway
                       name: RemovePodsViolatingTopologySpreadConstraint
                     - name: RemoveDuplicates
                     - name: RemovePodsViolatingNodeTaints
@@ -108,7 +110,9 @@ spec:
                   - requiredDuringSchedulingIgnoredDuringExecution
             - name: RemovePodsViolatingTopologySpreadConstraint
               args:
-                includeSoftConstraints: true
+                constraints:
+                  - DoNotSchedule
+                  - ScheduleAnyway
           plugins:
             balance:
               enabled:
