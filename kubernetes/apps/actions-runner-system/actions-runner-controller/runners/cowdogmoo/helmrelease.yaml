@@ -32,6 +32,8 @@ spec:
       spec:
         nodeSelector:
           kubernetes.io/arch: arm64
+        containers:
+          - name: listener
     template:
       spec:
         nodeSelector:
