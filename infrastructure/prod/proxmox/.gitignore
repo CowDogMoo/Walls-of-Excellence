@@ -1,0 +1,24 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Terragrunt
+.terragrunt-cache/
+
+# Generated files with secrets (from .tpl templates)
+# These are generated via: op inject -i file.tpl -o file
+k8s*/terragrunt.hcl
+*/terragrunt.hcl
+
+# Sensitive files
+secrets.auto.tfvars
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db

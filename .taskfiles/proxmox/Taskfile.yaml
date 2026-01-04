@@ -1,0 +1,756 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+set: [pipefail]
+
+vars:
+  PROXMOX_DIR: "{{.ROOT_DIR}}/infrastructure/prod/proxmox"
+
+tasks:
+  default:
+    desc: List available Proxmox tasks
+    cmds:
+      - task --list-all | grep "proxmox:"
+    silent: true
+
+  create-template:
+    desc: Create Ubuntu cloud-init template on Proxmox
+    summary: |
+      Creates an Ubuntu 24.04 LTS cloud-init template on Proxmox.
+
+      Usage: task proxmox:create-template [VMID=9000]
+
+      This will:
+      1. Download Ubuntu 24.04 cloud image
+      2. Create a VM template with cloud-init support
+      3. Configure QEMU agent
+      4. Resize disk to 20GB total
+    vars:
+      VMID: '{{.VMID | default "9000"}}'
+      PROXMOX_NODE: '{{.PROXMOX_NODE | default "proxmox"}}'
+    cmds:
+      - |
+        echo "Creating Ubuntu 24.04 LTS template (VM ID: {{.VMID}})..."
+
+        ssh {{.PROXMOX_NODE}} bash << 'EOF'
+        set -e
+
+        cd /var/lib/vz/template/iso
+
+        # Download if not exists
+        if [ ! -f noble-server-cloudimg-amd64.img ]; then
+          echo "Downloading Ubuntu 24.04 cloud image..."
+          wget https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+        else
+          echo "Cloud image already downloaded"
+        fi
+
+        # Check if VM already exists
+        if qm status {{.VMID}} &>/dev/null; then
+          echo "Error: VM {{.VMID}} already exists"
+          exit 1
+        fi
+
+        echo "Creating VM template..."
+        qm create {{.VMID}} --name ubuntu-2404-cloudinit-template --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+        qm importdisk {{.VMID}} noble-server-cloudimg-amd64.img local-lvm
+        qm set {{.VMID}} --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-{{.VMID}}-disk-0
+        qm set {{.VMID}} --ide2 local-lvm:cloudinit
+        qm set {{.VMID}} --boot c --bootdisk scsi0
+        qm set {{.VMID}} --serial0 socket --vga serial0
+        qm set {{.VMID}} --agent enabled=1
+        qm resize {{.VMID}} scsi0 +18G
+        qm template {{.VMID}}
+
+        echo "✓ Template created successfully (VM ID: {{.VMID}})"
+        EOF
+    silent: true
+
+  export-env:
+    desc: Export Proxmox credentials from 1Password (use with eval)
+    summary: |
+      Retrieve Proxmox API credentials from 1Password and output export commands.
+
+      Usage: eval $(task proxmox:export-env)
+
+      This will set:
+        - PM_API_TOKEN_ID
+        - PM_API_TOKEN_SECRET
+        - PM_API_URL
+        - TASK_X_REMOTE_TASKFILES
+    cmds:
+      - |
+        # Check 1Password signin (output to stderr to not interfere with eval)
+        if ! op whoami &> /dev/null; then
+          echo "Error: Not signed into 1Password. Run: eval \$(op signin)" >&2
+          exit 1
+        fi
+
+        # Output export commands (only these go to stdout for eval)
+        echo "export PM_API_TOKEN_ID='$(op item get 'proxmox' --fields label=api-token-id --reveal 2>/dev/null)'"
+        echo "export PM_API_TOKEN_SECRET='$(op item get 'proxmox' --fields label=api-token-value --reveal 2>/dev/null)'"
+        echo "export PM_API_URL='$(op item get 'proxmox' --format json 2>/dev/null | jq -r '.urls[0].href')/api2/json'"
+        echo "export TASK_X_REMOTE_TASKFILES=1"
+
+  check-op-signin:
+    internal: true
+    desc: Verify 1Password CLI is authenticated
+    deps:
+      - :onepassword:ensure-dependencies
+    cmds:
+      - |
+        if ! op whoami &> /dev/null; then
+          echo "Error: Not signed into 1Password. Run: eval \$(op signin)"
+          exit 1
+        fi
+    silent: true
+
+  check-terraform:
+    internal: true
+    desc: Verify Terraform and Terragrunt are installed
+    cmds:
+      - |
+        if ! command -v terraform &> /dev/null; then
+          echo "Error: terraform not found. Install with: brew install terraform"
+          exit 1
+        fi
+        if ! command -v terragrunt &> /dev/null; then
+          echo "Error: terragrunt not found. Install with: brew install terragrunt"
+          exit 1
+        fi
+    silent: true
+
+  check-proxmox-env:
+    internal: true
+    desc: Verify Proxmox environment variables are set
+    cmds:
+      - |
+        if [ -z "$PM_API_URL" ] || [ -z "$PM_API_TOKEN_ID" ] || [ -z "$PM_API_TOKEN_SECRET" ]; then
+          echo "Error: Proxmox credentials not set. Required environment variables:"
+          echo "  - PM_API_URL"
+          echo "  - PM_API_TOKEN_ID"
+          echo "  - PM_API_TOKEN_SECRET"
+          exit 1
+        fi
+    silent: true
+
+  check-resources:
+    desc: Check available resources on Proxmox host
+    summary: |
+      Query Proxmox host for available CPU, memory, and storage resources.
+      Helps determine if there's enough capacity before creating a new VM.
+
+      Usage: task proxmox:check-resources [NODE=k8s8]
+
+      If NODE is specified, it reads the VM configuration to show required resources.
+    deps:
+      - check-proxmox-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+      PROXMOX_NODE: '{{.PROXMOX_NODE | default "proxmox"}}'
+    cmds:
+      - |
+        echo "Checking resources on Proxmox host: {{.PROXMOX_NODE}}"
+        echo ""
+
+        # Get resource information from Proxmox
+        RESOURCE_JSON=$(ssh {{.PROXMOX_NODE}} "pvesh get /nodes/{{.PROXMOX_NODE}}/status --output-format=json")
+
+        if [ $? -ne 0 ]; then
+          echo "Error: Failed to query Proxmox resources"
+          exit 1
+        fi
+
+        # Parse memory info (bytes)
+        MEMORY_TOTAL=$(echo "$RESOURCE_JSON" | jq -r '.memory.total')
+        MEMORY_USED=$(echo "$RESOURCE_JSON" | jq -r '.memory.used')
+        MEMORY_FREE=$(echo "$RESOURCE_JSON" | jq -r '.memory.free')
+
+        # Parse storage info (bytes)
+        STORAGE_TOTAL=$(echo "$RESOURCE_JSON" | jq -r '.rootfs.total')
+        STORAGE_USED=$(echo "$RESOURCE_JSON" | jq -r '.rootfs.used')
+        STORAGE_FREE=$(echo "$RESOURCE_JSON" | jq -r '.rootfs.free')
+
+        # Parse CPU info
+        CPU_COUNT=$(echo "$RESOURCE_JSON" | jq -r '.cpuinfo.cpus // 0')
+
+        # Convert to human-readable units
+        MEMORY_TOTAL_GB=$(awk "BEGIN {printf \"%.2f\", $MEMORY_TOTAL/1024/1024/1024}")
+        MEMORY_USED_GB=$(awk "BEGIN {printf \"%.2f\", $MEMORY_USED/1024/1024/1024}")
+        MEMORY_FREE_GB=$(awk "BEGIN {printf \"%.2f\", $MEMORY_FREE/1024/1024/1024}")
+        MEMORY_PERCENT=$(awk "BEGIN {printf \"%.0f\", ($MEMORY_USED/$MEMORY_TOTAL)*100}")
+
+        STORAGE_TOTAL_GB=$(awk "BEGIN {printf \"%.2f\", $STORAGE_TOTAL/1024/1024/1024}")
+        STORAGE_USED_GB=$(awk "BEGIN {printf \"%.2f\", $STORAGE_USED/1024/1024/1024}")
+        STORAGE_FREE_GB=$(awk "BEGIN {printf \"%.2f\", $STORAGE_FREE/1024/1024/1024}")
+        STORAGE_PERCENT=$(awk "BEGIN {printf \"%.0f\", ($STORAGE_USED/$STORAGE_TOTAL)*100}")
+
+        # Display current resources
+        echo "📊 Current Resource Usage:"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "CPU:"
+        echo "  Total Cores: $CPU_COUNT"
+        echo ""
+        echo "Memory:"
+        echo "  Total: ${MEMORY_TOTAL_GB} GB"
+        echo "  Used:  ${MEMORY_USED_GB} GB (${MEMORY_PERCENT}%)"
+        echo "  Free:  ${MEMORY_FREE_GB} GB"
+        echo ""
+        echo "Storage (rootfs):"
+        echo "  Total: ${STORAGE_TOTAL_GB} GB"
+        echo "  Used:  ${STORAGE_USED_GB} GB (${STORAGE_PERCENT}%)"
+        echo "  Free:  ${STORAGE_FREE_GB} GB"
+        echo ""
+
+        # If NODE is specified, check if resources are sufficient
+        if [ -n "{{.NODE}}" ]; then
+          NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+          if [ ! -f "$NODE_DIR/terragrunt.hcl.tpl" ]; then
+            echo "⚠️  Node configuration not found: $NODE_DIR/terragrunt.hcl.tpl"
+            exit 0
+          fi
+
+          # Extract VM requirements from template
+          VM_CORES=$(grep "cpu_cores" "$NODE_DIR/terragrunt.hcl.tpl" | grep -Eo '[0-9]+' | head -1)
+          VM_MEMORY_MB=$(grep "memory.*=" "$NODE_DIR/terragrunt.hcl.tpl" | grep -Eo '[0-9]+' | head -1)
+          VM_DISK=$(grep "disk_size" "$NODE_DIR/terragrunt.hcl.tpl" | grep -Eo '[0-9]+' | head -1)
+
+          # Convert to GB
+          VM_MEMORY_GB=$(awk "BEGIN {printf \"%.2f\", $VM_MEMORY_MB/1024}")
+
+          echo "📋 Requested VM Resources ({{.NODE}}):"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  CPU Cores: $VM_CORES"
+          echo "  Memory:    ${VM_MEMORY_GB} GB"
+          echo "  Disk:      ${VM_DISK} GB"
+          echo ""
+
+          # Check if resources are available
+          WARNINGS=0
+
+          # Check CPU
+          if [ "$VM_CORES" -gt "$CPU_COUNT" ]; then
+            echo "❌ WARNING: Requested CPU cores ($VM_CORES) exceed available cores ($CPU_COUNT)"
+            WARNINGS=$((WARNINGS + 1))
+          fi
+
+          # Check memory (convert free memory to MB for comparison)
+          MEMORY_FREE_MB=$(awk "BEGIN {printf \"%.0f\", $MEMORY_FREE/1024/1024}")
+          if [ "$VM_MEMORY_MB" -gt "$MEMORY_FREE_MB" ]; then
+            echo "❌ WARNING: Requested memory (${VM_MEMORY_GB} GB) exceeds free memory (${MEMORY_FREE_GB} GB)"
+            WARNINGS=$((WARNINGS + 1))
+          elif [ "$VM_MEMORY_MB" -gt $(awk "BEGIN {printf \"%.0f\", $MEMORY_FREE_MB*0.8}") ]; then
+            echo "⚠️  CAUTION: Requested memory (${VM_MEMORY_GB} GB) will use >80% of free memory (${MEMORY_FREE_GB} GB)"
+          fi
+
+          # Check storage
+          if [ "$VM_DISK" -gt $(awk "BEGIN {printf \"%.0f\", $STORAGE_FREE_GB}") ]; then
+            echo "❌ WARNING: Requested disk (${VM_DISK} GB) exceeds free storage (${STORAGE_FREE_GB} GB)"
+            WARNINGS=$((WARNINGS + 1))
+          elif [ "$VM_DISK" -gt $(awk "BEGIN {printf \"%.0f\", $STORAGE_FREE_GB*0.8}") ]; then
+            echo "⚠️  CAUTION: Requested disk (${VM_DISK} GB) will use >80% of free storage (${STORAGE_FREE_GB} GB)"
+          fi
+
+          if [ $WARNINGS -eq 0 ]; then
+            echo "✅ Sufficient resources available for {{.NODE}}"
+          else
+            echo ""
+            echo "⚠️  $WARNINGS critical resource warnings detected!"
+            echo "    Consider:"
+            echo "    - Reducing VM resource allocation"
+            echo "    - Freeing up resources on Proxmox"
+            echo "    - Using a different Proxmox node"
+          fi
+        else
+          # General recommendations
+          if [ $(awk "BEGIN {print ($MEMORY_PERCENT > 90)}") -eq 1 ]; then
+            echo "⚠️  WARNING: Memory usage is high (${MEMORY_PERCENT}%)"
+          fi
+          if [ $(awk "BEGIN {print ($STORAGE_PERCENT > 85)}") -eq 1 ]; then
+            echo "⚠️  WARNING: Storage usage is high (${STORAGE_PERCENT}%)"
+          fi
+        fi
+    silent: true
+
+  inject-env:
+    internal: true
+    desc: Inject secrets from 1Password into env.hcl
+    deps:
+      - check-op-signin
+    cmds:
+      - |
+        ENV_FILE="{{.PROXMOX_DIR}}/../env.hcl"
+        ENV_TPL="{{.PROXMOX_DIR}}/../env.hcl.tpl"
+
+        if [ ! -f "$ENV_TPL" ]; then
+          echo "Error: Template file not found: $ENV_TPL"
+          exit 1
+        fi
+
+        # Only regenerate if template is newer or env.hcl doesn't exist
+        if [ ! -f "$ENV_FILE" ] || [ "$ENV_TPL" -nt "$ENV_FILE" ]; then
+          echo "Injecting secrets from 1Password into env.hcl..."
+          op inject -i "$ENV_TPL" -o "$ENV_FILE"
+        fi
+    silent: true
+
+  inject:
+    desc: Inject secrets from 1Password into terragrunt.hcl
+    summary: |
+      Generate terragrunt.hcl from terragrunt.hcl.tpl with secrets from 1Password.
+
+      Usage: task proxmox:inject NODE=k8s8
+    deps:
+      - check-op-signin
+      - inject-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Error: NODE variable required"
+          echo "Usage: task proxmox:inject NODE=k8s8"
+          exit 1
+        fi
+
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$NODE_DIR" ]; then
+          echo "Error: Node directory does not exist: $NODE_DIR"
+          exit 1
+        fi
+
+        if [ ! -f "$NODE_DIR/terragrunt.hcl.tpl" ]; then
+          echo "Error: Template file not found: $NODE_DIR/terragrunt.hcl.tpl"
+          exit 1
+        fi
+
+        echo "Injecting secrets from 1Password..."
+        cd "$NODE_DIR"
+        op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+        echo "✓ Generated: $NODE_DIR/terragrunt.hcl"
+    silent: true
+
+  init:
+    desc: Initialize Terragrunt for a Proxmox node
+    summary: |
+      Initialize Terragrunt for a Proxmox node configuration.
+      Automatically injects secrets from 1Password if needed.
+
+      Usage: task proxmox:init NODE=k8s8
+    deps:
+      - check-terraform
+      - check-proxmox-env
+      - check-op-signin
+      - inject-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Error: NODE variable required"
+          echo "Usage: task proxmox:init NODE=k8s8"
+          exit 1
+        fi
+
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$NODE_DIR" ]; then
+          echo "Error: Node directory does not exist: $NODE_DIR"
+          exit 1
+        fi
+
+        cd "$NODE_DIR"
+
+        # Generate terragrunt.hcl if it doesn't exist
+        if [ ! -f "terragrunt.hcl" ] && [ -f "terragrunt.hcl.tpl" ]; then
+          echo "Generating terragrunt.hcl from template..."
+          op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+        fi
+
+        echo "Initializing Terragrunt..."
+        terragrunt init
+    silent: true
+
+  plan:
+    desc: Plan changes for a Proxmox node
+    summary: |
+      Preview infrastructure changes for a Proxmox node.
+      Automatically injects secrets from 1Password if needed.
+
+      Usage: task proxmox:plan NODE=k8s8
+    deps:
+      - check-terraform
+      - check-proxmox-env
+      - check-op-signin
+      - inject-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Error: NODE variable required"
+          echo "Usage: task proxmox:plan NODE=k8s8"
+          exit 1
+        fi
+
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$NODE_DIR" ]; then
+          echo "Error: Node directory does not exist: $NODE_DIR"
+          exit 1
+        fi
+
+        cd "$NODE_DIR"
+
+        # Generate terragrunt.hcl if it doesn't exist
+        if [ ! -f "terragrunt.hcl" ] && [ -f "terragrunt.hcl.tpl" ]; then
+          echo "Generating terragrunt.hcl from template..."
+          op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+        fi
+
+        # Initialize if needed
+        if [ ! -d ".terraform" ]; then
+          echo "Initializing first..."
+          terragrunt init
+        fi
+
+        echo "Planning changes..."
+        terragrunt plan
+    silent: true
+
+  apply:
+    desc: Create or update a Proxmox node
+    summary: |
+      Apply infrastructure changes to create or update a Proxmox VM.
+      Automatically injects secrets from 1Password if needed.
+
+      Usage: task proxmox:apply NODE=k8s8
+
+      Set APPROVE=false to prompt for confirmation (default: true for automation)
+    deps:
+      - check-terraform
+      - check-proxmox-env
+      - check-op-signin
+      - inject-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+      APPROVE: '{{.APPROVE | default "true"}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Error: NODE variable required"
+          echo "Usage: task proxmox:apply NODE=k8s8"
+          exit 1
+        fi
+
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$NODE_DIR" ]; then
+          echo "Error: Node directory does not exist: $NODE_DIR"
+          exit 1
+        fi
+
+        cd "$NODE_DIR"
+
+        # Generate terragrunt.hcl if it doesn't exist
+        if [ ! -f "terragrunt.hcl" ] && [ -f "terragrunt.hcl.tpl" ]; then
+          echo "Generating terragrunt.hcl from template..."
+          op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+        fi
+
+        # Initialize if needed
+        if [ ! -d ".terraform" ]; then
+          echo "Initializing first..."
+          terragrunt init
+        fi
+
+        echo "Applying changes..."
+        if [ "{{.APPROVE}}" = "true" ]; then
+          terragrunt apply -auto-approve
+        else
+          terragrunt apply
+        fi
+    silent: true
+
+  destroy:
+    desc: Destroy a Proxmox node
+    summary: |
+      Destroy a Proxmox VM and remove all associated resources.
+      Automatically injects secrets from 1Password if needed.
+
+      Usage: task proxmox:destroy NODE=k8s8
+
+      WARNING: This will permanently delete the VM!
+    deps:
+      - check-terraform
+      - check-proxmox-env
+      - check-op-signin
+      - inject-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    prompt: This will destroy the {{.NODE}} VM. Are you sure?
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Error: NODE variable required"
+          echo "Usage: task proxmox:destroy NODE=k8s8"
+          exit 1
+        fi
+
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$NODE_DIR" ]; then
+          echo "Error: Node directory does not exist: $NODE_DIR"
+          exit 1
+        fi
+
+        cd "$NODE_DIR"
+
+        # Generate terragrunt.hcl if it doesn't exist
+        if [ ! -f "terragrunt.hcl" ] && [ -f "terragrunt.hcl.tpl" ]; then
+          echo "Generating terragrunt.hcl from template..."
+          op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+        fi
+
+        echo "Destroying {{.NODE}}..."
+        terragrunt destroy -auto-approve
+
+        echo "✓ {{.NODE}} destroyed"
+        echo ""
+        echo "Remember to:"
+        echo "  1. Remove {{.NODE}} from k3s-ansible/inventory/cowdogmoo/hosts.ini"
+        echo "  2. Update Taskfile.yaml K8S_NODES variable if needed"
+    silent: true
+
+  output:
+    desc: Show outputs for a Proxmox node
+    summary: |
+      Display Terraform outputs for a Proxmox node (IP, VM ID, etc).
+
+      Usage: task proxmox:output NODE=k8s8
+    deps:
+      - check-terraform
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Error: NODE variable required"
+          echo "Usage: task proxmox:output NODE=k8s8"
+          exit 1
+        fi
+
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$NODE_DIR" ]; then
+          echo "Error: Node directory does not exist: $NODE_DIR"
+          exit 1
+        fi
+
+        cd "$NODE_DIR"
+        terragrunt output
+    silent: true
+
+  create:
+    desc: Complete workflow to create a new K8s node
+    summary: |
+      End-to-end workflow to create a new Kubernetes node:
+      1. Copy template configuration
+      2. Inject secrets from 1Password
+      3. Initialize Terragrunt
+      4. Plan changes
+      5. Apply (create VM)
+      6. Show outputs
+      7. Remind about Ansible provisioning
+
+      Usage: task proxmox:create NODE=k8s9 IP=192.168.20.201
+
+      After this completes, you must:
+      - Add node to k3s-ansible/inventory/cowdogmoo/hosts.ini
+      - Run: task provision-nodes
+    deps:
+      - check-terraform
+      - check-proxmox-env
+      - check-op-signin
+      - inject-env
+    vars:
+      NODE: '{{.NODE | default ""}}'
+      IP: '{{.IP | default ""}}'
+      SOURCE: '{{.SOURCE | default "k8s8"}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ] || [ -z "{{.IP}}" ]; then
+          echo "Error: NODE and IP variables required"
+          echo "Usage: task proxmox:create NODE=k8s9 IP=192.168.20.201"
+          exit 1
+        fi
+
+        SOURCE_DIR="{{.PROXMOX_DIR}}/{{.SOURCE}}"
+        NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+
+        if [ ! -d "$SOURCE_DIR" ]; then
+          echo "Error: Source directory does not exist: $SOURCE_DIR"
+          exit 1
+        fi
+
+        if [ -d "$NODE_DIR" ]; then
+          echo "Error: Node directory already exists: $NODE_DIR"
+          exit 1
+        fi
+
+        echo "Creating new node: {{.NODE}}"
+        echo ""
+
+        # Step 1: Copy template
+        echo "Step 1/7: Copying configuration from {{.SOURCE}}..."
+        cp -r "$SOURCE_DIR" "$NODE_DIR"
+
+        # Step 2: Update configuration
+        echo "Step 2/7: Updating configuration..."
+        cd "$NODE_DIR"
+
+        # Update vm_name and ip_address in template
+        sed -i '' 's/vm_name.*=.*".*"/vm_name        = "{{.NODE}}"/' terragrunt.hcl.tpl
+        sed -i '' 's/ip_address.*=.*".*"/ip_address = "{{.IP}}"/' terragrunt.hcl.tpl
+        sed -i '' 's/vm_description.*=.*".*"/vm_description = "Kubernetes worker node {{.NODE}}"/' terragrunt.hcl.tpl
+
+        # Update README
+        sed -i '' 's/{{.SOURCE}}/{{.NODE}}/g' README.md
+        sed -i '' 's/192.168.20.200/{{.IP}}/g' README.md
+
+        # Step 3: Check resources
+        echo "Step 3/7: Checking available resources on Proxmox..."
+        echo ""
+
+        # Get resource information from Proxmox
+        RESOURCE_JSON=$(ssh proxmox "pvesh get /nodes/proxmox/status --output-format=json")
+
+        # Parse memory and extract VM requirements
+        MEMORY_FREE=$(echo "$RESOURCE_JSON" | jq -r '.memory.free')
+        STORAGE_FREE=$(echo "$RESOURCE_JSON" | jq -r '.rootfs.free')
+        CPU_COUNT=$(echo "$RESOURCE_JSON" | jq -r '.cpuinfo.cpus // 0')
+
+        VM_CORES=$(grep "cpu_cores" terragrunt.hcl.tpl | grep -Eo '[0-9]+' | head -1)
+        VM_MEMORY_MB=$(grep "memory.*=" terragrunt.hcl.tpl | grep -Eo '[0-9]+' | head -1)
+        VM_DISK=$(grep "disk_size" terragrunt.hcl.tpl | grep -Eo '[0-9]+' | head -1)
+
+        MEMORY_FREE_GB=$(awk "BEGIN {printf \"%.2f\", $MEMORY_FREE/1024/1024/1024}")
+        STORAGE_FREE_GB=$(awk "BEGIN {printf \"%.2f\", $STORAGE_FREE/1024/1024/1024}")
+        VM_MEMORY_GB=$(awk "BEGIN {printf \"%.2f\", $VM_MEMORY_MB/1024}")
+
+        echo "  Available: ${MEMORY_FREE_GB} GB RAM, ${STORAGE_FREE_GB} GB storage, $CPU_COUNT CPU cores"
+        echo "  Requested: ${VM_MEMORY_GB} GB RAM, ${VM_DISK} GB storage, $VM_CORES CPU cores"
+
+        # Check for issues
+        MEMORY_FREE_MB=$(awk "BEGIN {printf \"%.0f\", $MEMORY_FREE/1024/1024}")
+        RESOURCE_OK=true
+
+        if [ "$VM_MEMORY_MB" -gt "$MEMORY_FREE_MB" ]; then
+          echo ""
+          echo "  ❌ ERROR: Insufficient memory (need ${VM_MEMORY_GB} GB, have ${MEMORY_FREE_GB} GB free)"
+          RESOURCE_OK=false
+        fi
+
+        if [ "$VM_DISK" -gt $(awk "BEGIN {printf \"%.0f\", $STORAGE_FREE_GB}") ]; then
+          echo ""
+          echo "  ❌ ERROR: Insufficient storage (need ${VM_DISK} GB, have ${STORAGE_FREE_GB} GB free)"
+          RESOURCE_OK=false
+        fi
+
+        if [ "$RESOURCE_OK" = false ]; then
+          echo ""
+          echo "Cannot proceed: Insufficient resources on Proxmox"
+          echo "Run 'task proxmox:check-resources' for detailed information"
+          rm -rf "$NODE_DIR"
+          exit 1
+        fi
+
+        echo "  ✓ Sufficient resources available"
+        echo ""
+
+        # Step 4: Inject secrets
+        echo "Step 4/7: Injecting secrets from 1Password..."
+        op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+
+        # Step 5: Initialize
+        echo "Step 5/7: Initializing Terragrunt..."
+        terragrunt init
+
+        # Step 6: Plan
+        echo "Step 6/7: Planning changes..."
+        terragrunt plan
+
+        echo ""
+        echo "Ready to create {{.NODE}} at {{.IP}}"
+        read -p "Continue with apply? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+          echo "Aborted. To continue later, run: task proxmox:apply NODE={{.NODE}}"
+          exit 0
+        fi
+
+        # Step 7: Apply
+        echo "Step 7/7: Creating VM..."
+        terragrunt apply -auto-approve
+
+        echo ""
+        echo "=========================================="
+        echo "✓ {{.NODE}} created successfully!"
+        echo "=========================================="
+        echo ""
+        terragrunt output
+        echo ""
+        echo "Next steps:"
+        echo "  1. Add to Ansible inventory:"
+        echo "     vim k3s-ansible/inventory/cowdogmoo/hosts.ini"
+        echo ""
+        echo "     [node]"
+        echo "     {{.NODE}} ansible_host={{.IP}} ansible_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/Users/l/.ssh/k8s"
+        echo ""
+        echo "  2. Update Taskfile.yaml K8S_NODES variable to include {{.NODE}}"
+        echo ""
+        echo "  3. Provision the node:"
+        echo "     task provision-nodes"
+        echo ""
+        echo "  4. Verify:"
+        echo "     kubectl get nodes"
+    silent: true
+
+  clean:
+    desc: Remove generated files with secrets
+    summary: |
+      Remove generated files (with secrets) from the infrastructure directory.
+      The template files (.tpl) are preserved.
+
+      Usage:
+        task proxmox:clean              # Clean all generated files
+        task proxmox:clean NODE=k8s8    # Clean specific node only
+    vars:
+      NODE: '{{.NODE | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NODE}}" ]; then
+          echo "Cleaning all generated files with secrets..."
+
+          # Clean env.hcl
+          ENV_FILE="{{.PROXMOX_DIR}}/../env.hcl"
+          if [ -f "$ENV_FILE" ]; then
+            rm -v "$ENV_FILE"
+            echo "✓ Removed: $ENV_FILE"
+          fi
+
+          # Clean node terragrunt.hcl files
+          find "{{.PROXMOX_DIR}}" -type f -name "terragrunt.hcl" -path "*/k8s*/*" -exec rm -v {} \;
+        else
+          NODE_DIR="{{.PROXMOX_DIR}}/{{.NODE}}"
+          if [ -f "$NODE_DIR/terragrunt.hcl" ]; then
+            rm -v "$NODE_DIR/terragrunt.hcl"
+            echo "✓ Removed: $NODE_DIR/terragrunt.hcl"
+          else
+            echo "No terragrunt.hcl file found in {{.NODE}}"
+          fi
+        fi
+    silent: true

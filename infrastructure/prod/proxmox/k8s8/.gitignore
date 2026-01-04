@@ -1,0 +1,3 @@
+# Generated file - do not commit
+# This is generated from terragrunt.hcl.tpl using: op inject -i terragrunt.hcl.tpl -o terragrunt.hcl
+terragrunt.hcl
