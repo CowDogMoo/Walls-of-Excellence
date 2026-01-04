@@ -28,6 +28,39 @@ spec:
     deschedulerPolicy:
       nodeSelector: "node-role.kubernetes.io/master!="
       evictLocalStoragePods: true
+      profiles:
+        - name: default
+          pluginConfig:
+            - name: DefaultEvictor
+              args:
+                podProtections:
+                  defaultDisabled:
+                    - PodsWithLocalStorage
+                  extraEnabled:
+                    - PodsWithPVC
+            - name: RemovePodsHavingTooManyRestarts
+              args:
+                includingInitContainers: true
+                podRestartThreshold: 100
+            - name: RemovePodsViolatingNodeAffinity
+              args:
+                nodeAffinityType:
+                  - requiredDuringSchedulingIgnoredDuringExecution
+            - name: RemovePodsViolatingTopologySpreadConstraint
+              args:
+                includeSoftConstraints: true
+          plugins:
+            balance:
+              enabled:
+                - RemoveDuplicates
+                - RemovePodsViolatingTopologySpreadConstraint
+                # LowNodeUtilization REMOVED - was causing issues with master nodes
+            deschedule:
+              enabled:
+                - RemovePodsHavingTooManyRestarts
+                - RemovePodsViolatingNodeTaints
+                - RemovePodsViolatingNodeAffinity
+                - RemovePodsViolatingInterPodAntiAffinity
       strategies:
         RemovePodsViolatingTopologySpreadConstraint:
           enabled: true
