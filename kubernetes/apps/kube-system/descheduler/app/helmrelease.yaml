@@ -24,21 +24,25 @@ spec:
       retries: 3
   values:
     kind: Deployment
+    schedule: "*/5 * * * *"
     deschedulerPolicy:
+      nodeSelector: "node-role.kubernetes.io/master!="
+      evictLocalStoragePods: true
       strategies:
         RemovePodsViolatingTopologySpreadConstraint:
           enabled: true
           params:
             includeSoftConstraints: true
         LowNodeUtilization:
+          enabled: false
+        RemoveDuplicates:
+          enabled: true
+        RemovePodsViolatingNodeTaints:
+          enabled: true
+        RemovePodsViolatingNodeAffinity:
           enabled: true
           params:
-            nodeResourceUtilizationThresholds:
-              thresholds:
-                cpu: 50
-                memory: 50
-              targetThresholds:
-                cpu: 70
-                memory: 70
-        RemoveDuplicates:
+            nodeAffinityType:
+              - requiredDuringSchedulingIgnoredDuringExecution
+        RemovePodsViolatingInterPodAntiAffinity:
           enabled: true
