@@ -25,6 +25,7 @@ spec:
   values:
     kind: Deployment
     schedule: "*/5 * * * *"
+    deschedulerPolicyAPIVersion: "descheduler/v1alpha2"
     deschedulerPolicy:
       nodeSelector: "node-role.kubernetes.io/master!="
       evictLocalStoragePods: true
@@ -54,28 +55,9 @@ spec:
               enabled:
                 - RemoveDuplicates
                 - RemovePodsViolatingTopologySpreadConstraint
-                # LowNodeUtilization REMOVED - was causing issues with master nodes
             deschedule:
               enabled:
                 - RemovePodsHavingTooManyRestarts
                 - RemovePodsViolatingNodeTaints
                 - RemovePodsViolatingNodeAffinity
                 - RemovePodsViolatingInterPodAntiAffinity
-      strategies:
-        RemovePodsViolatingTopologySpreadConstraint:
-          enabled: true
-          params:
-            includeSoftConstraints: true
-        LowNodeUtilization:
-          enabled: false
-        RemoveDuplicates:
-          enabled: true
-        RemovePodsViolatingNodeTaints:
-          enabled: true
-        RemovePodsViolatingNodeAffinity:
-          enabled: true
-          params:
-            nodeAffinityType:
-              - requiredDuringSchedulingIgnoredDuringExecution
-        RemovePodsViolatingInterPodAntiAffinity:
-          enabled: true
