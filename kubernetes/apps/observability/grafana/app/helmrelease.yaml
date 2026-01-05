@@ -253,11 +253,18 @@ spec:
 
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
+        cpu: 109m
+        memory: 380Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        memory: 380Mi
+
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: grafana
 
     sidecar:
       image:

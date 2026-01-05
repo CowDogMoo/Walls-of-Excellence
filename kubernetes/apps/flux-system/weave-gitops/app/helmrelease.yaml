@@ -39,10 +39,17 @@ spec:
       tag: "0.38.0"
     resources:
       requests:
-        cpu: 300m
-        memory: 256Mi
+        cpu: 410m
+        memory: 110Mi
       limits:
-        memory: 256Mi
+        memory: 110Mi
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: weave-gitops
     livenessProbe:
       httpGet:
         path: /
