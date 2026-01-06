@@ -1,50 +1,1351 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: observability-health-dashboard
   namespace: observability
   labels:
-    grafana_dashboard: '1'
+    grafana_dashboard: "1"
   annotations:
     grafana_folder: Observability
     dashboard-version: 3.0.2
-    last-modified: '2026-01-05'
-    description: RED/USE methodology dashboard - focused and actionable observability stack health monitoring
+    last-modified: "2026-01-05"
+    description: Monitor Prometheus, Loki, and Grafana health and performance
 data:
-  observability-health.json: "{\n  \"title\": \"\\ud83d\\udcca Observability Stack Health\",\n  \"description\": \"Monitor Prometheus, Loki, and Grafana health using RED methodology. Clear, actionable insights for your observability stack.\",\n  \"tags\": [\n    \"observability\",\n    \"prometheus\",\n    \"loki\",\n    \"grafana\",\n    \"health\",\n    \"RED\"\n  ],\n  \"timezone\": \"browser\",\n  \"refresh\": \"1m\",\n  \"time\": {\n    \"from\": \"now-6h\",\n    \"to\": \"now\"\n  },\n  \"templating\": {\n    \"list\": [\n      {\n        \"name\": \"datasource\",\n        \"type\": \"datasource\",\n        \"query\": \"prometheus\",\n        \"hide\": 0\n      }\n    ]\n  },\n  \"panels\": [\n    {\n      \"id\": 1,\n      \"type\": \"stat\",\n      \"title\": \"\\u2705 Stack Status\",\n      \"gridPos\": {\n        \"h\": 5,\n        \"w\": 6,\n        \"x\": 0,\n        \"y\": 0\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\
-    \n      },\n      \"targets\": [\n        {\n          \"expr\": \"min(up{job=~\\\"kube-prometheus-stack-prometheus|observability/loki|grafana\\\", namespace=\\\"observability\\\"})\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"mappings\": [\n            {\n              \"type\": \"value\",\n              \"options\": {\n                \"0\": {\n                  \"text\": \"\\u274c SERVICES DOWN\",\n                  \"color\": \"red\"\n                },\n                \"1\": {\n                  \"text\": \"\\u2705 ALL HEALTHY\",\n                  \"color\": \"green\"\n                }\n              }\n            }\n          ],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"red\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"green\",\n                \"value\": 1\n\
-    \              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 2,\n      \"type\": \"stat\",\n      \"title\": \"\\u26a0\\ufe0f Query Errors (Last 5m)\",\n      \"gridPos\": {\n        \"h\": 5,\n        \"w\": 6,\n        \"x\": 6,\n        \"y\": 0\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(increase(prometheus_http_request_duration_seconds_count{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\", code=~\\\"5..\\\"}[5m])) or vector(0) + sum(increase(loki_request_duration_seconds_count{job=\\\"observability/loki\\\", namespace=\\\"observability\\\", status_code=~\\\
-    \"5..\\\"}[5m])) or vector(0) + sum(increase(grafana_api_response_status_total{job=\\\"grafana\\\", namespace=\\\"observability\\\", status_code=~\\\"5..\\\"}[5m])) or vector(0)\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"short\",\n          \"decimals\": 0,\n          \"mappings\": [\n            {\n              \"type\": \"special\",\n              \"options\": {\n                \"match\": \"null\",\n                \"result\": {\n                  \"text\": \"0\",\n                  \"color\": \"green\"\n                }\n              }\n            }\n          ],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 1\n              },\n              {\n                \"\
-    color\": \"orange\",\n                \"value\": 10\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 50\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 3,\n      \"type\": \"stat\",\n      \"title\": \"\\ud83d\\udcbe Loki Storage Free\",\n      \"gridPos\": {\n        \"h\": 5,\n        \"w\": 6,\n        \"x\": 12,\n        \"y\": 0\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"(sum(kubelet_volume_stats_capacity_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"}) - sum(kubelet_volume_stats_used_bytes{namespace=\\\
-    \"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"})) / sum(kubelet_volume_stats_capacity_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"}) * 100\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"percent\",\n          \"decimals\": 1,\n          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"red\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"orange\",\n                \"value\": 10\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 20\n              },\n              {\n                \"color\": \"green\",\n                \"value\": 30\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\"\
-    ,\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"text\": {\n          \"valueSize\": 32,\n          \"titleSize\": 16\n        },\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 4,\n      \"type\": \"stat\",\n      \"title\": \"\\ud83d\\udd50 Est. Days Until Loki Disk Full\",\n      \"gridPos\": {\n        \"h\": 5,\n        \"w\": 6,\n        \"x\": 18,\n        \"y\": 0\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"((sum(kubelet_volume_stats_capacity_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"}) - sum(kubelet_volume_stats_used_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"})) / ((sum(delta(kubelet_volume_stats_used_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\
-    \".*loki.*\\\"}[24h])) / 86400) + 1)) / 86400\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"days\",\n          \"decimals\": 0,\n          \"noValue\": \"N/A\",\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"red\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"orange\",\n                \"value\": 7\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 30\n              },\n              {\n                \"color\": \"green\",\n                \"value\": 90\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"\
-    lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"id\": 10,\n      \"title\": \"\\ud83d\\udd0d Prometheus\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 5\n      },\n      \"collapsed\": false\n    },\n    {\n      \"id\": 11,\n      \"type\": \"timeseries\",\n      \"title\": \"\\ud83d\\udcca Rate: Queries/sec\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 6\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(prometheus_http_request_duration_seconds_count{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\", handler=~\\\"/api/v1/.*\\\"}[5m]))\",\n          \"legendFormat\": \"Queries/sec\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\"\
-    : {\n          \"unit\": \"reqps\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        }\n      }\n    },\n    {\n      \"id\": 12,\n      \"type\": \"timeseries\",\n      \"title\": \"\\u274c Errors: 5xx Error Rate\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 6\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(prometheus_http_request_duration_seconds_count{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\", code=~\\\"5..\\\"}[5m])) or vector(0)\",\n \
-    \         \"legendFormat\": \"5xx errors/sec\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"reqps\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"thresholdsStyle\": {\n              \"mode\": \"line\"\n            }\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 0.1\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 1\n              }\n            ]\n          },\n          \"color\": {\n            \"mode\": \"thresholds\"\n  \
-    \        }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        }\n      }\n    },\n    {\n      \"id\": 13,\n      \"type\": \"timeseries\",\n      \"title\": \"\\u23f1\\ufe0f Duration: Query Latency (p95)\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\": 6\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"histogram_quantile(0.95, sum by (le) (rate(prometheus_http_request_duration_seconds_bucket{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\", handler=~\\\"/api/v1/query.*\\\"}[5m])))\",\n          \"legendFormat\": \"p95 latency\",\n          \"refId\": \"A\"\n        },\n        {\n          \"expr\": \"histogram_quantile(0.50, sum by (le) (rate(prometheus_http_request_duration_seconds_bucket{job=\\\
-    \"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\", handler=~\\\"/api/v1/query.*\\\"}[5m])))\",\n          \"legendFormat\": \"p50 latency\",\n          \"refId\": \"B\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"s\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"thresholdsStyle\": {\n              \"mode\": \"line\"\n            }\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 1\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 5\n \
-    \             }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\",\n            \"mean\",\n            \"max\"\n          ]\n        }\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"id\": 20,\n      \"title\": \"\\ud83d\\udcdd Loki\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 14\n      },\n      \"collapsed\": false\n    },\n    {\n      \"id\": 21,\n      \"type\": \"timeseries\",\n      \"title\": \"\\ud83d\\udcca Rate: Log Ingestion Rate\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 15\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(loki_distributor_bytes_received_total{job=\\\
-    \"observability/loki\\\", namespace=\\\"observability\\\"}[5m])) / 1024 / 1024\",\n          \"legendFormat\": \"Ingestion MB/s\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"MBs\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        }\n      }\n    },\n    {\n      \"id\": 22,\n      \"type\": \"timeseries\",\n      \"title\": \"\\u274c Errors: 5xx Error Rate\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 15\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"\
-    targets\": [\n        {\n          \"expr\": \"sum(rate(loki_request_duration_seconds_count{job=\\\"observability/loki\\\", namespace=\\\"observability\\\", status_code=~\\\"5..\\\"}[5m])) or vector(0)\",\n          \"legendFormat\": \"5xx errors/sec\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"reqps\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"thresholdsStyle\": {\n              \"mode\": \"line\"\n            }\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 0.1\n      \
-    \        },\n              {\n                \"color\": \"red\",\n                \"value\": 1\n              }\n            ]\n          },\n          \"color\": {\n            \"mode\": \"thresholds\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        }\n      }\n    },\n    {\n      \"id\": 23,\n      \"type\": \"timeseries\",\n      \"title\": \"\\u23f1\\ufe0f Duration: Query Latency (p95)\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\": 15\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\\\"observability/loki\\\", namespace=\\\"observability\\\", route=~\\\"loki_api_v1_query.*\\\"}[5m])))\",\n          \"legendFormat\"\
-    : \"p95 latency\",\n          \"refId\": \"A\"\n        },\n        {\n          \"expr\": \"histogram_quantile(0.50, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\\\"observability/loki\\\", namespace=\\\"observability\\\", route=~\\\"loki_api_v1_query.*\\\"}[5m])))\",\n          \"legendFormat\": \"p50 latency\",\n          \"refId\": \"B\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"s\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"thresholdsStyle\": {\n              \"mode\": \"line\"\n            }\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n      \
-    \          \"color\": \"yellow\",\n                \"value\": 5\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 10\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\",\n            \"mean\",\n            \"max\"\n          ]\n        }\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"id\": 30,\n      \"title\": \"\\ud83c\\udfa8 Grafana\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 23\n      },\n      \"collapsed\": false\n    },\n    {\n      \"id\": 31,\n      \"type\": \"timeseries\",\n      \"title\": \"\\ud83d\\udcca Rate: HTTP Requests/sec\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 24\n      },\n      \"datasource\": {\n     \
-    \   \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(grafana_http_request_duration_seconds_count{job=\\\"grafana\\\", namespace=\\\"observability\\\"}[5m]))\",\n          \"legendFormat\": \"Requests/sec\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"reqps\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        }\n      }\n    },\n    {\n      \"id\": 32,\n      \"type\": \"timeseries\",\n      \"title\": \"\\u274c Errors: 5xx Error Rate\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
-    \ 8,\n        \"x\": 8,\n        \"y\": 24\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(grafana_api_response_status_total{job=\\\"grafana\\\", namespace=\\\"observability\\\", status_code=~\\\"5..\\\"}[5m])) or vector(0)\",\n          \"legendFormat\": \"5xx errors/sec\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"reqps\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"thresholdsStyle\": {\n              \"mode\": \"line\"\n            }\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"\
-    green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 0.1\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 1\n              }\n            ]\n          },\n          \"color\": {\n            \"mode\": \"thresholds\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        }\n      }\n    },\n    {\n      \"id\": 33,\n      \"type\": \"timeseries\",\n      \"title\": \"\\u23f1\\ufe0f Duration: HTTP Response Time (p90)\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 16,\n        \"y\": 24\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"histogram_quantile(0.9, sum(rate(grafana_http_request_duration_seconds_bucket{job=\\\
-    \"grafana\\\", namespace=\\\"observability\\\"}[5m])) by (le))\",\n          \"legendFormat\": \"p90 latency\",\n          \"refId\": \"A\"\n        },\n        {\n          \"expr\": \"histogram_quantile(0.5, sum(rate(grafana_http_request_duration_seconds_bucket{job=\\\"grafana\\\", namespace=\\\"observability\\\"}[5m])) by (le))\",\n          \"legendFormat\": \"p50 latency\",\n          \"refId\": \"B\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"s\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"gradientMode\": \"opacity\",\n            \"lineInterpolation\": \"smooth\",\n            \"thresholdsStyle\": {\n              \"mode\": \"line\"\n            }\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\"\
-    : 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 3\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 5\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\",\n            \"mean\",\n            \"max\"\n          ]\n        }\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"id\": 40,\n      \"title\": \"\\ud83d\\udcbe Storage Capacity\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 32\n      },\n      \"collapsed\": false\n    },\n    {\n      \"id\": 41,\n      \"type\": \"timeseries\",\n      \"title\": \"Prometheus Storage Usage\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\": 33\n\
-    \      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"max(prometheus_tsdb_storage_blocks_bytes{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\"}) / 1024 / 1024 / 1024\",\n          \"legendFormat\": \"Storage Used (GB)\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"gbytes\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\",\n            \"mean\",\n            \"max\"\n          ]\n        }\n\
-    \      }\n    },\n    {\n      \"id\": 42,\n      \"type\": \"timeseries\",\n      \"title\": \"Loki Storage Usage & Capacity\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 33\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(kubelet_volume_stats_used_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"}) / 1024 / 1024 / 1024\",\n          \"legendFormat\": \"Used (GB)\",\n          \"refId\": \"A\"\n        },\n        {\n          \"expr\": \"sum(kubelet_volume_stats_capacity_bytes{namespace=\\\"observability\\\", persistentvolumeclaim=~\\\".*loki.*\\\"}) / 1024 / 1024 / 1024\",\n          \"legendFormat\": \"Capacity (GB)\",\n          \"refId\": \"B\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"gbytes\",\n          \"custom\": {\n\
-    \            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        },\n        \"overrides\": [\n          {\n            \"matcher\": {\n              \"id\": \"byName\",\n              \"options\": \"Capacity (GB)\"\n            },\n            \"properties\": [\n              {\n                \"id\": \"custom.lineStyle\",\n                \"value\": {\n                  \"fill\": \"dash\"\n                }\n              },\n              {\n                \"id\": \"color\",\n                \"value\": {\n                  \"mode\": \"fixed\",\n                  \"fixedColor\": \"red\"\n                }\n              }\n            ]\n          }\n        ]\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\"\
-    ,\n            \"mean\",\n            \"max\"\n          ]\n        }\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"id\": 50,\n      \"title\": \"\\ud83d\\udcc8 Resource Usage\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 41\n      },\n      \"collapsed\": false\n    },\n    {\n      \"id\": 51,\n      \"type\": \"timeseries\",\n      \"title\": \"CPU Usage by Service\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\": 42\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"rate(process_cpu_seconds_total{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\"}[5m]) * 100\",\n          \"legendFormat\": \"Prometheus\",\n          \"refId\": \"A\"\n        },\n        {\n          \"expr\": \"rate(container_cpu_usage_seconds_total{namespace=\\\
-    \"observability\\\", container=\\\"loki\\\"}[5m]) * 100\",\n          \"legendFormat\": \"Loki\",\n          \"refId\": \"B\"\n        },\n        {\n          \"expr\": \"rate(container_cpu_usage_seconds_total{namespace=\\\"observability\\\", container=\\\"grafana\\\"}[5m]) * 100\",\n          \"legendFormat\": \"Grafana\",\n          \"refId\": \"C\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"percent\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\",\n            \"mean\",\n            \"max\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 52,\n\
-    \      \"type\": \"timeseries\",\n      \"title\": \"Memory Usage by Service\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 42\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"process_resident_memory_bytes{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\"} / 1024 / 1024\",\n          \"legendFormat\": \"Prometheus (MB)\",\n          \"refId\": \"A\"\n        },\n        {\n          \"expr\": \"sum(container_memory_working_set_bytes{namespace=\\\"observability\\\", container=\\\"loki\\\"}) / 1024 / 1024\",\n          \"legendFormat\": \"Loki (MB)\",\n          \"refId\": \"B\"\n        },\n        {\n          \"expr\": \"sum(container_memory_working_set_bytes{namespace=\\\"observability\\\", container=\\\"grafana\\\"}) / 1024 / 1024\",\n          \"legendFormat\": \"Grafana (MB)\",\n\
-    \          \"refId\": \"C\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"decmbytes\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n            \"lineInterpolation\": \"smooth\"\n          }\n        }\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\": \"table\",\n          \"placement\": \"bottom\",\n          \"calcs\": [\n            \"lastNotNull\",\n            \"mean\",\n            \"max\"\n          ]\n        }\n      }\n    },\n    {\n      \"type\": \"row\",\n      \"id\": 60,\n      \"title\": \"\\ud83d\\udea8 Data Quality\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 50\n      },\n      \"collapsed\": false\n    },\n    {\n      \"id\": 61,\n      \"type\": \"stat\",\n      \"title\": \"Prometheus Scrape Success Rate\"\
-    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n        \"x\": 0,\n        \"y\": 51\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(up{namespace=\\\"observability\\\"}) / count(up{namespace=\\\"observability\\\"}) * 100\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"percent\",\n          \"decimals\": 1,\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"red\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"orange\",\n                \"value\": 80\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 95\n              },\n              {\n                \"color\": \"green\",\n     \
-    \           \"value\": 99\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 62,\n      \"type\": \"stat\",\n      \"title\": \"Loki Flush Queue (Backlog)\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n        \"x\": 6,\n        \"y\": 51\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"description\": \"Number of chunks waiting to be written to storage. 0 is healthy.\",\n      \"targets\": [\n        {\n          \"expr\": \"max(loki_ingester_flush_queue_length{job=\\\"observability/loki\\\", namespace=\\\"observability\\\"})\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n  \
-    \      \"defaults\": {\n          \"unit\": \"short\",\n          \"decimals\": 0,\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 10\n              },\n              {\n                \"color\": \"orange\",\n                \"value\": 50\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 100\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 63,\n      \"type\": \"stat\",\n      \"title\": \"Prometheus WAL Fsync (Disk Health)\"\
-    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n        \"x\": 12,\n        \"y\": 51\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"description\": \"How long it takes to write to disk. <100ms is good, >1000ms indicates disk issues.\",\n      \"targets\": [\n        {\n          \"expr\": \"max(prometheus_tsdb_wal_fsync_duration_seconds{namespace=\\\"observability\\\", quantile=\\\"0.99\\\"}) * 1000\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"ms\",\n          \"decimals\": 0,\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 100\n              },\n              {\n                \"color\"\
-    : \"orange\",\n                \"value\": 500\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 1000\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": 64,\n      \"type\": \"stat\",\n      \"title\": \"Failed Prometheus Scrapes (Last 5m)\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 6,\n        \"x\": 18,\n        \"y\": 51\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"${datasource}\"\n      },\n      \"targets\": [\n        {\n          \"expr\": \"sum(increase(prometheus_target_scrapes_exceeded_sample_limit_total{job=\\\"kube-prometheus-stack-prometheus\\\", namespace=\\\"observability\\\"\
-    }[5m])) or vector(0)\",\n          \"refId\": \"A\"\n        }\n      ],\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"short\",\n          \"decimals\": 0,\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\": [\n              {\n                \"color\": \"green\",\n                \"value\": 0\n              },\n              {\n                \"color\": \"yellow\",\n                \"value\": 1\n              },\n              {\n                \"color\": \"red\",\n                \"value\": 10\n              }\n            ]\n          }\n        }\n      },\n      \"options\": {\n        \"colorMode\": \"background\",\n        \"graphMode\": \"area\",\n        \"textMode\": \"value\",\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        }\n      }\n    }\n  ],\n  \"uid\": \"observability-health\",\n  \"schemaVersion\": 39,\n  \"version\": 5\n}"
+  observability-health.json: |
+    {
+      "title": "\ud83d\udcca Observability Stack Health",
+      "description": "Monitor Prometheus, Loki, and Grafana health and performance",
+      "tags": [
+        "observability",
+        "prometheus",
+        "loki",
+        "grafana",
+        "health"
+      ],
+      "timezone": "browser",
+      "refresh": "1m",
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "hide": 0
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "\u2705 Stack Status",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "min(up{job=~\"kube-prometheus-stack-prometheus|observability/loki|grafana\", namespace=\"observability\"})",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "\u274c SERVICES DOWN",
+                      "color": "red"
+                    },
+                    "1": {
+                      "text": "\u2705 ALL HEALTHY",
+                      "color": "green"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "\u26a0\ufe0f Query Errors (Last 5m)",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", code=~\"5..\"}[5m])) or vector(0) + sum(increase(loki_request_duration_seconds_count{job=\"observability/loki\", namespace=\"observability\", status_code=~\"5..\"}[5m])) or vector(0) + sum(increase(grafana_api_response_status_total{job=\"grafana\", namespace=\"observability\", status_code=~\"5..\"}[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "mappings": [
+                {
+                  "type": "special",
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "0",
+                      "color": "green"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "orange",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 50
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "\ud83d\udcbe Loki Storage Free",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "(sum(kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) - sum(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"})) / sum(kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) * 100",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 1,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "orange",
+                    "value": 10
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "green",
+                    "value": 30
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "text": {
+              "valueSize": 32,
+              "titleSize": 16
+            },
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "\ud83d\udd50 Est. Days Until Loki Disk Full",
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "((sum(kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) - sum(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"})) / ((sum(delta(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}[24h])) / 86400) + 1)) / 86400",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "days",
+              "decimals": 0,
+              "noValue": "N/A",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "orange",
+                    "value": 7
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 30
+                  },
+                  {
+                    "color": "green",
+                    "value": 90
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "type": "row",
+          "id": 10,
+          "title": "\ud83d\udd0d Prometheus",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          },
+          "collapsed": false
+        },
+        {
+          "id": 11,
+          "type": "timeseries",
+          "title": "\ud83d\udcca Rate: Queries/sec",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 6
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/.*\"}[5m]))",
+              "legendFormat": "Queries/sec",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          }
+        },
+        {
+          "id": 12,
+          "type": "timeseries",
+          "title": "\u274c Errors: 5xx Error Rate",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 6
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(prometheus_http_request_duration_seconds_count{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", code=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "5xx errors/sec",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.1
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          }
+        },
+        {
+          "id": 13,
+          "type": "timeseries",
+          "title": "\u23f1\ufe0f Duration: Query Latency (p95)",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 6
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/query.*\"}[5m])))",
+              "legendFormat": "p95 latency",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(prometheus_http_request_duration_seconds_bucket{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\", handler=~\"/api/v1/query.*\"}[5m])))",
+              "legendFormat": "p50 latency",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "type": "row",
+          "id": 20,
+          "title": "\ud83d\udcdd Loki",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
+          "collapsed": false
+        },
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "\ud83d\udcca Rate: Log Ingestion Rate",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 15
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(loki_distributor_bytes_received_total{job=\"observability/loki\", namespace=\"observability\"}[5m])) / 1024 / 1024",
+              "legendFormat": "Ingestion MB/s",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "MBs",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          }
+        },
+        {
+          "id": 22,
+          "type": "timeseries",
+          "title": "\u274c Errors: 5xx Error Rate",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 15
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(loki_request_duration_seconds_count{job=\"observability/loki\", namespace=\"observability\", status_code=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "5xx errors/sec",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.1
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          }
+        },
+        {
+          "id": 23,
+          "type": "timeseries",
+          "title": "\u23f1\ufe0f Duration: Query Latency (p95)",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 15
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\"observability/loki\", namespace=\"observability\", route=~\"loki_api_v1_query.*\"}[5m])))",
+              "legendFormat": "p95 latency",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(loki_request_duration_seconds_bucket{job=\"observability/loki\", namespace=\"observability\", route=~\"loki_api_v1_query.*\"}[5m])))",
+              "legendFormat": "p50 latency",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "type": "row",
+          "id": 30,
+          "title": "\ud83c\udfa8 Grafana",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "collapsed": false
+        },
+        {
+          "id": 31,
+          "type": "timeseries",
+          "title": "\ud83d\udcca Rate: HTTP Requests/sec",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(grafana_http_request_duration_seconds_count{job=\"grafana\", namespace=\"observability\"}[5m]))",
+              "legendFormat": "Requests/sec",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          }
+        },
+        {
+          "id": 32,
+          "type": "timeseries",
+          "title": "\u274c Errors: 5xx Error Rate",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(grafana_api_response_status_total{job=\"grafana\", namespace=\"observability\", status_code=~\"5..\"}[5m])) or vector(0)",
+              "legendFormat": "5xx errors/sec",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.1
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          }
+        },
+        {
+          "id": 33,
+          "type": "timeseries",
+          "title": "\u23f1\ufe0f Duration: HTTP Response Time (p90)",
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 24
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.9, sum(rate(grafana_http_request_duration_seconds_bucket{job=\"grafana\", namespace=\"observability\"}[5m])) by (le))",
+              "legendFormat": "p90 latency",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.5, sum(rate(grafana_http_request_duration_seconds_bucket{job=\"grafana\", namespace=\"observability\"}[5m])) by (le))",
+              "legendFormat": "p50 latency",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 3
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "type": "row",
+          "id": 40,
+          "title": "\ud83d\udcbe Storage Capacity",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 32
+          },
+          "collapsed": false
+        },
+        {
+          "id": 41,
+          "type": "timeseries",
+          "title": "Prometheus Storage Usage",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 33
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "max(prometheus_tsdb_storage_blocks_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Storage Used (GB)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "gbytes",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "lineInterpolation": "smooth"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 42,
+          "type": "timeseries",
+          "title": "Loki Storage Usage & Capacity",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 33
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(kubelet_volume_stats_used_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Used (GB)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(kubelet_volume_stats_capacity_bytes{namespace=\"observability\", persistentvolumeclaim=~\".*loki.*\"}) / 1024 / 1024 / 1024",
+              "legendFormat": "Capacity (GB)",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "gbytes",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "lineInterpolation": "smooth"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Capacity (GB)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.lineStyle",
+                    "value": {
+                      "fill": "dash"
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "type": "row",
+          "id": 50,
+          "title": "\ud83d\udcc8 Resource Usage",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 41
+          },
+          "collapsed": false
+        },
+        {
+          "id": 51,
+          "type": "timeseries",
+          "title": "CPU Usage by Service",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 42
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m]) * 100",
+              "legendFormat": "Prometheus",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"observability\", container=\"loki\"}[5m]) * 100",
+              "legendFormat": "Loki",
+              "refId": "B"
+            },
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"observability\", container=\"grafana\"}[5m]) * 100",
+              "legendFormat": "Grafana",
+              "refId": "C"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "lineInterpolation": "smooth"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 52,
+          "type": "timeseries",
+          "title": "Memory Usage by Service",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 42
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "process_resident_memory_bytes{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"} / 1024 / 1024",
+              "legendFormat": "Prometheus (MB)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"loki\"}) / 1024 / 1024",
+              "legendFormat": "Loki (MB)",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"observability\", container=\"grafana\"}) / 1024 / 1024",
+              "legendFormat": "Grafana (MB)",
+              "refId": "C"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decmbytes",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "lineInterpolation": "smooth"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "type": "row",
+          "id": 60,
+          "title": "\ud83d\udea8 Data Quality",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 50
+          },
+          "collapsed": false
+        },
+        {
+          "id": 61,
+          "type": "stat",
+          "title": "Prometheus Scrape Success Rate",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 51
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(up{namespace=\"observability\"}) / count(up{namespace=\"observability\"}) * 100",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "orange",
+                    "value": 80
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 95
+                  },
+                  {
+                    "color": "green",
+                    "value": 99
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 62,
+          "type": "stat",
+          "title": "Loki Flush Queue (Backlog)",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 51
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Number of chunks waiting to be written to storage. 0 is healthy.",
+          "targets": [
+            {
+              "expr": "max(loki_ingester_flush_queue_length{job=\"observability/loki\", namespace=\"observability\"})",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "orange",
+                    "value": 50
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 63,
+          "type": "stat",
+          "title": "Prometheus WAL Fsync (Disk Health)",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 51
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "How long it takes to write to disk. <100ms is good, >1000ms indicates disk issues.",
+          "targets": [
+            {
+              "expr": "max(prometheus_tsdb_wal_fsync_duration_seconds{namespace=\"observability\", quantile=\"0.99\"}) * 1000",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 100
+                  },
+                  {
+                    "color": "orange",
+                    "value": 500
+                  },
+                  {
+                    "color": "red",
+                    "value": 1000
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "id": 64,
+          "type": "stat",
+          "title": "Failed Prometheus Scrapes (Last 5m)",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 51
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(prometheus_target_scrapes_exceeded_sample_limit_total{job=\"kube-prometheus-stack-prometheus\", namespace=\"observability\"}[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        }
+      ],
+      "uid": "observability-health",
+      "schemaVersion": 39,
+      "version": 5
+    }
