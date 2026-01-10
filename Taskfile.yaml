@@ -297,11 +297,7 @@ tasks:
       ANSIBLE_CFG: '{{.ANSIBLE_CFG | default "k3s-ansible/ansible.cfg"}}'
     cmds:
       - |
-        if [ "{{.GROUP}}" != "master" ] && [ "{{.GROUP}}" != "node" ] && [ "{{.GROUP}}" != "all" ]; then
-          echo "Invalid group: {{.GROUP}}. Group must be 'master', 'node', or 'all'"
-          exit 1
-        fi
-        echo "Provisioning k3s cluster on {{.GROUP}} nodes..."
+        echo "Provisioning k3s cluster on {{.GROUP}}..."
 
         # Always export ANSIBLE_CONFIG - either home config or custom
         export ANSIBLE_CONFIG="{{.ANSIBLE_CFG}}"
@@ -335,11 +331,7 @@ tasks:
       GROUP: '{{.GROUP | default "all"}}'
     cmds:
       - |
-        if [ "{{.GROUP}}" != "master" ] && [ "{{.GROUP}}" != "node" ] && [ "{{.GROUP}}" != "all" ]; then
-          echo "Invalid group: {{.GROUP}}. Group must be 'master', 'node', or 'all'"
-          exit 1
-        fi
-        echo "Resetting k3s cluster on {{.GROUP}} nodes..."
+        echo "Resetting k3s cluster on {{.GROUP}}..."
         ansible-playbook "{{.K3S_ANSIBLE_DIR}}/reset.yml" \
           -i "{{.INVENTORY}}" \
           --limit {{.GROUP}}
