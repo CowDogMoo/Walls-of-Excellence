@@ -91,7 +91,7 @@ data:
           "id": 0,
           "type": "text",
           "title": "",
-          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 2 },
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
           "options": {
             "mode": "markdown",
             "content": "Explore logs from home automation services. Filter by app, pod, or container. Separate panels for Errors, Warnings, and All logs."
@@ -101,7 +101,7 @@ data:
           "id": 1,
           "title": "Total Log Entries",
           "type": "stat",
-          "gridPos": { "x": 0, "y": 2, "w": 6, "h": 4 },
+          "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} [$__range]))",
@@ -131,7 +131,7 @@ data:
           "id": 2,
           "title": "Errors (Last Hour)",
           "type": "stat",
-          "gridPos": { "x": 6, "y": 2, "w": 6, "h": 4 },
+          "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(error|exception|fatal)` [1h]))",
@@ -170,7 +170,7 @@ data:
           "id": 3,
           "title": "Warnings (Last Hour)",
           "type": "stat",
-          "gridPos": { "x": 12, "y": 2, "w": 6, "h": 4 },
+          "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(warn|warning)` [1h]))",
@@ -208,7 +208,7 @@ data:
           "id": 4,
           "title": "Active Services",
           "type": "stat",
-          "gridPos": { "x": 18, "y": 2, "w": 6, "h": 4 },
+          "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
           "targets": [
             {
               "expr": "count(sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [5m])))",
@@ -238,7 +238,7 @@ data:
           "id": 5,
           "title": "Log Volume by Service",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 5, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} [5m]))",
@@ -279,7 +279,7 @@ data:
           "id": 6,
           "title": "Top Log Sources",
           "type": "bargauge",
-          "gridPos": { "x": 0, "y": 14, "w": 8, "h": 8 },
+          "gridPos": { "x": 0, "y": 13, "w": 8, "h": 8 },
           "targets": [
             {
               "expr": "topk(10, sum by (app_name) (count_over_time({namespace=\"home-automation\", app_name=~\"$app\"} [$__range])))",
@@ -305,7 +305,7 @@ data:
           "id": 7,
           "title": "Error & Warning Trends",
           "type": "timeseries",
-          "gridPos": { "x": 8, "y": 14, "w": 16, "h": 8 },
+          "gridPos": { "x": 8, "y": 13, "w": 16, "h": 8 },
           "targets": [
             {
               "expr": "sum(count_over_time({namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\"} |~ `(?i)(error|exception|fatal)` [5m]))",
@@ -357,7 +357,7 @@ data:
           "id": 8,
           "title": "Error Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 22, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 21, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(error|exception|fatal)`",
@@ -380,7 +380,7 @@ data:
           "id": 11,
           "title": "Warning Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 30, "w": 24, "h": 8 },
+          "gridPos": { "x": 0, "y": 29, "w": 24, "h": 8 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"} |~ `(?i)(warn|warning)`",
@@ -403,7 +403,7 @@ data:
           "id": 12,
           "title": "All Logs",
           "type": "logs",
-          "gridPos": { "x": 0, "y": 38, "w": 24, "h": 12 },
+          "gridPos": { "x": 0, "y": 37, "w": 24, "h": 12 },
           "targets": [
             {
               "expr": "{namespace=\"home-automation\", app_name=~\"$app\", pod=~\"$pod\", container=~\"$container\"}",
