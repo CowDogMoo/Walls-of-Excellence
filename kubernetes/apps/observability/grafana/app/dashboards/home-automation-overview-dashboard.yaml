@@ -61,20 +61,10 @@ data:
       },
       "panels": [
         {
-          "id": 1,
-          "type": "text",
-          "title": "",
-          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
-          "options": {
-            "mode": "markdown",
-            "content": "Monitor health and resource usage of Home Assistant, Grocy, Mosquitto, Music Assistant, and Actions Runner."
-          }
-        },
-        {
           "id": 2,
           "type": "stat",
           "title": "Services Running",
-          "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -108,7 +98,7 @@ data:
           "id": 3,
           "type": "stat",
           "title": "Pods Ready",
-          "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -142,7 +132,7 @@ data:
           "id": 4,
           "type": "stat",
           "title": "Total Restarts (24h)",
-          "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
+          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -177,7 +167,7 @@ data:
           "id": 5,
           "type": "stat",
           "title": "Errors (1h)",
-          "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
@@ -212,7 +202,7 @@ data:
           "id": 6,
           "type": "timeseries",
           "title": "CPU Usage by Service",
-          "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -249,7 +239,7 @@ data:
           "id": 7,
           "type": "timeseries",
           "title": "Memory Usage by Service",
-          "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 },
+          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -286,7 +276,7 @@ data:
           "id": 8,
           "type": "timeseries",
           "title": "Pod Restarts",
-          "gridPos": { "x": 0, "y": 13, "w": 12, "h": 6 },
+          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -323,7 +313,7 @@ data:
           "id": 9,
           "type": "bargauge",
           "title": "Storage Usage",
-          "gridPos": { "x": 12, "y": 13, "w": 12, "h": 6 },
+          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
@@ -360,7 +350,7 @@ data:
           "id": 10,
           "type": "timeseries",
           "title": "Log Volume by Service",
-          "gridPos": { "x": 0, "y": 19, "w": 12, "h": 6 },
+          "gridPos": { "x": 0, "y": 18, "w": 12, "h": 6 },
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
@@ -397,7 +387,7 @@ data:
           "id": 11,
           "type": "logs",
           "title": "Recent Errors",
-          "gridPos": { "x": 12, "y": 19, "w": 12, "h": 6 },
+          "gridPos": { "x": 12, "y": 18, "w": 12, "h": 6 },
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
@@ -419,7 +409,7 @@ data:
           "id": 12,
           "type": "table",
           "title": "Service Status",
-          "gridPos": { "x": 0, "y": 25, "w": 24, "h": 6 },
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 6 },
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
           "targets": [
             {
