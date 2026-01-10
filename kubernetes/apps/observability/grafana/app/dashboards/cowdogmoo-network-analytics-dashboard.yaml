@@ -751,6 +751,101 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 }
         },
         {
+          "id": 25,
+          "title": "Top Disconnecting Devices",
+          "type": "piechart",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (device) (count_over_time({source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<device> disconnected from <_>` | device != \"\" [1h])))",
+              "legendFormat": "{{device}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.device}",
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "pieType": "donut",
+            "displayLabels": ["name", "value"],
+            "legendDisplayMode": "table",
+            "legendPlacement": "right",
+            "legendValues": ["value", "percent"],
+            "tooltip": {
+              "displayMode": "single"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 }
+        },
+        {
+          "id": 26,
+          "title": "Disconnects by Access Point",
+          "type": "bargauge",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (ap) (count_over_time({source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<_>Last Connected To: <ap> at <_>` | ap != \"\" [1h]))",
+              "legendFormat": "{{ap}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 5 },
+                  { "color": "orange", "value": 15 },
+                  { "color": "red", "value": 30 }
+                ]
+              },
+              "unit": "short",
+              "displayName": "${__field.labels.ap}"
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 }
+        },
+        {
+          "id": 27,
+          "title": "Recent WiFi Issues",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<device> disconnected from <network>. Time Connected: <duration>. <_>Last Connected To: <ap> at <signal>.` | line_format `[{{.signal}}] {{.device}} on {{.network}} via {{.ap}} (connected {{.duration}})`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "maxLines": 50
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
+        },
+        {
           "id": 19,
           "title": "Recent Multicast Relay Events",
           "type": "logs",
@@ -772,7 +867,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
         },
         {
           "id": 20,
@@ -796,7 +891,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 80 }
         },
         {
           "id": 22,
@@ -820,7 +915,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 88 }
         },
         {
           "id": 21,
@@ -844,7 +939,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 20
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 80 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 96 }
         }
       ]
     }
