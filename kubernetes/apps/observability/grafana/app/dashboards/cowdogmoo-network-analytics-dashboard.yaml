@@ -557,7 +557,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" |~ \"DPT=(5353|1900|10001)\" [5m])) * 60",
+              "expr": "sum(rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" |~ \"DPT=(5353|1900|10001)[^0-9]\" [5m])) * 60",
               "legendFormat": "Discovery Ports Blocked/min",
               "refId": "A"
             }
