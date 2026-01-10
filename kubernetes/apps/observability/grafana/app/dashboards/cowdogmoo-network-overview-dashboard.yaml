@@ -1,0 +1,525 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cowdogmoo-network-overview
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Network"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  cowdogmoo-network-overview.json: |
+    {
+      "uid": "cowdogmoo-network-overview",
+      "title": "CowDogMoo Network - Overview",
+      "tags": ["network", "unifi", "overview"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "5m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": true,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Firewall",
+          "tooltip": "Investigate firewall blocks and security events",
+          "type": "link",
+          "url": "/d/cowdogmoo-network-firewall/cowdogmoo-network-firewall"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": true,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "WiFi",
+          "tooltip": "Troubleshoot client connectivity and roaming issues",
+          "type": "link",
+          "url": "/d/cowdogmoo-network-wifi/cowdogmoo-network-wifi"
+        }
+      ],
+      "panels": [
+        {
+          "id": 100,
+          "title": "Dashboard Purpose",
+          "type": "text",
+          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+          "options": {
+            "mode": "markdown",
+            "content": "**At-a-glance health status for all network systems.** Use the links above to drill down into Firewall or WiFi details."
+          }
+        },
+        {
+          "id": 4,
+          "title": "Total Log Events",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} [5m])) * 60",
+              "legendFormat": "Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 100 },
+                  { "color": "red", "value": 500 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 2 }
+        },
+        {
+          "id": 5,
+          "title": "Error Events",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |~ \"(?i)error|fail|warning\" [5m])) * 60",
+              "legendFormat": "Errors/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 10 },
+                  { "color": "red", "value": 50 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 2
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 2 }
+        },
+        {
+          "id": 2,
+          "title": "Firewall Blocks",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" [5m])) * 60",
+              "legendFormat": "Blocks/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 10 },
+                  { "color": "red", "value": 50 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 2 }
+        },
+        {
+          "id": 6,
+          "title": "WiFi Events",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |~ \"device_event_class_id.*40[01]\" [5m])) * 60",
+              "legendFormat": "WiFi Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 5 },
+                  { "color": "red", "value": 20 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 2
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 2 }
+        },
+        {
+          "id": 1,
+          "title": "SSDP Multicast Relay",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[SSDP]\" [5m])) * 60",
+              "legendFormat": "SSDP Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "green", "value": 5 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1,
+              "mappings": [
+                {
+                  "type": "special",
+                  "options": {
+                    "match": "null",
+                    "result": { "text": "No Activity", "color": "red" }
+                  }
+                }
+              ]
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 }
+        },
+        {
+          "id": 3,
+          "title": "mDNS Relay",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[mDNS]\" [5m])) * 60",
+              "legendFormat": "mDNS Events/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "yellow", "value": 1 },
+                  { "color": "green", "value": 5 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 }
+        },
+        {
+          "id": 7,
+          "title": "WiFi Roaming Events",
+          "type": "stat",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\", event_type=\"unifi_event\"} |~ \"roam\" [5m])) * 60",
+              "legendFormat": "Roams/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 5 },
+                  { "color": "red", "value": 15 }
+                ]
+              },
+              "unit": "short",
+              "decimals": 1
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "textMode": "value_and_name"
+          },
+          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 6 }
+        },
+        {
+          "id": 10,
+          "title": "Events by Syslog Severity",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (syslog_sev) (rate({source=\"unifi\"} | json | line_format \"{{.syslog_severity}}\" | pattern `<syslog_sev>` | syslog_sev != \"\" [5m]))",
+              "legendFormat": "{{syslog_sev}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "unit": "ops",
+              "decimals": 3
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": ["lastNotNull", "mean"]
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 }
+        },
+        {
+          "id": 11,
+          "title": "Events by Type",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (event_type) (rate({source=\"unifi\"} [5m]))",
+              "legendFormat": "{{event_type}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "unit": "ops",
+              "decimals": 3
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 }
+        },
+        {
+          "id": 8,
+          "title": "Multicast Relay Activity",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[SSDP]\" [1m]))",
+              "legendFormat": "SSDP Relay",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate({source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\" |= \"[mDNS]\" [1m]))",
+              "legendFormat": "mDNS Relay",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "unit": "ops",
+              "decimals": 3
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": ["lastNotNull", "mean"]
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 }
+        },
+        {
+          "id": 17,
+          "title": "Errors by Syslog Severity",
+          "type": "bargauge",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (syslog_sev) (count_over_time({source=\"unifi\"} |~ \"(?i)error|fail|warning\" | json | line_format \"{{.syslog_severity}}\" | pattern `<syslog_sev>` | syslog_sev != \"\" [30m]))",
+              "legendFormat": "{{syslog_sev}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 10 },
+                  { "color": "orange", "value": 50 },
+                  { "color": "red", "value": 100 }
+                ]
+              },
+              "unit": "short",
+              "displayName": "${__field.labels.syslog_sev}"
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 }
+        },
+        {
+          "id": 19,
+          "title": "Recent Multicast Relay Events",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{source=\"unifi\"} |= \"/data/scripts/multicast-relay.py\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "numbers",
+            "sortOrder": "Descending",
+            "maxLines": 50
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 }
+        },
+        {
+          "id": 22,
+          "title": "Recent System Events",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{source=\"unifi\"} |~ \"(?i)error|fail|warning\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "numbers",
+            "sortOrder": "Descending",
+            "maxLines": 50
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 }
+        }
+      ]
+    }

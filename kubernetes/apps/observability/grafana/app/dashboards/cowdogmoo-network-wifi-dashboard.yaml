@@ -1,0 +1,201 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cowdogmoo-network-wifi
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Network"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  cowdogmoo-network-wifi.json: |
+    {
+      "uid": "cowdogmoo-network-wifi",
+      "title": "CowDogMoo Network - WiFi",
+      "tags": ["network", "wifi", "unifi", "wireless"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "5m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": true,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Overview",
+          "tooltip": "Back to Network Overview",
+          "type": "link",
+          "url": "/d/cowdogmoo-network-overview/cowdogmoo-network-overview"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": true,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Firewall",
+          "tooltip": "Investigate firewall blocks and security events",
+          "type": "link",
+          "url": "/d/cowdogmoo-network-firewall/cowdogmoo-network-firewall"
+        }
+      ],
+      "panels": [
+        {
+          "id": 100,
+          "title": "Dashboard Purpose",
+          "type": "text",
+          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+          "options": {
+            "mode": "markdown",
+            "content": "**Troubleshoot client connectivity and roaming issues.** This dashboard shows WiFi connect/disconnect events, roaming patterns, and problematic devices or access points."
+          }
+        },
+        {
+          "id": 18,
+          "title": "WiFi Events (Connect/Disconnect)",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(rate({source=\"unifi\"} |~ \"device_event_class_id.*400\" [5m]))",
+              "legendFormat": "WiFi Connects",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate({source=\"unifi\"} |~ \"device_event_class_id.*401\" [5m]))",
+              "legendFormat": "WiFi Disconnects",
+              "refId": "B"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "gradientMode": "opacity"
+              },
+              "unit": "ops"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 2 }
+        },
+        {
+          "id": 25,
+          "title": "Top Disconnecting Devices",
+          "type": "piechart",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (wifi_client) (count_over_time({source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<wifi_client> disconnected from <_>` | wifi_client != \"\" [1h])))",
+              "legendFormat": "{{wifi_client}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.wifi_client}",
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "pieType": "donut",
+            "displayLabels": ["name", "value"],
+            "legendDisplayMode": "table",
+            "legendPlacement": "right",
+            "legendValues": ["value", "percent"],
+            "tooltip": {
+              "displayMode": "single"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 }
+        },
+        {
+          "id": 26,
+          "title": "Disconnects by Access Point",
+          "type": "bargauge",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (ap) (count_over_time({source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<_>Last Connected To: <ap> at <_>` | ap != \"\" [1h]))",
+              "legendFormat": "{{ap}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 5 },
+                  { "color": "orange", "value": 15 },
+                  { "color": "red", "value": 30 }
+                ]
+              },
+              "unit": "short",
+              "displayName": "${__field.labels.ap}"
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "text": {
+              "titleSize": 12,
+              "valueSize": 14
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 }
+        },
+        {
+          "id": 27,
+          "title": "Recent WiFi Issues",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<wifi_client> disconnected from <network>. Time Connected: <duration>. <_>Last Connected To: <ap> at <signal>.` | line_format `[{{.signal}}] {{.wifi_client}} on {{.network}} via {{.ap}} (connected {{.duration}})`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "maxLines": 50
+          },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 18 }
+        }
+      ]
+    }
