@@ -28,11 +28,25 @@ data:
       },
       "links": [
         {
-          "title": "Home Automation Logs",
+          "title": "Logs & Debugging",
           "type": "link",
           "url": "/d/home-automation-logs-overview",
           "icon": "doc",
           "tooltip": "View detailed logs and debugging"
+        },
+        {
+          "title": "Shade Operations",
+          "type": "link",
+          "url": "/d/throwingshade-operations",
+          "icon": "dashboard",
+          "tooltip": "Monitor shade operations and room activity"
+        },
+        {
+          "title": "Troy Backup",
+          "type": "link",
+          "url": "/d/troy-backup-monitoring",
+          "icon": "database",
+          "tooltip": "Monitor backup job execution"
         }
       ],
       "templating": {
@@ -53,7 +67,7 @@ data:
           "gridPos": { "x": 0, "y": 0, "w": 24, "h": 2 },
           "options": {
             "mode": "markdown",
-            "content": "## Home Automation Overview\nMonitor the health and resource usage of all home automation services: Home Assistant, Grocy, Mosquitto (MQTT), Music Assistant, and Actions Runner."
+            "content": "Monitor health and resource usage of Home Assistant, Grocy, Mosquitto, Music Assistant, and Actions Runner."
           }
         },
         {

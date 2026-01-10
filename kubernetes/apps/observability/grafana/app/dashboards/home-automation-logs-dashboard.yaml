@@ -94,7 +94,7 @@ data:
           "gridPos": { "x": 0, "y": 0, "w": 24, "h": 2 },
           "options": {
             "mode": "markdown",
-            "content": "## Home Automation Logs & Debugging\nExplore logs from all home automation services. Use the dropdowns above to filter by application, pod, or container. Separate panels show Error, Warning, and All logs for quick triage."
+            "content": "Explore logs from home automation services. Filter by app, pod, or container. Separate panels for Errors, Warnings, and All logs."
           }
         },
         {
