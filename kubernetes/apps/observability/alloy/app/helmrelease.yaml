@@ -28,9 +28,13 @@ spec:
       configMap:
         create: true
         content: |
-          // Kubernetes pod discovery
+          // Kubernetes pod discovery - filter to local node only (critical for DaemonSet)
           discovery.kubernetes "pods" {
             role = "pod"
+            selectors {
+              role  = "pod"
+              field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
+            }
           }
 
           // Relabel pods to add metadata
