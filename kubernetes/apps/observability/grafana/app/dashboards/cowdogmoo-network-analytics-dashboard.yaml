@@ -757,14 +757,14 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(10, sum by (device) (count_over_time({source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<device> disconnected from <_>` | device != \"\" [1h])))",
-              "legendFormat": "{{device}}",
+              "expr": "topk(10, sum by (wifi_client) (count_over_time({source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<wifi_client> disconnected from <_>` | wifi_client != \"\" [1h])))",
+              "legendFormat": "{{wifi_client}}",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "displayName": "${__field.labels.device}",
+              "displayName": "${__field.labels.wifi_client}",
               "mappings": [],
               "unit": "short"
             },
@@ -828,7 +828,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<device> disconnected from <network>. Time Connected: <duration>. <_>Last Connected To: <ap> at <signal>.` | line_format `[{{.signal}}] {{.device}} on {{.network}} via {{.ap}} (connected {{.duration}})`",
+              "expr": "{source=\"unifi\", event_type=\"wifi_disconnect\"} | json | line_format \"{{.msg}}\" | pattern `<wifi_client> disconnected from <network>. Time Connected: <duration>. <_>Last Connected To: <ap> at <signal>.` | line_format `[{{.signal}}] {{.wifi_client}} on {{.network}} via {{.ap}} (connected {{.duration}})`",
               "refId": "A"
             }
           ],
