@@ -51,16 +51,6 @@ data:
       ],
       "panels": [
         {
-          "id": 100,
-          "title": "Dashboard Purpose",
-          "type": "text",
-          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-          "options": {
-            "mode": "markdown",
-            "content": "**Investigate firewall blocks and security events.** This dashboard shows blocked traffic, source/destination analysis, and VLAN traffic flows."
-          }
-        },
-        {
           "id": 16,
           "title": "mDNS/UPnP Discovery Status - Ports 5353, 1900, 10001",
           "type": "stat",
@@ -115,7 +105,7 @@ data:
               "calcs": ["lastNotNull"]
             }
           },
-          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 2 }
+          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 }
         },
         {
           "id": 9,
@@ -156,7 +146,7 @@ data:
               "calcs": ["lastNotNull", "sum"]
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
         },
         {
           "id": 23,
@@ -197,7 +187,7 @@ data:
               "calcs": ["lastNotNull", "sum"]
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
         },
         {
           "id": 12,
@@ -229,7 +219,7 @@ data:
               "displayMode": "single"
             }
           },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 }
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 }
         },
         {
           "id": 13,
@@ -261,7 +251,7 @@ data:
               "displayMode": "single"
             }
           },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 }
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 }
         },
         {
           "id": 24,
@@ -293,7 +283,7 @@ data:
               "displayMode": "single"
             }
           },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 }
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 12 }
         },
         {
           "id": 14,
@@ -332,7 +322,7 @@ data:
               "valueSize": 14
             }
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 }
         },
         {
           "id": 20,
@@ -356,7 +346,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 30 }
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 28 }
         }
       ]
     }

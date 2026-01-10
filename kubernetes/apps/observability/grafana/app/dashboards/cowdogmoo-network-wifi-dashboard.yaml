@@ -51,16 +51,6 @@ data:
       ],
       "panels": [
         {
-          "id": 100,
-          "title": "Dashboard Purpose",
-          "type": "text",
-          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-          "options": {
-            "mode": "markdown",
-            "content": "**Troubleshoot client connectivity and roaming issues.** This dashboard shows WiFi connect/disconnect events, roaming patterns, and problematic devices or access points."
-          }
-        },
-        {
           "id": 18,
           "title": "WiFi Events (Connect/Disconnect)",
           "type": "timeseries",
@@ -100,7 +90,7 @@ data:
               "placement": "bottom"
             }
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 2 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 }
         },
         {
           "id": 25,
@@ -132,7 +122,7 @@ data:
               "displayMode": "single"
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
         },
         {
           "id": 26,
@@ -171,7 +161,7 @@ data:
               "valueSize": 14
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
         },
         {
           "id": 27,
@@ -195,7 +185,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 50
           },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 18 }
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 }
         }
       ]
     }

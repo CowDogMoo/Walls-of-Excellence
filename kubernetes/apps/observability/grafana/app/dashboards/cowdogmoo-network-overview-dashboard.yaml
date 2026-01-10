@@ -51,16 +51,6 @@ data:
       ],
       "panels": [
         {
-          "id": 100,
-          "title": "Dashboard Purpose",
-          "type": "text",
-          "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-          "options": {
-            "mode": "markdown",
-            "content": "**At-a-glance health status for all network systems.** Use the links above to drill down into Firewall or WiFi details."
-          }
-        },
-        {
           "id": 4,
           "title": "Total Log Events",
           "type": "stat",
@@ -92,7 +82,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 2 }
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
         },
         {
           "id": 5,
@@ -126,7 +116,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 2 }
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
         },
         {
           "id": 2,
@@ -160,7 +150,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 2 }
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
         },
         {
           "id": 6,
@@ -194,7 +184,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 2 }
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
         },
         {
           "id": 1,
@@ -237,7 +227,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 }
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 }
         },
         {
           "id": 3,
@@ -271,7 +261,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 }
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 4 }
         },
         {
           "id": 7,
@@ -305,7 +295,7 @@ data:
             "justifyMode": "center",
             "textMode": "value_and_name"
           },
-          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 6 }
+          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 }
         },
         {
           "id": 10,
@@ -346,7 +336,7 @@ data:
               "calcs": ["lastNotNull", "mean"]
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
         },
         {
           "id": 11,
@@ -386,7 +376,7 @@ data:
               "placement": "bottom"
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
         },
         {
           "id": 8,
@@ -432,7 +422,7 @@ data:
               "calcs": ["lastNotNull", "mean"]
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
         },
         {
           "id": 17,
@@ -471,7 +461,7 @@ data:
               "valueSize": 14
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
         },
         {
           "id": 19,
@@ -495,7 +485,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 50
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }
         },
         {
           "id": 22,
@@ -519,7 +509,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 50
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 }
         }
       ]
     }
