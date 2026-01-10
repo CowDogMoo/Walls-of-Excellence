@@ -22,14 +22,14 @@ spec:
 
         - alert: SynologyCertSyncJobNotRunning
           expr: |
-            time() - kube_cronjob_status_last_schedule_time{cronjob="synology-cert-sync",namespace="cert-manager"} > 90000
+            time() - kube_cronjob_status_last_successful_time{cronjob="synology-cert-sync",namespace="cert-manager"} > 90000
           for: 10m
           labels:
             severity: warning
             category: certificates
           annotations:
             summary: "Synology certificate sync has not run recently"
-            description: "The Synology certificate sync CronJob has not run successfully in over 25 hours. Last run was {{ $value | humanizeDuration }} ago."
+            description: "The Synology certificate sync CronJob has not completed successfully in over 25 hours. Last successful run was {{ $value | humanizeDuration }} ago."
 
         - alert: SynologyCertSyncJobStuck
           expr: |
