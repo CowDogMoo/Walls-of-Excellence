@@ -221,13 +221,13 @@ data:
         },
         {
           "id": 7,
-          "title": "🏠 Active Access Points",
+          "title": "🔀 WiFi Roaming Events",
           "type": "stat",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "count(rate({source=\"unifi\"} [5m]))",
-              "legendFormat": "Access Points",
+              "expr": "sum(rate({source=\"unifi\", event_type=\"unifi_event\"} |~ \"roam\" [5m])) * 60",
+              "legendFormat": "Roams/min",
               "refId": "A"
             }
           ],
@@ -236,13 +236,13 @@ data:
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "red", "value": 0 },
-                  { "color": "yellow", "value": 1 },
-                  { "color": "green", "value": 2 }
+                  { "color": "green", "value": 0 },
+                  { "color": "yellow", "value": 5 },
+                  { "color": "red", "value": 15 }
                 ]
               },
               "unit": "short",
-              "decimals": 0
+              "decimals": 1
             }
           },
           "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 }
@@ -341,8 +341,8 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} [5m]))",
-              "legendFormat": "{{syslog_severity}}",
+              "expr": "sum by (severity) (rate({source=\"unifi\"} [5m]))",
+              "legendFormat": "{{severity}}",
               "refId": "A"
             }
           ],
@@ -377,13 +377,13 @@ data:
         },
         {
           "id": 11,
-          "title": "Events by Access Point",
+          "title": "Events by Type",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} [5m]))",
-              "legendFormat": "{{syslog_hostname}}",
+              "expr": "sum by (event_type) (rate({source=\"unifi\"} [5m]))",
+              "legendFormat": "{{event_type}}",
               "refId": "A"
             }
           ],
@@ -519,6 +519,79 @@ data:
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 }
         },
         {
+          "id": 23,
+          "title": "VLAN Traffic Flow (Blocked)",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (in_iface, out_iface) (rate({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `IN=(?P<in_iface>\\w+) OUT=(?P<out_iface>\\w+)` [1m]))",
+              "legendFormat": "{{in_iface}} → {{out_iface}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "spanNulls": false,
+                "showPoints": "never"
+              },
+              "unit": "ops",
+              "decimals": 3
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": ["lastNotNull", "sum"]
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 }
+        },
+        {
+          "id": 24,
+          "title": "Firewall Rules Triggered",
+          "type": "piechart",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (rule) (count_over_time({source=\"unifi\"} |= \"FIREWALL_RULE\" |= \"DROP\" | regexp `DROP FIREWALL_RULE (?P<rule>[\\w-]+) IN=` [30m])))",
+              "legendFormat": "{{rule}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "displayName": "${__field.labels.rule}",
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "pieType": "donut",
+            "displayLabels": ["name", "percent"],
+            "legendDisplayMode": "table",
+            "legendPlacement": "right",
+            "legendValues": ["value", "percent"],
+            "tooltip": {
+              "displayMode": "single"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 }
+        },
+        {
           "id": 15,
           "title": "Events by Host IP",
           "type": "piechart",
@@ -548,7 +621,7 @@ data:
               "displayMode": "single"
             }
           },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 }
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 }
         },
         {
           "id": 16,
@@ -605,17 +678,17 @@ data:
               "calcs": ["lastNotNull"]
             }
           },
-          "gridPos": { "h": 8, "w": 16, "x": 8, "y": 32 }
+          "gridPos": { "h": 8, "w": 16, "x": 8, "y": 40 }
         },
         {
           "id": 17,
-          "title": "Error Messages by Type",
+          "title": "Errors by Severity",
           "type": "bargauge",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({source=\"unifi\"} |~ \"(?i)error|fail|warning\" [30m]))",
-              "legendFormat": "{{syslog_hostname}}",
+              "expr": "sum by (severity) (count_over_time({source=\"unifi\"} |~ \"(?i)error|fail|warning\" [30m]))",
+              "legendFormat": "{{severity}}",
               "refId": "A"
             }
           ],
@@ -631,7 +704,7 @@ data:
                 ]
               },
               "unit": "short",
-              "displayName": "${__field.labels.syslog_hostname}"
+              "displayName": "${__field.labels.severity}"
             },
             "overrides": []
           },
@@ -644,7 +717,7 @@ data:
               "valueSize": 14
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 }
         },
         {
           "id": 18,
@@ -675,7 +748,7 @@ data:
               "unit": "ops"
             }
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 }
         },
         {
           "id": 19,
@@ -699,7 +772,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 }
         },
         {
           "id": 20,
@@ -723,7 +796,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 56 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
         },
         {
           "id": 22,
@@ -747,7 +820,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 100
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 64 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
         },
         {
           "id": 21,
@@ -771,7 +844,7 @@ data:
             "sortOrder": "Descending",
             "maxLines": 20
           },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 80 }
         }
       ]
     }
