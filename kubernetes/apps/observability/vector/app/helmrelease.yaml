@@ -330,3 +330,9 @@ spec:
             subcategory: "{{`{{ unifi_subcategory }}`}}"
             severity: "{{`{{ severity }}`}}"
           out_of_order_action: "accept"
+    resources:
+      requests:
+        cpu: 163m
+        memory: 104Mi
+      limits:
+        memory: 200Mi

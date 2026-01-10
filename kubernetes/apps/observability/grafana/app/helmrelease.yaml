@@ -253,10 +253,10 @@ spec:
 
     resources:
       requests:
-        cpu: 109m
-        memory: 380Mi
+        cpu: 182m
+        memory: 454Mi
       limits:
-        memory: 380Mi
+        memory: 600Mi
 
     topologySpreadConstraints:
       - maxSkew: 1

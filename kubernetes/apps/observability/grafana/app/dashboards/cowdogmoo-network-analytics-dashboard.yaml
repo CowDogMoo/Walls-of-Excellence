@@ -18,7 +18,11 @@ data:
       "timezone": "browser",
       "schemaVersion": 39,
       "version": 2,
-      "refresh": "30s",
+      "refresh": "5m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
       "panels": [
         {
           "id": 1,
@@ -166,7 +170,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | syslog_severity=\"err\" or syslog_severity=\"warning\" [5m])) * 60",
+              "expr": "sum(rate({source=\"unifi\"} |~ \"(?i)error|fail|warning\" [5m])) * 60",
               "legendFormat": "Errors/min",
               "refId": "A"
             }
@@ -194,7 +198,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id=~\"40[0-1]\" [5m])) * 60",
+              "expr": "sum(rate({source=\"unifi\"} |~ \"device_event_class_id.*40[01]\" [5m])) * 60",
               "legendFormat": "WiFi Events/min",
               "refId": "A"
             }
@@ -222,7 +226,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "count(count by (syslog_hostname) (rate({source=\"unifi\"} | json | syslog_hostname != \"\" [5m])))",
+              "expr": "count(rate({source=\"unifi\"} [5m]))",
               "legendFormat": "Access Points",
               "refId": "A"
             }
@@ -337,7 +341,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (syslog_severity) (rate({source=\"unifi\"} | json | syslog_severity != \"\" [5m]))",
+              "expr": "sum(rate({source=\"unifi\"} [5m]))",
               "legendFormat": "{{syslog_severity}}",
               "refId": "A"
             }
@@ -378,7 +382,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (syslog_hostname) (rate({source=\"unifi\"} | json | syslog_hostname != \"\" [5m]))",
+              "expr": "sum(rate({source=\"unifi\"} [5m]))",
               "legendFormat": "{{syslog_hostname}}",
               "refId": "A"
             }
@@ -610,7 +614,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (syslog_hostname) (count_over_time({source=\"unifi\"} | json | syslog_severity=~\"err|warning\" [30m]))",
+              "expr": "sum(count_over_time({source=\"unifi\"} |~ \"(?i)error|fail|warning\" [30m]))",
               "legendFormat": "{{syslog_hostname}}",
               "refId": "A"
             }
@@ -649,12 +653,12 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id=\"400\" [5m]))",
+              "expr": "sum(rate({source=\"unifi\"} |~ \"device_event_class_id.*400\" [5m]))",
               "legendFormat": "WiFi Connects",
               "refId": "A"
             },
             {
-              "expr": "sum(rate({source=\"unifi\"} | json | device_event_class_id=\"401\" [5m]))",
+              "expr": "sum(rate({source=\"unifi\"} |~ \"device_event_class_id.*401\" [5m]))",
               "legendFormat": "WiFi Disconnects",
               "refId": "B"
             }
@@ -728,7 +732,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{source=\"unifi\"} | json | syslog_severity=~\"err|warning\" | line_format `[{{.syslog_severity}}] {{.syslog_hostname}}: {{.message}}`",
+              "expr": "{source=\"unifi\"} |~ \"(?i)error|fail|warning\"",
               "refId": "A"
             }
           ],
@@ -752,7 +756,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{source=\"unifi\"} | json | line_format `[{{.event_type}}] {{.syslog_hostname}}: {{.message}}`",
+              "expr": "{source=\"unifi\"}",
               "refId": "A"
             }
           ],
@@ -765,7 +769,7 @@ data:
             "enableLogDetails": true,
             "dedupStrategy": "numbers",
             "sortOrder": "Descending",
-            "maxLines": 100
+            "maxLines": 20
           },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 }
         }

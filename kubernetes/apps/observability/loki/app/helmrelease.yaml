@@ -136,10 +136,10 @@ spec:
               app.kubernetes.io/component: single-binary
       resources:
         requests:
-          cpu: 1168m
-          memory: 476Mi
+          cpu: 627m
+          memory: 7506Mi
         limits:
-          memory: 476Mi
+          memory: 10Gi
       extraEnv:
         - name: GOGC
           value: "80"
@@ -186,6 +186,10 @@ spec:
         tls:
           - hosts:
               - *host
+
+    memberlist:
+      service:
+        publishNotReadyAddresses: true
 
     backend:
       replicas: 0

@@ -130,10 +130,10 @@ spec:
           }
       resources:
         requests:
-          cpu: 920m
-          memory: 225Mi
+          cpu: 1388m
+          memory: 259Mi
         limits:
-          memory: 225Mi
+          memory: 400Mi
 
     controller:
       type: daemonset
