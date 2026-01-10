@@ -122,10 +122,10 @@ spec:
       replicas: 1
       persistence:
         enabled: true
-        storageClass: nfs-client
+        storageClass: local-path
         size: 50Gi
       nodeSelector:
-        kubernetes.io/arch: arm64
+        kubernetes.io/hostname: k8s9
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname

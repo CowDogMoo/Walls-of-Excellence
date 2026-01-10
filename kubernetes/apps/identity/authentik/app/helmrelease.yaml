@@ -288,7 +288,7 @@ spec:
       primary:
         persistence:
           enabled: true
-          storageClass: nfs-client
+          storageClass: local-path
           size: 8Gi
 
         resources:
@@ -299,24 +299,11 @@ spec:
             memory: 1Gi
             cpu: 1000m
 
-        # Spread authentik components across different nodes to prevent CPU saturation
+        # Pin PostgreSQL to k8s9 for fast NVMe storage
+        nodeSelector:
+          kubernetes.io/hostname: k8s9
+
         affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: kubernetes.io/arch
-                      operator: In
-                      values:
-                        - arm64
-            preferredDuringSchedulingIgnoredDuringExecution:
-              - weight: 100
-                preference:
-                  matchExpressions:
-                    - key: kubernetes.io/hostname
-                      operator: In
-                      values:
-                        - k8s5
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
               # Avoid same component (postgresql HA replicas)

@@ -106,7 +106,7 @@ spec:
           runAsGroup: 64535
           fsGroup: 64535
         nodeSelector:
-          kubernetes.io/arch: arm64
+          kubernetes.io/hostname: k8s9
         topologySpreadConstraints:
           - maxSkew: 1
             topologyKey: kubernetes.io/hostname
@@ -136,9 +136,7 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              # Note: NFS is not recommended for Prometheus TSDB but used in homelab
-              # May experience performance issues or data inconsistencies
-              storageClassName: nfs-client
+              storageClassName: local-path
               resources:
                 requests:
                   storage: 50Gi
