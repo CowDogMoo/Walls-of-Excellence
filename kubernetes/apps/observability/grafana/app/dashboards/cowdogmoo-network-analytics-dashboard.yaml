@@ -336,13 +336,13 @@ data:
         },
         {
           "id": 10,
-          "title": "Events by Severity",
+          "title": "Events by Syslog Severity",
           "type": "timeseries",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (severity) (rate({source=\"unifi\"} [5m]))",
-              "legendFormat": "{{severity}}",
+              "expr": "sum by (syslog_sev) (rate({source=\"unifi\"} | json | line_format \"{{.syslog_severity}}\" | pattern `<syslog_sev>` | syslog_sev != \"\" [5m]))",
+              "legendFormat": "{{syslog_sev}}",
               "refId": "A"
             }
           ],
@@ -682,13 +682,13 @@ data:
         },
         {
           "id": 17,
-          "title": "Errors by Severity",
+          "title": "Errors by Syslog Severity",
           "type": "bargauge",
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (severity) (count_over_time({source=\"unifi\"} |~ \"(?i)error|fail|warning\" [30m]))",
-              "legendFormat": "{{severity}}",
+              "expr": "sum by (syslog_sev) (count_over_time({source=\"unifi\"} |~ \"(?i)error|fail|warning\" | json | line_format \"{{.syslog_severity}}\" | pattern `<syslog_sev>` | syslog_sev != \"\" [30m]))",
+              "legendFormat": "{{syslog_sev}}",
               "refId": "A"
             }
           ],
@@ -704,7 +704,7 @@ data:
                 ]
               },
               "unit": "short",
-              "displayName": "${__field.labels.severity}"
+              "displayName": "${__field.labels.syslog_sev}"
             },
             "overrides": []
           },
