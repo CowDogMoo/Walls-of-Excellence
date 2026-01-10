@@ -29,6 +29,27 @@ spec:
           reloader.stakater.com/auto: "true"
         # Init container to setup the initial ts configuration
         initContainers:
+          install-hass-dyson:
+            image:
+              repository: alpine/git
+              tag: latest
+            command:
+              - sh
+              - -c
+              - |
+                echo "$(date): Installing hass-dyson custom component"
+
+                # Clone the repository
+                cd /tmp
+                git clone --depth 1 https://github.com/CowDogMoo/hass-dyson.git
+
+                # Create custom_components directory and copy files
+                mkdir -p /config/custom_components
+                rm -rf /config/custom_components/hass_dyson
+                cp -r /tmp/hass-dyson/custom_components/hass_dyson /config/custom_components/
+
+                echo "$(date): hass-dyson component installed successfully"
+                ls -la /config/custom_components/hass_dyson/
           install-oidc-component:
             image:
               repository: alpine/git
