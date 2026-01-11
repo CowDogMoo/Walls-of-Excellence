@@ -8,6 +8,7 @@ resources:
   - helmrepository.yaml
   - ./authentik-middleware.yaml
   - ./ingressroute.yaml
+  - ./prometheusrule.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: traefik

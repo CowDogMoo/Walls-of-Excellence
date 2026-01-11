@@ -1,0 +1,70 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: traefik-rules
+  namespace: networking
+spec:
+  groups:
+    - name: traefik
+      rules:
+        - alert: TraefikDown
+          expr: |
+            absent(up{job=~".*traefik.*"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Traefik ingress controller is down"
+            description: "Traefik ingress controller has been unavailable for more than 5 minutes. External traffic cannot reach cluster services."
+        - alert: TraefikHighHttp5xxErrorRate
+          expr: |
+            sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) by (service)
+            /
+            sum(rate(traefik_service_requests_total[5m])) by (service)
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traefik high 5xx error rate for {{ $labels.service }}"
+            description: "Traefik service {{ $labels.service }} has more than 5% 5xx error rate for the last 5 minutes."
+        - alert: TraefikHighHttp4xxErrorRate
+          expr: |
+            sum(rate(traefik_service_requests_total{code=~"4.."}[5m])) by (service)
+            /
+            sum(rate(traefik_service_requests_total[5m])) by (service)
+            > 0.25
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traefik high 4xx error rate for {{ $labels.service }}"
+            description: "Traefik service {{ $labels.service }} has more than 25% 4xx error rate for the last 10 minutes."
+        - alert: TraefikHighRequestLatency
+          expr: |
+            histogram_quantile(0.95, sum(rate(traefik_service_request_duration_seconds_bucket[5m])) by (le, service)) > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traefik high request latency for {{ $labels.service }}"
+            description: "Traefik service {{ $labels.service }} 95th percentile latency is above 2 seconds for the last 10 minutes."
+        - alert: TraefikTLSCertExpiringSoon
+          expr: |
+            traefik_tls_certs_not_after - time() < 7 * 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traefik TLS certificate expiring soon"
+            description: "A TLS certificate in Traefik will expire in less than 7 days."
+        - alert: TraefikOpenConnections
+          expr: |
+            sum(traefik_entrypoint_open_connections) > 1000
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traefik high number of open connections"
+            description: "Traefik has {{ $value }} open connections, which may indicate a connection leak or attack."

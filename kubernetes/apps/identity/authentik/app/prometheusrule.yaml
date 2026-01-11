@@ -1,0 +1,46 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: authentik-rules
+  namespace: identity
+spec:
+  groups:
+    - name: authentik
+      rules:
+        - alert: AuthentikDown
+          expr: |
+            absent(up{job="authentik-server-metrics"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Authentik server is down"
+            description: "Authentik identity provider has been unavailable for more than 5 minutes. Authentication services are offline."
+        - alert: AuthentikOutpostDisconnected
+          expr: |
+            authentik_outposts_connected < on(uid) group_left authentik_outposts_last_update * 0 + 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Authentik outpost {{ $labels.outpost }} is disconnected"
+            description: "Authentik outpost {{ $labels.outpost }} has fewer connections than expected for more than 5 minutes."
+        - alert: AuthentikHighRequestLatency
+          expr: |
+            histogram_quantile(0.95, sum(rate(authentik_main_request_duration_seconds_bucket[5m])) by (le)) > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Authentik high request latency"
+            description: "Authentik 95th percentile request latency is above 2 seconds for more than 10 minutes."
+        - alert: AuthentikWorkersDegraded
+          expr: |
+            authentik_admin_workers < 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Authentik workers degraded"
+            description: "Authentik has fewer than expected background workers running."

@@ -153,12 +153,30 @@ spec:
         server: 192.168.20.210
         path: /volume1/k8s/traefik
 
+    metrics:
+      prometheus:
+        entryPoint: metrics
+        service:
+          enabled: true
+        serviceMonitor:
+          enabled: true
+          namespace: networking
+          namespaceSelector: {}
+          additionalLabels:
+            release: kube-prometheus-stack
+
     ports:
       traefik:
         port: 9000
         expose:
           default: true
         exposedPort: 9000
+        protocol: TCP
+      metrics:
+        port: 9100
+        expose:
+          default: false
+        exposedPort: 9100
         protocol: TCP
       web:
         port: 8000
