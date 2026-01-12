@@ -8,21 +8,21 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Home Automation"
-    dashboard-version: "3.1.0"
+    dashboard-version: "4.1.0"
     last-modified: "2026-01-10"
 data:
   troy-backup.json: |
     {
       "uid": "troy-backup-monitoring",
       "title": "Troy Backup Monitoring",
-      "description": "Monitor throwingshade backup CronJob execution and logs",
+      "description": "Monitor throwingshade backup CronJob execution using Prometheus metrics",
       "tags": ["home-automation", "backup", "throwingshade", "troy-backup"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 3,
+      "version": 5,
       "refresh": "5m",
       "time": {
-        "from": "now-8d",
+        "from": "now-30d",
         "to": "now"
       },
       "links": [
@@ -35,74 +35,70 @@ data:
         }
       ],
       "templating": {
-        "list": [
-          {
-            "name": "pod",
-            "label": "Pod",
-            "type": "query",
-            "datasource": { "type": "loki", "uid": "loki" },
-            "query": "label_values({namespace=\"home-automation\", app=\"troy-backup\"}, pod)",
-            "multi": true,
-            "includeAll": true,
-            "current": {
-              "selected": true,
-              "text": "All",
-              "value": "$__all"
-            },
-            "refresh": 1,
-            "sort": 1
-          }
-        ]
+        "list": []
       },
       "panels": [
         {
           "id": 1,
-          "title": "Total Backup Jobs",
+          "title": "Successful Jobs",
           "type": "stat",
-          "gridPos": { "x": 0, "y": 0, "w": 8, "h": 4 },
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} [1h]))",
-              "refId": "A"
+              "expr": "count(kube_job_status_succeeded{namespace=\"home-automation\", job_name=~\"troy-backup.*\"} == 1)",
+              "refId": "A",
+              "legendFormat": "__auto"
             }
           ],
           "options": {
             "colorMode": "value",
             "graphMode": "area",
+            "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"]
+              "calcs": ["lastNotNull"],
+              "fields": ""
             },
             "textMode": "auto"
           },
           "fieldConfig": {
             "defaults": {
-              "color": { "mode": "palette-classic" },
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "red" },
+                  { "value": 1, "color": "green" }
+                ]
+              },
               "unit": "short",
               "decimals": 0
             }
           },
-          "datasource": { "type": "loki", "uid": "loki" }
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
         },
         {
           "id": 2,
-          "title": "Errors",
+          "title": "Failed Jobs",
           "type": "stat",
-          "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} |~ `(?i)(error|fail|exception)` [1h]))",
-              "refId": "A"
+              "expr": "sum(kube_job_status_failed{namespace=\"home-automation\", job_name=~\"troy-backup.*\"})",
+              "refId": "A",
+              "legendFormat": "__auto"
             }
           ],
           "options": {
             "colorMode": "value",
             "graphMode": "area",
+            "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"]
+              "calcs": ["lastNotNull"],
+              "fields": ""
             },
             "textMode": "auto"
           },
@@ -114,33 +110,37 @@ data:
                 "steps": [
                   { "value": null, "color": "green" },
                   { "value": 1, "color": "yellow" },
-                  { "value": 5, "color": "red" }
+                  { "value": 3, "color": "red" }
                 ]
               },
               "unit": "short",
-              "decimals": 0
+              "decimals": 0,
+              "noValue": "0"
             }
           },
-          "datasource": { "type": "loki", "uid": "loki" }
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
         },
         {
           "id": 3,
-          "title": "Warnings",
+          "title": "Time Since Last Backup",
           "type": "stat",
-          "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} |~ `(?i)(warn|warning)` [1h]))",
-              "refId": "A"
+              "expr": "time() - max(kube_cronjob_status_last_successful_time{namespace=\"home-automation\", cronjob=\"troy-backup\"})",
+              "refId": "A",
+              "legendFormat": "__auto"
             }
           ],
           "options": {
             "colorMode": "value",
-            "graphMode": "area",
+            "graphMode": "none",
+            "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"]
+              "calcs": ["lastNotNull"],
+              "fields": ""
             },
             "textMode": "auto"
           },
@@ -151,26 +151,235 @@ data:
                 "mode": "absolute",
                 "steps": [
                   { "value": null, "color": "green" },
-                  { "value": 1, "color": "yellow" },
-                  { "value": 10, "color": "orange" }
+                  { "value": 604800, "color": "yellow" },
+                  { "value": 1209600, "color": "red" }
                 ]
               },
-              "unit": "short",
+              "unit": "dtdurations",
               "decimals": 0
             }
           },
-          "datasource": { "type": "loki", "uid": "loki" }
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
         },
         {
           "id": 4,
-          "title": "Backup Job Activity Over Time",
-          "type": "timeseries",
-          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+          "title": "Next Scheduled Backup",
+          "type": "stat",
+          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
           "targets": [
             {
-              "expr": "sum(count_over_time({namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} [2d]))",
+              "expr": "min(kube_cronjob_next_schedule_time{namespace=\"home-automation\", cronjob=\"troy-backup\"}) - time()",
               "refId": "A",
-              "legendFormat": "Log entries"
+              "legendFormat": "__auto"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "blue" }
+                ]
+              },
+              "unit": "dtdurations",
+              "decimals": 0
+            }
+          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        },
+        {
+          "id": 5,
+          "title": "CronJob Status",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "max(kube_cronjob_spec_suspend{namespace=\"home-automation\", cronjob=\"troy-backup\"})",
+              "refId": "A",
+              "legendFormat": "__auto"
+            }
+          ],
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "green" },
+                  { "value": 1, "color": "red" }
+                ]
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": { "text": "Active", "color": "green", "index": 0 }
+                  }
+                },
+                {
+                  "type": "value",
+                  "options": {
+                    "1": { "text": "Suspended", "color": "red", "index": 1 }
+                  }
+                }
+              ],
+              "unit": "short"
+            }
+          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        },
+        {
+          "id": 6,
+          "title": "Success Rate",
+          "type": "gauge",
+          "gridPos": { "x": 6, "y": 4, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "sum(kube_job_status_succeeded{namespace=\"home-automation\", job_name=~\"troy-backup.*\"}) / (sum(kube_job_status_succeeded{namespace=\"home-automation\", job_name=~\"troy-backup.*\"}) + sum(kube_job_status_failed{namespace=\"home-automation\", job_name=~\"troy-backup.*\"})) * 100",
+              "refId": "A",
+              "legendFormat": "__auto"
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "red" },
+                  { "value": 80, "color": "yellow" },
+                  { "value": 95, "color": "green" }
+                ]
+              },
+              "unit": "percent",
+              "min": 0,
+              "max": 100
+            }
+          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        },
+        {
+          "id": 7,
+          "title": "Schedule",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 4, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "count(kube_cronjob_info{namespace=\"home-automation\", cronjob=\"troy-backup\", schedule=\"0 2 * * 0\"})",
+              "refId": "A",
+              "legendFormat": "__auto"
+            }
+          ],
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": { "text": "Sundays @ 2:00 AM", "index": 0 }
+                  }
+                }
+              ],
+              "unit": "string"
+            }
+          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        },
+        {
+          "id": 10,
+          "title": "Last Successful Run",
+          "type": "stat",
+          "gridPos": { "x": 18, "y": 4, "w": 6, "h": 4 },
+          "targets": [
+            {
+              "expr": "max(kube_cronjob_status_last_successful_time{namespace=\"home-automation\", cronjob=\"troy-backup\"}) * 1000",
+              "refId": "A",
+              "legendFormat": "__auto"
+            }
+          ],
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "dateTimeAsLocalNoDateIfToday",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "value": null, "color": "text" }
+                ]
+              }
+            }
+          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
+        },
+        {
+          "id": 8,
+          "title": "Job Start Times",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "kube_job_status_succeeded{namespace=\"home-automation\", job_name=~\"troy-backup.*\"} == 1",
+              "refId": "A",
+              "legendFormat": "{{job_name}}"
             }
           ],
           "options": {
@@ -187,63 +396,118 @@ data:
           "fieldConfig": {
             "defaults": {
               "custom": {
-                "drawStyle": "bars",
-                "lineInterpolation": "linear",
-                "barAlignment": 0,
-                "fillOpacity": 100,
-                "showPoints": "never"
+                "drawStyle": "points",
+                "pointSize": 10,
+                "showPoints": "always",
+                "lineWidth": 0,
+                "fillOpacity": 0
               },
+              "color": { "mode": "fixed", "fixedColor": "green" },
               "unit": "short",
-              "min": 0
+              "min": 0,
+              "max": 2,
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": { "text": "Success", "index": 0 }
+                  }
+                }
+              ]
             }
           },
-          "datasource": { "type": "loki", "uid": "loki" }
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
         },
         {
-          "id": 5,
-          "title": "Error Logs",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+          "id": 9,
+          "title": "Job History",
+          "type": "table",
+          "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
           "targets": [
             {
-              "expr": "{namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"} |~ `(?i)(error|fail|exception)`",
-              "refId": "A"
+              "expr": "kube_job_status_succeeded{namespace=\"home-automation\", job_name=~\"troy-backup.*\"}",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "__name__": true,
+                  "container": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "kubernetes_node": true,
+                  "pod": true,
+                  "service": true,
+                  "Time": true
+                },
+                "indexByName": {
+                  "job_name": 0,
+                  "namespace": 1,
+                  "Value": 2
+                },
+                "renameByName": {
+                  "job_name": "Job Name",
+                  "namespace": "Namespace",
+                  "Value": "Status"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [{ "field": "Job Name", "desc": true }]
+              }
             }
           ],
           "options": {
-            "showTime": true,
-            "showLabels": true,
-            "showCommonLabels": false,
-            "wrapLogMessage": true,
-            "sortOrder": "Descending",
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false
-          },
-          "datasource": { "type": "loki", "uid": "loki" }
-        },
-        {
-          "id": 6,
-          "title": "All Backup Logs",
-          "type": "logs",
-          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 10 },
-          "targets": [
-            {
-              "expr": "{namespace=\"home-automation\", app=\"troy-backup\", pod=~\"$pod\"}",
-              "refId": "A"
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
             }
-          ],
-          "options": {
-            "showTime": true,
-            "showLabels": true,
-            "showCommonLabels": false,
-            "wrapLogMessage": true,
-            "sortOrder": "Descending",
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false
           },
-          "datasource": { "type": "loki", "uid": "loki" }
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto",
+                "inspect": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "Status" },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "1": { "text": "Success", "color": "green", "index": 0 }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "0": { "text": "Failed", "color": "red", "index": 1 }
+                        }
+                      }
+                    ]
+                  },
+                  { "id": "custom.displayMode", "value": "color-background-solid" }
+                ]
+              }
+            ]
+          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" }
         }
       ]
     }

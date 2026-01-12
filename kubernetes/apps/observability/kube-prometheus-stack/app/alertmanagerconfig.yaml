@@ -60,23 +60,25 @@ spec:
       pushoverConfigs:
         - html: true
           message: |-
-            {{- range .Alerts }}
-              {{- if ne .Annotations.description "" }}
-                {{ .Annotations.description }}
-              {{- else if ne .Annotations.summary "" }}
-                {{ .Annotations.summary }}
-              {{- else if ne .Annotations.message "" }}
-                {{ .Annotations.message }}
-              {{- else }}
-                Alert description not available
+            {{- $maxAlerts := 2 }}
+            {{- $alerts := .Alerts }}
+            {{- $total := len $alerts }}
+            {{- range $i, $alert := $alerts }}
+              {{- if lt $i $maxAlerts }}
+            <b>{{ $alert.Labels.alertname }}</b>
+                {{- if ne $alert.Annotations.summary "" }}
+            {{ $alert.Annotations.summary | reReplaceAll "(.{200}).*" "$1..." }}
+                {{- else if ne $alert.Annotations.description "" }}
+            {{ $alert.Annotations.description | reReplaceAll "(.{200}).*" "$1..." }}
+                {{- end }}
+                {{- with $alert.Labels.namespace }} ns:{{ . }}{{ end }}
+                {{- with $alert.Labels.instance }} host:{{ . }}{{ end }}
+                {{- with $alert.Labels.pod }} pod:{{ . }}{{ end }}
+            ---
               {{- end }}
-              {{- if gt (len .Labels.SortedPairs) 0 }}
-                <small>
-                  {{- range .Labels.SortedPairs }}
-                    <b>{{ .Name }}:</b> {{ .Value }}
-                  {{- end }}
-                </small>
-              {{- end }}
+            {{- end }}
+            {{- if gt $total $maxAlerts }}
+            <b>+{{ sub $total $maxAlerts }} more alerts</b>
             {{- end }}
           priority: |-
             {{ if eq .Status "firing" }}1{{ else }}0{{ end }}

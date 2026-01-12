@@ -1,0 +1,67 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: loki-rules
+  namespace: observability
+spec:
+  groups:
+    - name: loki
+      rules:
+        - alert: LokiDown
+          expr: |
+            absent(up{job="observability/loki"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Loki is down"
+            description: "Loki log aggregation service has been unavailable for more than 5 minutes. Log collection is impaired."
+        - alert: LokiIngesterUnhealthy
+          expr: |
+            loki_ring_members{state="Unhealthy", name="ingester"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Loki ingester unhealthy"
+            description: "Loki has {{ $value }} unhealthy ingester(s) in the ring."
+        - alert: LokiRequestErrors
+          expr: |
+            sum(rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])) by (route)
+            /
+            sum(rate(loki_request_duration_seconds_count[5m])) by (route)
+            > 0.1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki high error rate on {{ $labels.route }}"
+            description: "Loki route {{ $labels.route }} has more than 10% error rate for the last 10 minutes."
+        - alert: LokiWriteLatencyHigh
+          expr: |
+            histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route=~".*push.*"}[5m])) by (le)) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki write latency high"
+            description: "Loki 99th percentile write latency is above 1 second for more than 10 minutes."
+        - alert: LokiDiscardedSamples
+          expr: |
+            increase(loki_discarded_samples_total[1h]) > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki discarding samples"
+            description: "Loki has discarded {{ $value }} samples in the last hour due to rate limiting or validation errors."
+        - alert: LokiPanicDetected
+          expr: |
+            increase(loki_panic_total[10m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Loki panic detected"
+            description: "Loki has experienced {{ $value }} panic(s) in the last 10 minutes."
