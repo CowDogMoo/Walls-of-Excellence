@@ -19,13 +19,13 @@ spec:
             description: "Authentik identity provider has been unavailable for more than 5 minutes. Authentication services are offline."
         - alert: AuthentikOutpostDisconnected
           expr: |
-            authentik_outposts_connected < on(uid) group_left authentik_outposts_last_update * 0 + 1
+            authentik_outposts_connected < 1
           for: 5m
           labels:
             severity: warning
           annotations:
             summary: "Authentik outpost {{ $labels.outpost }} is disconnected"
-            description: "Authentik outpost {{ $labels.outpost }} has fewer connections than expected for more than 5 minutes."
+            description: "Authentik outpost {{ $labels.outpost }} has no active connections for more than 5 minutes."
         - alert: AuthentikHighRequestLatency
           expr: |
             histogram_quantile(0.95, sum(rate(authentik_main_request_duration_seconds_bucket[5m])) by (le)) > 2
