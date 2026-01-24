@@ -78,13 +78,13 @@ spec:
               - sh
               - -c
               - |
-                mkdir -p /config/.ts
-                chmod 777 /config/.ts || true
+                mkdir -p /config/.config/ts
+                chmod 777 /config/.config/ts || true
 
-                if [ -x /config/ts ] && [ ! -f /config/.ts/config.yaml ]; then
+                if [ -x /config/ts ] && [ ! -f /config/.config/ts/config.yaml ]; then
                   echo "$(date): Initial config creation"
                   HOME=/config /config/ts room list
-                  chmod 666 /config/.ts/config.yaml || true
+                  chmod 666 /config/.config/ts/config.yaml || true
                 fi
           setup-oidc:
             image:
@@ -296,8 +296,8 @@ spec:
               - -c
               - |
                 echo "$(date): Starting throwingshade config monitor"
-                echo "$(date): Monitoring /config/.ts/config.yaml"
-                CFG=/config/.ts/config.yaml
+                echo "$(date): Monitoring /config/.config/ts/config.yaml"
+                CFG=/config/.config/ts/config.yaml
 
                 # Monitor loop
                 while true; do
@@ -326,7 +326,7 @@ spec:
                     # Regenerate config
                     echo "$(date): Regenerating config..."
                     if /config/ts room list; then
-                      chmod 666 /config/.ts/config.yaml || true
+                      chmod 666 /config/.config/ts/config.yaml || true
                       echo "$(date): Config regenerated successfully"
                     else
                       echo "$(date): Regen failed; will retry in 60s"
@@ -347,6 +347,61 @@ spec:
                 memory: 32Mi
               limits:
                 memory: 64Mi
+          ts-monitor:
+            image:
+              repository: alpine
+              tag: latest
+            env:
+              HOME: /config
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+
+                echo "$(date): Starting throwingshade MQTT monitor container"
+
+                # Wait for ts binary and config to be ready
+                while [ ! -x /config/ts ] || [ ! -f /config/.config/ts/config.yaml ]; do
+                  echo "$(date): Waiting for ts binary and config..."
+                  sleep 10
+                done
+
+                echo "$(date): ts binary and config ready, waiting for secrets.yaml..."
+
+                # Wait for secrets.yaml to exist
+                while [ ! -f /config/secrets.yaml ]; do
+                  echo "$(date): Waiting for /config/secrets.yaml..."
+                  sleep 10
+                done
+
+                echo "$(date): Extracting MQTT credentials from secrets.yaml"
+
+                # Extract credentials from secrets.yaml
+                MQTT_USER=$(grep 'mqtt.username:' /config/secrets.yaml | awk '{print $2}')
+                MQTT_PASS=$(grep 'mqtt.password:' /config/secrets.yaml | awk '{print $2}')
+
+                if [ -z "$MQTT_USER" ] || [ -z "$MQTT_PASS" ]; then
+                  echo "$(date): ERROR: Could not extract MQTT credentials from secrets.yaml"
+                  exit 1
+                fi
+
+                echo "$(date): Starting ts monitor with MQTT broker at mosquitto.home-automation.svc.cluster.local:1883"
+
+                # Run the monitor (this blocks, so it runs as the main process)
+                exec /config/ts monitor \
+                  --mqtt-broker tcp://mosquitto.home-automation.svc.cluster.local:1883 \
+                  --mqtt-username "$MQTT_USER" \
+                  --mqtt-password "$MQTT_PASS" \
+                  --shade-interval 30s \
+                  --button-interval 1s \
+                  --publish-discovery
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
         pod:
           # Enable devices to be discoverable
           hostNetwork: true
