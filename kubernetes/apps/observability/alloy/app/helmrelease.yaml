@@ -72,6 +72,35 @@ spec:
             forward_to = [loki.process.home_automation.receiver]
           }
 
+          // Syslog receiver for external devices (SLZB-06, etc)
+          loki.source.syslog "syslog" {
+            listener {
+              address  = "0.0.0.0:1514"
+              protocol = "udp"
+            }
+            forward_to = [loki.process.syslog.receiver]
+            labels     = {
+              job = "syslog",
+            }
+          }
+
+          // Process syslog messages
+          loki.process "syslog" {
+            forward_to = [loki.write.loki.receiver]
+
+            // Add hostname label from syslog message
+            stage.json {
+              expressions = {
+                hostname = "hostname",
+              }
+            }
+            stage.labels {
+              values = {
+                hostname = "",
+              }
+            }
+          }
+
           // Process home-automation namespace logs
           loki.process "home_automation" {
             forward_to = [loki.write.loki.receiver]
@@ -139,6 +168,11 @@ spec:
       type: daemonset
       tolerations:
         - operator: Exists
+      extraPorts:
+        - name: syslog-udp
+          port: 1514
+          targetPort: 1514
+          protocol: UDP
 
     serviceMonitor:
       enabled: true

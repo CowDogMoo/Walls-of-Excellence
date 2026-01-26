@@ -11,3 +11,4 @@ resources:
   - ./music-assistant/ks.yaml
   - ./printer-monitor/ks.yaml
   - ./troy-backup/ks.yaml
+  - ./zigbee2mqtt/ks.yaml
