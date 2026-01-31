@@ -1,0 +1,11 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: ollama-transport
+  namespace: inference
+spec:
+  forwardingTimeouts:
+    dialTimeout: 300s
+    responseHeaderTimeout: 300s
+    idleConnTimeout: 300s
