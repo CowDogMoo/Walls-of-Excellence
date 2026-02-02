@@ -38,7 +38,7 @@ spec:
             command:
               - sh
               - -c
-              - yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' /config/configuration.yaml /secrets/secrets.yaml > /data/configuration.yaml
+              - yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' /config/configuration.yaml /secrets/secrets.yaml > /merged-config/configuration.yaml
         containers:
           app:
             image:
@@ -123,19 +123,35 @@ spec:
         storageClass: nfs-client
         accessMode: ReadWriteOnce
         size: 1Gi
-        globalMounts:
-          - path: /data
+        advancedMounts:
+          zigbee2mqtt:
+            app:
+              - path: /data
+      merged-config:
+        type: emptyDir
+        advancedMounts:
+          zigbee2mqtt:
+            init-config:
+              - path: /merged-config
+            app:
+              - path: /data/configuration.yaml
+                subPath: configuration.yaml
+                readOnly: true
       config:
         type: configMap
         name: zigbee2mqtt-config
-        globalMounts:
-          - path: /config/configuration.yaml
-            subPath: configuration.yaml
-            readOnly: true
+        advancedMounts:
+          zigbee2mqtt:
+            init-config:
+              - path: /config/configuration.yaml
+                subPath: configuration.yaml
+                readOnly: true
       secrets:
         type: secret
         name: zigbee2mqtt-secret
-        globalMounts:
-          - path: /secrets/secrets.yaml
-            subPath: secrets.yaml
-            readOnly: true
+        advancedMounts:
+          zigbee2mqtt:
+            init-config:
+              - path: /secrets/secrets.yaml
+                subPath: secrets.yaml
+                readOnly: true
