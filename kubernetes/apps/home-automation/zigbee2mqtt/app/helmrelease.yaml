@@ -33,14 +33,12 @@ spec:
         initContainers:
           init-config:
             image:
-              repository: busybox
-              tag: latest
+              repository: mikefarah/yq
+              tag: 4
             command:
               - sh
               - -c
-              - |
-                cp -f /config/configuration.yaml /data/configuration.yaml
-                echo "Synced configuration from ConfigMap"
+              - yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' /config/configuration.yaml /secrets/secrets.yaml > /data/configuration.yaml
         containers:
           app:
             image:
@@ -49,7 +47,6 @@ spec:
             env:
               TZ: America/Denver
               ZIGBEE2MQTT_DATA: /data
-              # MQTT credentials from secret
               ZIGBEE2MQTT_CONFIG_MQTT_USER:
                 valueFrom:
                   secretKeyRef:
@@ -129,9 +126,16 @@ spec:
         globalMounts:
           - path: /data
       config:
-        type: secret
+        type: configMap
         name: zigbee2mqtt-config
         globalMounts:
           - path: /config/configuration.yaml
             subPath: configuration.yaml
+            readOnly: true
+      secrets:
+        type: secret
+        name: zigbee2mqtt-secret
+        globalMounts:
+          - path: /secrets/secrets.yaml
+            subPath: secrets.yaml
             readOnly: true

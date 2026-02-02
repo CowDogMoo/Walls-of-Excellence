@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zigbee2mqtt-config
+  namespace: home-automation
+data:
+  configuration.yaml: |-
+    ---
+    homeassistant: true
+    permit_join: false
+
+    frontend:
+      port: 8080
+
+    mqtt:
+      base_topic: zigbee2mqtt
+
+    serial:
+      adapter: zstack
+
+    advanced:
+      log_output:
+        - console
+      log_level: info
+      homeassistant_legacy_entity_attributes: false
+      homeassistant_legacy_triggers: false
+      last_seen: ISO_8601
+
+    availability:
+      active:
+        timeout: 10
+      passive:
+        timeout: 1500
+
+    device_options:
+      retain: true
