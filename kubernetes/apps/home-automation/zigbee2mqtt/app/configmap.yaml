@@ -35,3 +35,9 @@ data:
 
     device_options:
       retain: true
+
+    groups:
+      '100':
+        friendly_name: nursery-canopy-light
+      '101':
+        friendly_name: nursery-canopy-fan
