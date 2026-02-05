@@ -22,17 +22,17 @@ spec:
           resources:
             requests:
               cpu: "1"
-              memory: 4Gi
+              memory: 8Gi
             limits:
               cpu: "4"
-              memory: 8Gi
+              memory: 22Gi
           command:
             - /bin/sh
             - -c
             - |
               ollama serve &
               sleep 5
-              ollama pull qwen2.5-coder:3b-instruct
+              ollama pull qwen2.5-coder:32b-instruct
               pkill ollama || true
           volumeMounts:
             - name: models
@@ -64,11 +64,11 @@ spec:
             timeoutSeconds: 5
           resources:
             requests:
-              cpu: "1"
-              memory: 4Gi
+              cpu: "2"
+              memory: 16Gi
             limits:
-              cpu: "3"
-              memory: 8Gi
+              cpu: "6"
+              memory: 24Gi
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
