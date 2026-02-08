@@ -211,6 +211,67 @@ spec:
                   echo "$TOKEN"
                 }
 
+                # Function to reload Home Assistant integrations after config changes
+                reload_home_assistant() {
+                  echo "$(date): Reloading Home Assistant integrations..."
+                  HA_URL="http://localhost:8123"
+
+                  # Wait for HA to be ready
+                  for i in $(seq 1 5); do
+                    if curl -s -f "${HA_URL}/api/" -H "Authorization: Bearer ${HA_TOKEN}" > /dev/null 2>&1; then
+                      break
+                    fi
+                    echo "$(date): Waiting for Home Assistant to be ready..."
+                    sleep 5
+                  done
+
+                  # Reload core config (covers most YAML changes)
+                  curl -s -X POST "${HA_URL}/api/services/homeassistant/reload_core_config" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" && \
+                    echo "$(date): Reloaded core config"
+
+                  # Reload automations
+                  curl -s -X POST "${HA_URL}/api/services/automation/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" && \
+                    echo "$(date): Reloaded automations"
+
+                  # Reload scripts
+                  curl -s -X POST "${HA_URL}/api/services/script/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" && \
+                    echo "$(date): Reloaded scripts"
+
+                  # Reload scenes
+                  curl -s -X POST "${HA_URL}/api/services/scene/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" && \
+                    echo "$(date): Reloaded scenes"
+
+                  # Reload template entities
+                  curl -s -X POST "${HA_URL}/api/services/template/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" && \
+                    echo "$(date): Reloaded templates"
+
+                  # Reload input_* helpers
+                  curl -s -X POST "${HA_URL}/api/services/input_boolean/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" 2>/dev/null
+                  curl -s -X POST "${HA_URL}/api/services/input_number/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" 2>/dev/null
+                  curl -s -X POST "${HA_URL}/api/services/input_select/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" 2>/dev/null
+                  curl -s -X POST "${HA_URL}/api/services/input_text/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" 2>/dev/null
+
+                  echo "$(date): Home Assistant reload complete"
+                }
+
                 cd /config
 
                 # Configure git
@@ -234,6 +295,9 @@ spec:
                     git checkout ${GIT_SYNC_BRANCH} || echo "$(date): Failed to checkout ${GIT_SYNC_BRANCH}"
                   fi
 
+                  # Get current HEAD before pull
+                  OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "none")
+
                   # Get fresh GitHub App token
                   TOKEN=$(get_github_token)
 
@@ -245,7 +309,13 @@ spec:
 
                     # Pull latest changes from configured branch
                     if git pull origin ${GIT_SYNC_BRANCH}; then
-                      echo "$(date): Successfully pulled latest changes from ${GIT_SYNC_BRANCH}"
+                      NEW_HEAD=$(git rev-parse HEAD)
+                      if [ "$OLD_HEAD" != "$NEW_HEAD" ]; then
+                        echo "$(date): Changes detected (${OLD_HEAD:0:7} -> ${NEW_HEAD:0:7}), reloading Home Assistant"
+                        reload_home_assistant
+                      else
+                        echo "$(date): No changes from ${GIT_SYNC_BRANCH}"
+                      fi
                     else
                       echo "$(date): Failed to pull changes from ${GIT_SYNC_BRANCH}, will retry next cycle"
                     fi
@@ -275,6 +345,11 @@ spec:
                   secretKeyRef:
                     name: home-assistant-secrets
                     key: GITHUB_APP_PRIVATE_KEY
+              - name: HA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: home-assistant-secrets
+                    key: HA_TOKEN
             resources:
               requests:
                 cpu: 10m
