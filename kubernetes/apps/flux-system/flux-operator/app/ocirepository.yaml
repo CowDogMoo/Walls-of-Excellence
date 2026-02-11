@@ -9,4 +9,4 @@ spec:
   interval: 12h
   url: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator
   ref:
-    tag: 0.40.0
+    tag: 0.41.0
