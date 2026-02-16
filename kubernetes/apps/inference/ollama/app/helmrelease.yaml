@@ -1,0 +1,132 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollama
+  namespace: inference
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: ollama
+  install:
+    timeout: 10m
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    timeout: 10m
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      ollama:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          model-puller:
+            image:
+              repository: ollama/ollama
+              tag: latest
+            command:
+              - /bin/sh
+              - -c
+              - |
+                ollama serve &
+                sleep 5
+                ollama pull qwen2.5-coder:32b-instruct
+                pkill ollama || true
+            resources:
+              requests:
+                cpu: "1"
+                memory: 8Gi
+              limits:
+                cpu: "4"
+                memory: 22Gi
+        containers:
+          app:
+            image:
+              repository: ollama/ollama
+              tag: latest
+            env:
+              OLLAMA_CONTEXT_LENGTH: "8192"
+              OLLAMA_DEBUG: "true"
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 11434
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 11434
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 11434
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 30
+            resources:
+              requests:
+                cpu: "2"
+                memory: 16Gi
+              limits:
+                cpu: "6"
+                memory: 24Gi
+        pod:
+          automountServiceAccountToken: false
+          nodeSelector:
+            node-role.kubernetes.io/storage: "true"
+    service:
+      app:
+        controller: ollama
+        ports:
+          http:
+            port: 11434
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          traefik.ingress.kubernetes.io/service.serversTransport: inference-ollama-transport@kubernetescrd
+        hosts:
+          - host: &host ollama.techvomit.xyz
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+    persistence:
+      models:
+        enabled: true
+        type: persistentVolumeClaim
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 50Gi
+        globalMounts:
+          - path: /root/.ollama
