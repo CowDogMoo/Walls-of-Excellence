@@ -54,6 +54,10 @@ spec:
             env:
               OLLAMA_CONTEXT_LENGTH: "8192"
               OLLAMA_DEBUG: "true"
+            ports:
+              http:
+                containerPort: 11434
+                protocol: TCP
             probes:
               liveness:
                 enabled: true
