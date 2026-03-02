@@ -120,6 +120,8 @@ spec:
 
     singleBinary:
       replicas: 1
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       persistence:
         enabled: true
         storageClass: local-path
@@ -147,6 +149,8 @@ spec:
     gateway:
       enabled: true
       replicas: 1
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       verboseLogging: true
       nginxConfig:
         httpSnippet: |

@@ -97,6 +97,8 @@ spec:
 
     server:
       replicas: 1
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       envFrom:
         - secretRef:
             name: authentik-secrets
@@ -188,6 +190,8 @@ spec:
     worker:
       enabled: true
       replicas: 1
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       envFrom:
         - secretRef:
             name: authentik-secrets

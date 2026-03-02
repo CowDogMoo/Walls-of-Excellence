@@ -13,6 +13,8 @@ spec:
       app: runzero-explorer
   template:
     metadata:
+      annotations:
+        reloader.stakater.com/auto: "true"
       labels:
         app: runzero-explorer
     spec:

@@ -85,6 +85,8 @@ spec:
       retries: 3
   values:
     kind: Deployment
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
     schedule: "*/5 * * * *"
     deschedulerPolicyAPIVersion: "descheduler/v1alpha2"
     deschedulerPolicy:

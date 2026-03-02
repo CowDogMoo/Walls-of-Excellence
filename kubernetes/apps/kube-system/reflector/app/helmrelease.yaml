@@ -27,6 +27,8 @@ spec:
                 path: /spec/revisionHistoryLimit
                 value: 3
   values:
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
     revisionHistoryLimit: 3
     configuration:
       logging:
