@@ -12,7 +12,7 @@ _... managed with Flux, Renovate and GitHub Actions_ 🤖
 
 <div align="center">
 
-[![License](https://img.shields.io/github/license/CowDogMoo/Walls-of-Excellence?label=License&style=flat&color=blue&logo=github)](https://github.com/lCowDogMoo/Walls-of-Excellence/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/CowDogMoo/Walls-of-Excellence?label=License&style=flat&color=blue&logo=github)](https://github.com/CowDogMoo/Walls-of-Excellence/blob/main/LICENSE)
 [![Pre-Commit](https://github.com/CowDogMoo/Walls-of-Excellence/actions/workflows/pre-commit.yaml/badge.svg)](https://github.com/CowDogMoo/Walls-of-Excellence/actions/workflows/pre-commit.yaml)
 [![Renovate](https://github.com/CowDogMoo/Walls-of-Excellence/actions/workflows/renovate.yaml/badge.svg)](https://github.com/CowDogMoo/Walls-of-Excellence/actions/workflows/renovate.yaml)
 
@@ -464,16 +464,16 @@ task reset-nodes
 
 The project uses [Task](https://taskfile.dev/) with the following categories:
 
-| Category | Description | Example Tasks |
-| -------- | ----------- | ------------- |
-| **Root tasks** | Core cluster operations | `provision`, `ping` |
-| `ansible:*` | Ansible automation/testing | `ansible:lint-ansible` |
-| `k8s:*` | Kubernetes management | `k8s:destroy-stuck-ns` |
-| `terraform:*` | Infrastructure as Code | `terraform:tf-check` |
-| `pre-commit:*` | Code quality/linting | `pre-commit:run-pre-commit` |
-| `renovate:*` | Renovate bot operations | `renovate:dry-run` |
-| `bootstrap:*` | Cluster bootstrap | `bootstrap:wait` |
-| `test:*` | Local testing with kind | `test:create`, `test:apply` |
+| Category       | Description                | Example Tasks               |
+| -------------- | -------------------------- | --------------------------- |
+| **Root tasks** | Core cluster operations    | `provision`, `ping`         |
+| `ansible:*`    | Ansible automation/testing | `ansible:lint-ansible`      |
+| `k8s:*`        | Kubernetes management      | `k8s:destroy-stuck-ns`      |
+| `terraform:*`  | Infrastructure as Code     | `terraform:tf-check`        |
+| `pre-commit:*` | Code quality/linting       | `pre-commit:run-pre-commit` |
+| `renovate:*`   | Renovate bot operations    | `renovate:dry-run`          |
+| `bootstrap:*`  | Cluster bootstrap          | `bootstrap:wait`            |
+| `test:*`       | Local testing with kind    | `test:create`, `test:apply` |
 
 Run `task -l` to see all available tasks with descriptions.
 
