@@ -16,3 +16,4 @@ resources:
   - ./dashboards/home-automation-overview-dashboard.yaml
   - ./dashboards/throwingshade-operations-dashboard.yaml
   - ./dashboards/troy-backup-dashboard.yaml
+  - ./dashboards/adguard-iphone-dns-dashboard.yaml

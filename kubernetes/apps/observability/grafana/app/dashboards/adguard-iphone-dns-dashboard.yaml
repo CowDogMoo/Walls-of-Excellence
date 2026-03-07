@@ -1,0 +1,87 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adguard-iphone-dns
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Network"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  adguard-iphone-dns.json: |
+    {
+      "uid": "adguard-iphone-dns",
+      "title": "AdGuard: iPhone DNS Queries",
+      "tags": ["adguard", "dns", "iphone"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "id": 3,
+          "title": "Top 25 Domains Visited",
+          "type": "bargauge",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "topk(25, sum by (query_host) (count_over_time({job=\"adguard-querylog\", client_ip=~\"192.168.10.*\"}[$__range])))",
+              "legendFormat": "{{query_host}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "thresholds": { "steps": [{ "color": "blue", "value": null }] }
+            }
+          },
+          "options": {
+            "displayMode": "gradient",
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "orientation": "horizontal",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "showUnfilled": true
+          },
+          "gridPos": { "h": 14, "w": 12, "x": 0, "y": 3 }
+        },
+        {
+          "id": 4,
+          "title": "Query Activity",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({job=\"adguard-querylog\", client_ip=~\"192.168.10.*\"}[1m]))",
+              "legendFormat": "Queries/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 20,
+                "lineWidth": 2,
+                "pointSize": 5,
+                "spanNulls": false
+              }
+            }
+          },
+          "options": {
+            "legend": { "showLegend": false },
+            "tooltip": { "mode": "single" }
+          },
+          "gridPos": { "h": 14, "w": 12, "x": 12, "y": 3 }
+        }
+      ]
+    }

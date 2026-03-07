@@ -79,14 +79,17 @@ spec:
               protocol = "udp"
             }
             forward_to = [loki.process.syslog.receiver]
-            labels     = {
-              job = "syslog",
-            }
           }
 
           // Process syslog messages
           loki.process "syslog" {
             forward_to = [loki.write.loki.receiver]
+
+            stage.static_labels {
+              values = {
+                job = "syslog",
+              }
+            }
 
             // Add hostname label from syslog message
             stage.json {

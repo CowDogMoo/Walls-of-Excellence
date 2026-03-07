@@ -1,0 +1,204 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: adguard-home
+  namespace: networking
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: adguard-home
+    namespace: networking
+  install:
+    timeout: 10m
+    replace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    controllers:
+      adguard-home:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: adguard/adguardhome
+              tag: v0.107.72
+            env:
+              TZ: America/Denver
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 3000
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 3000
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+          alloy:
+            image:
+              repository: grafana/alloy
+              tag: v1.6.1
+            args:
+              - run
+              - /etc/alloy/config.alloy
+              - --storage.path=/tmp/alloy
+              - --server.http.listen-addr=0.0.0.0:12345
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+
+    service:
+      app:
+        controller: adguard-home
+        ports:
+          http:
+            port: 3000
+      dns:
+        controller: adguard-home
+        type: LoadBalancer
+        externalTrafficPolicy: Local
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: adguard-dns.techvomit.xyz
+        ports:
+          dns-tcp:
+            port: 53
+            protocol: TCP
+          dns-udp:
+            port: 53
+            protocol: UDP
+
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: adguard.techvomit.xyz
+        hosts:
+          - host: &host adguard.techvomit.xyz
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+
+    configMaps:
+      alloy-config:
+        enabled: true
+        data:
+          config.alloy: |
+            // Tail AdGuard Home query log
+            loki.source.file "querylog" {
+              targets = [
+                {__path__ = "/opt/adguardhome/work/data/querylog.json", job = "adguard-querylog"},
+              ]
+              forward_to = [loki.process.adguard.receiver]
+            }
+
+            // Parse AdGuard JSON query log
+            loki.process "adguard" {
+              forward_to = [loki.write.loki.receiver]
+
+              // Parse JSON fields from querylog
+              stage.json {
+                expressions = {
+                  timestamp    = "T",
+                  query_host   = "QH",
+                  query_type   = "QT",
+                  client_ip    = "IP",
+                  upstream     = "Upstream",
+                  elapsed_ns   = "Elapsed",
+                  client_proto = "CP",
+                }
+              }
+
+              // Add labels for querying
+              stage.labels {
+                values = {
+                  query_host   = "",
+                  query_type   = "",
+                  client_ip    = "",
+                  upstream     = "",
+                  client_proto = "",
+                }
+              }
+
+              // Use the log timestamp
+              stage.timestamp {
+                source = "timestamp"
+                format = "RFC3339"
+              }
+
+              // Add static labels
+              stage.static_labels {
+                values = {
+                  app = "adguard-home",
+                }
+              }
+            }
+
+            // Write to Loki
+            loki.write "loki" {
+              endpoint {
+                url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+              }
+            }
+
+    persistence:
+      config:
+        enabled: true
+        storageClass: nfs-client
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        advancedMounts:
+          adguard-home:
+            app:
+              - path: /opt/adguardhome/conf
+      data:
+        enabled: true
+        storageClass: nfs-client
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        globalMounts:
+          - path: /opt/adguardhome/work
+      alloy-config:
+        enabled: true
+        type: configMap
+        name: adguard-home
+        advancedMounts:
+          adguard-home:
+            alloy:
+              - path: /etc/alloy
