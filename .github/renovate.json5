@@ -23,6 +23,9 @@
   suppressNotifications: [
     'prIgnoreNotification',
   ],
+  ignorePaths: [
+    'kubernetes/deprecated/**',
+  ],
   rebaseWhen: 'conflicted',
   commitBodyTable: true,
   labels: [
