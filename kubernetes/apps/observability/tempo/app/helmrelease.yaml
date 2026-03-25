@@ -1,0 +1,112 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tempo
+  namespace: observability
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: tempo
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    tempo:
+      repository: grafana/tempo
+      tag: "2.9.0"
+      pullPolicy: IfNotPresent
+
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          memory: 4Gi
+
+      compactor:
+        compaction:
+          block_retention: 72h
+
+      storage:
+        trace:
+          backend: local
+          local:
+            path: /var/tempo/traces
+          wal:
+            path: /var/tempo/wal
+
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+        jaeger:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:14250
+            thrift_http:
+              endpoint: 0.0.0.0:14268
+        zipkin:
+          endpoint: 0.0.0.0:9411
+
+      metricsGenerator:
+        enabled: true
+        registry:
+          collection_interval: 15s
+          external_labels:
+            source: tempo
+            cluster: woe
+        processor:
+          span_metrics:
+            enable_target_info: true
+            dimensions:
+              - service.namespace
+              - deployment.environment
+          service_graphs:
+            wait: 10s
+            max_items: 10000
+        storage:
+          path: /var/tempo/metrics
+          remote_write:
+            - url: "http://prometheus-operated.observability.svc.cluster.local:9090/api/v1/write"
+        traces_storage:
+          path: /var/tempo/wal
+
+      queryFrontend:
+        search:
+          max_duration: 168h
+
+      overrides:
+        defaults:
+          metrics_generator:
+            processors:
+              - service-graphs
+              - span-metrics
+
+    replicas: 1
+
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClassName: local-path
+
+    service:
+      type: ClusterIP
+
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+
+    multitenancyEnabled: false
+
+    podAnnotations:
+      reloader.stakater.com/auto: "true"

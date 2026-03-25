@@ -114,6 +114,7 @@ spec:
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: prometheus
+        enableRemoteWriteReceiver: true
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         ruleSelectorNilUsesHelmValues: false

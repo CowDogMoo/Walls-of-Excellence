@@ -115,6 +115,7 @@ spec:
           - { name: Alertmanager, orgId: 1 }
           - { name: Loki, orgId: 1 }
           - { name: Prometheus, orgId: 1 }
+          - { name: Tempo, orgId: 1 }
         datasources:
           - name: Prometheus
             type: prometheus
@@ -131,6 +132,41 @@ spec:
               maxLines: 250
               timeout: 300
               queryTimeout: 300
+              derivedFields:
+                - datasourceUid: tempo
+                  matcherRegex: "(?:traceID|trace_id|traceid)[=:]\\s*\"?([a-fA-F0-9]+)\"?"
+                  name: TraceID
+                  url: "$${__value.raw}"
+          - name: Tempo
+            type: tempo
+            uid: tempo
+            access: proxy
+            url: http://tempo.observability.svc.cluster.local:3200
+            jsonData:
+              tracesToLogsV2:
+                datasourceUid: loki
+                spanStartTimeShift: -1h
+                spanEndTimeShift: 1h
+                filterByTraceID: true
+                filterBySpanID: false
+                tags:
+                  - { key: "service.name", value: "service" }
+                  - { key: "service.namespace", value: "namespace" }
+              tracesToMetrics:
+                datasourceUid: prometheus
+                spanStartTimeShift: -1h
+                spanEndTimeShift: 1h
+                tags:
+                  - { key: "service.name", value: "service" }
+                  - { key: "service.namespace", value: "namespace" }
+              serviceMap:
+                datasourceUid: prometheus
+              nodeGraph:
+                enabled: true
+              search:
+                hide: false
+              lokiSearch:
+                datasourceUid: loki
           - name: Alertmanager
             type: alertmanager
             uid: alertmanager

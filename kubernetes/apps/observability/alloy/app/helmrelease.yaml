@@ -160,6 +160,29 @@ spec:
               url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
             }
           }
+
+          // OTLP trace receiver
+          otelcol.receiver.otlp "default" {
+            grpc {
+              endpoint = "0.0.0.0:4317"
+            }
+            http {
+              endpoint = "0.0.0.0:4318"
+            }
+            output {
+              traces = [otelcol.exporter.otlp.tempo.input]
+            }
+          }
+
+          // Export traces to Tempo
+          otelcol.exporter.otlp "tempo" {
+            client {
+              endpoint = "tempo.observability.svc.cluster.local:4317"
+              tls {
+                insecure = true
+              }
+            }
+          }
       resources:
         requests:
           cpu: 1388m
@@ -176,6 +199,14 @@ spec:
           port: 1514
           targetPort: 1514
           protocol: UDP
+        - name: otlp-grpc
+          port: 4317
+          targetPort: 4317
+          protocol: TCP
+        - name: otlp-http
+          port: 4318
+          targetPort: 4318
+          protocol: TCP
 
     serviceMonitor:
       enabled: true

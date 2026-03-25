@@ -11,5 +11,6 @@ resources:
   - ./grafana/ks.yaml
   - ./kube-prometheus-stack/ks.yaml
   - ./loki/ks.yaml
+  - ./tempo/ks.yaml
   - ./unpoller/ks.yaml
   - ./vector/ks.yaml
