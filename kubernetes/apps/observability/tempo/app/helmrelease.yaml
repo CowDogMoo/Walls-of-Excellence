@@ -10,6 +10,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: tempo
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Ingress
+              name: tempo
+            patch: |
+              - op: replace
+                path: /spec/rules/0/http/paths/0/backend/service/port/number
+                value: 3200
   install:
     remediation:
       retries: -1
@@ -101,6 +111,19 @@ spec:
 
     service:
       type: ClusterIP
+
+    tempoQuery:
+      enabled: true
+      ingress:
+        enabled: true
+        ingressClassName: ingress-traefik
+        path: /
+        pathType: Prefix
+        hosts:
+          - &host tempo.techvomit.xyz
+        tls:
+          - hosts:
+              - *host
 
     serviceMonitor:
       enabled: true
