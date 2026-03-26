@@ -103,6 +103,7 @@ spec:
         className: ingress-traefik
         annotations:
           external-dns.alpha.kubernetes.io/hostname: adguard.techvomit.xyz
+          traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - host: &host adguard.techvomit.xyz
             paths:

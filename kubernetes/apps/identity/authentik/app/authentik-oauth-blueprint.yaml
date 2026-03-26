@@ -120,6 +120,14 @@ data:
         attrs:
           name: NAS Users
 
+      - model: authentik_core.group
+        id: adguard-admins
+        identifiers:
+          name: AdGuard Admins
+        state: present
+        attrs:
+          name: AdGuard Admins
+
       # Custom Scope Mapping for Home Assistant groups and admin status
       - model: authentik_providers_oauth2.scopemapping
         id: homeassistant-groups-scope
@@ -220,6 +228,25 @@ data:
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
           mode: forward_single
           external_host: "https://guacamole.techvomit.xyz"
+          cookie_domain: "techvomit.xyz"
+          skip_path_regex: ""
+          basic_auth_enabled: false
+          intercept_header_auth: true
+          access_token_validity: "minutes=5"
+          refresh_token_validity: "days=30"
+
+      # Proxy Provider for AdGuard Home (Forward Auth)
+      - model: authentik_providers_proxy.proxyprovider
+        id: adguard-provider
+        identifiers:
+          name: AdGuard Home
+        state: present
+        attrs:
+          name: AdGuard Home
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          mode: forward_single
+          external_host: "https://adguard.techvomit.xyz"
           cookie_domain: "techvomit.xyz"
           skip_path_regex: ""
           basic_auth_enabled: false
@@ -449,6 +476,20 @@ data:
           meta_description: "Synology NAS - Network Attached Storage"
           policy_engine_mode: any
 
+      # Application for AdGuard Home
+      - model: authentik_core.application
+        id: adguard-app
+        identifiers:
+          slug: adguard-home
+        state: present
+        attrs:
+          name: AdGuard Home
+          slug: adguard-home
+          provider: !KeyOf adguard-provider
+          meta_launch_url: "https://adguard.techvomit.xyz"
+          meta_description: "AdGuard Home - Network-wide DNS Ad Blocker"
+          policy_engine_mode: any
+
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
@@ -519,6 +560,16 @@ data:
           name: nas-user-policy
           expression: |
             return ak_is_group_member(request.user, name="NAS Admins") or ak_is_group_member(request.user, name="NAS Users")
+
+      - model: authentik_policies_expression.expressionpolicy
+        id: adguard-admin-policy
+        identifiers:
+          name: adguard-admin-policy
+        state: present
+        attrs:
+          name: adguard-admin-policy
+          expression: |
+            return ak_is_group_member(request.user, name="AdGuard Admins")
 
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
@@ -597,6 +648,17 @@ data:
           enabled: true
           order: 0
 
+      # Policy binding for AdGuard Home application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf adguard-app
+          policy: !KeyOf adguard-admin-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
       # Assign provider to embedded outpost
       - model: authentik_outposts.outpost
         identifiers:
@@ -605,3 +667,4 @@ data:
           providers:
             - !KeyOf traefik-provider
             - !KeyOf guacamole-provider
+            - !KeyOf adguard-provider
