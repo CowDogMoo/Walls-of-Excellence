@@ -104,11 +104,11 @@ spec:
             name: authentik-secrets
       resources:
         requests:
-          memory: 776Mi
-          cpu: 300m
+          memory: 1181Mi
+          cpu: 224m
         limits:
-          memory: 1Gi
-          cpu: 750m
+          memory: 1214Mi
+          cpu: 278m
 
       # Spread authentik components across different nodes to prevent CPU saturation
       affinity:
@@ -198,11 +198,11 @@ spec:
 
       resources:
         requests:
-          memory: 488Mi
-          cpu: 49m
+          memory: 776Mi
+          cpu: 78m
         limits:
-          memory: 700Mi
-          cpu: 200m
+          memory: 797Mi
+          cpu: 111m
 
       # Spread authentik components across different nodes to prevent CPU saturation
       affinity:
@@ -297,11 +297,11 @@ spec:
 
         resources:
           requests:
-            memory: 391Mi
-            cpu: 271m
+            memory: 454Mi
+            cpu: 63m
           limits:
-            memory: 600Mi
-            cpu: 500m
+            memory: 467Mi
+            cpu: 64m
 
         # Pin PostgreSQL to k8s9 for fast NVMe storage
         nodeSelector:

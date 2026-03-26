@@ -38,11 +38,11 @@ spec:
               containerPort: 5432
           resources:
             requests:
-              cpu: 50m
-              memory: 256Mi
+              cpu: 35m
+              memory: 600Mi
             limits:
-              cpu: 200m
-              memory: 512Mi
+              cpu: 95m
+              memory: 745Mi
           readinessProbe:
             tcpSocket:
               port: 8080
@@ -142,11 +142,11 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 11m
+              memory: 50Mi
             limits:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 11m
+              memory: 50Mi
       restartPolicy: Always
       volumes:
         - name: guacamole-pvc

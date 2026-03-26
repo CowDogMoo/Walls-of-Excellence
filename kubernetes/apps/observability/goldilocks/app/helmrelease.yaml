@@ -50,15 +50,15 @@ spec:
               - *host
       resources:
         requests:
-          cpu: 25m
-          memory: 64Mi
+          cpu: 15m
+          memory: 100Mi
         limits:
-          memory: 64Mi
+          memory: 100Mi
     controller:
       enabled: true
       resources:
         requests:
-          cpu: 25m
-          memory: 64Mi
+          cpu: 23m
+          memory: 100Mi
         limits:
-          memory: 64Mi
+          memory: 100Mi
