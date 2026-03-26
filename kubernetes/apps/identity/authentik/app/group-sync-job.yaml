@@ -1,0 +1,97 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: authentik-group-sync
+  namespace: identity
+spec:
+  schedule: "0 */6 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Replace
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: group-sync
+              image: python:3.13-alpine
+              env:
+                - name: PYTHONUNBUFFERED
+                  value: "1"
+                - name: AUTHENTIK_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: authentik-secrets
+                      key: AUTHENTIK_BOOTSTRAP_TOKEN
+                - name: AUTHENTIK_ADMIN_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: authentik-admin-account
+                      key: username
+              command:
+                - python3
+                - -c
+                - |
+                  import json, os, sys
+                  from urllib.request import Request, urlopen
+                  from urllib.parse import quote
+
+                  API = "http://authentik-server.identity.svc.cluster.local:80/api/v3"
+                  TOKEN = os.environ["AUTHENTIK_TOKEN"]
+                  USERNAME = os.environ["AUTHENTIK_ADMIN_USERNAME"]
+                  HEADERS = {
+                      "Authorization": f"Bearer {TOKEN}",
+                      "Content-Type": "application/json",
+                  }
+
+                  # Built-in authentik groups that should not be managed by this job
+                  SKIP_GROUPS = {"authentik Admins"}
+
+                  def api_get(path):
+                      req = Request(f"{API}{path}", headers=HEADERS)
+                      with urlopen(req) as resp:
+                          return json.load(resp)
+
+                  def api_post(path, data):
+                      body = json.dumps(data).encode()
+                      req = Request(f"{API}{path}", data=body, headers=HEADERS, method="POST")
+                      with urlopen(req) as resp:
+                          return resp.status
+
+                  # Resolve user PK
+                  users = api_get(f"/core/users/?username={quote(USERNAME)}")
+                  if not users["results"]:
+                      print(f"ERROR: user '{USERNAME}' not found")
+                      sys.exit(1)
+
+                  user_pk = users["results"][0]["pk"]
+                  print(f"Resolved user '{USERNAME}' to pk={user_pk}")
+
+                  # Fetch all groups dynamically from the API
+                  all_groups = []
+                  page = 1
+                  while True:
+                      data = api_get(f"/core/groups/?page={page}&page_size=100")
+                      all_groups.extend(data["results"])
+                      if not data["pagination"]["next"]:
+                          break
+                      page += 1
+
+                  groups = [g for g in all_groups if g["name"] not in SKIP_GROUPS]
+                  print(f"Found {len(groups)} groups to sync")
+
+                  errors = 0
+                  for group in groups:
+                      try:
+                          api_post(f"/core/groups/{group['pk']}/add_user/", {"pk": user_pk})
+                          print(f"OK: '{USERNAME}' -> '{group['name']}'")
+                      except Exception as e:
+                          print(f"ERROR: failed to add user to '{group['name']}': {e}")
+                          errors += 1
+
+                  print(f"Group sync complete ({len(groups) - errors}/{len(groups)} succeeded)")
+                  sys.exit(1 if errors else 0)

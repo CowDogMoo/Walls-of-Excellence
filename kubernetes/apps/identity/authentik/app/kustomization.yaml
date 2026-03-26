@@ -5,11 +5,13 @@ kind: Kustomization
 namespace: identity
 resources:
   - externalsecret.yaml
+  - externalsecret-admin.yaml
   - authentik-oauth-blueprint.yaml
   - authentik-passkeys-blueprint.yaml
   - helmrelease.yaml
   - helmrepository.yaml
   - prometheusrule.yaml
+  - group-sync-job.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: authentik
