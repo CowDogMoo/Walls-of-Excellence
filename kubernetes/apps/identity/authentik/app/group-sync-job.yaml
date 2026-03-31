@@ -18,7 +18,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: group-sync
-              image: python:3.13-alpine
+              image: python:3.14-alpine
               env:
                 - name: PYTHONUNBUFFERED
                   value: "1"
