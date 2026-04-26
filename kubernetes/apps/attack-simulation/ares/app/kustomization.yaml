@@ -19,7 +19,6 @@ resources:
   - agents/orchestrator.yaml
   - agents/recon.yaml
   - agents/credential-access.yaml
-  - agents/cracker.yaml
   - agents/acl.yaml
   - agents/privesc.yaml
   - agents/lateral-movement.yaml

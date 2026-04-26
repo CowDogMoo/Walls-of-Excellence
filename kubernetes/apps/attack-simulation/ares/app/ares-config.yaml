@@ -80,11 +80,6 @@ data:
         max_steps: 100
         pod_selector: "ares.dreadnode.io/role=credential_access"
 
-      cracker:
-        model: "gpt-5.2"
-        max_steps: 150
-        pod_selector: "ares.dreadnode.io/role=cracker"
-
       acl:
         model: "gpt-5.2"
         max_steps: 150
