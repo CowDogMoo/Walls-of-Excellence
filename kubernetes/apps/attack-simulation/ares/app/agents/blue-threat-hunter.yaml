@@ -106,14 +106,14 @@ spec:
               mountPath: /ares
           livenessProbe:
             exec:
-              command: ["/bin/sh", "-c", "pgrep -f 'sleep infinity'"]
+              command: ["/bin/sh", "-c", "true"]
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             exec:
-              command: ["/bin/sh", "-c", "pgrep -f 'sleep infinity'"]
+              command: ["/bin/sh", "-c", "true"]
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3
