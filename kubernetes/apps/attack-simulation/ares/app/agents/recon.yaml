@@ -1,0 +1,156 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ares-recon-agent
+  namespace: attack-simulation
+  labels:
+    app.kubernetes.io/name: ares-recon-agent
+    app.kubernetes.io/part-of: attack-simulation
+    ares.dreadnode.io/role: recon
+    ares.dreadnode.io/component: red-team
+spec:
+  serviceName: ares-recon-agent
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ares-recon-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ares-recon-agent
+        app.kubernetes.io/part-of: attack-simulation
+        ares.dreadnode.io/role: recon
+        ares.dreadnode.io/component: red-team
+    spec:
+      serviceAccountName: ares-agent
+      imagePullSecrets:
+        - name: ghcr-auth
+      hostAliases:
+        - ip: "10.1.10.10"
+          hostnames:
+            - "sevenkingdoms.local"
+            - "kingslanding.sevenkingdoms.local"
+            - "kingslanding"
+        - ip: "10.1.10.11"
+          hostnames:
+            - "north.sevenkingdoms.local"
+            - "winterfell.north.sevenkingdoms.local"
+            - "winterfell"
+        - ip: "10.1.10.12"
+          hostnames:
+            - "essos.local"
+            - "meereen.essos.local"
+            - "meereen"
+        - ip: "10.1.10.22"
+          hostnames:
+            - "castelblack.north.sevenkingdoms.local"
+            - "castelblack"
+        - ip: "10.1.10.23"
+          hostnames:
+            - "braavos.essos.local"
+            - "braavos"
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: agent
+          image: ghcr.io/dreadnode/ares-recon-agent:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              while true; do
+                ares worker recon --redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
+                status=$?
+                echo "ares worker exited with status $status; restarting in 5s" >&2
+                sleep 5
+              done
+          stdin: true
+          tty: true
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
+                - NET_ADMIN
+            seccompProfile:
+              type: Unconfined
+          env:
+            - name: ARES_ROLE
+              value: "recon"
+            - name: ARES_CONFIG
+              value: "/etc/ares/ares.yaml"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ares-llm-secret
+                  key: OPENAI_API_KEY
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: ares-agent-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/ares
+            - name: workspace
+              mountPath: /ares
+          livenessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pgrep -f 'ares worker'"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pgrep -f 'ares worker'"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: config
+          configMap:
+            name: ares-config
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nfs-client
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ares-recon-agent
+  namespace: attack-simulation
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: ares-recon-agent
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

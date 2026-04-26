@@ -8,3 +8,4 @@ resources:
   # Flux-Kustomizations
   - ./atomic-red-team/ks.yaml
   - ./ttpforge/ks.yaml
+  - ./ares/ks.yaml

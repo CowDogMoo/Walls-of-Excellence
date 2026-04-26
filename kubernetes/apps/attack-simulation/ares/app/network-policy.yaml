@@ -1,0 +1,23 @@
+---
+# Allow Ares agents full egress (lab network, DNS, Redis, LLM APIs)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-lab-network-egress
+  namespace: attack-simulation
+  labels:
+    app.kubernetes.io/part-of: attack-simulation
+    ares.dreadnode.io/component: network-policy
+spec:
+  podSelector:
+    matchExpressions:
+      - key: ares.dreadnode.io/component
+        operator: In
+        values:
+          - red-team
+          - blue-team
+  policyTypes:
+    - Egress
+  egress:
+    # Allow all egress (lab network, cluster DNS, Redis, OpenAI API)
+    - {}

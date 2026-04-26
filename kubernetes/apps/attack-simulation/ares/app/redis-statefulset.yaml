@@ -1,0 +1,93 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: attack-simulation
+  labels:
+    app: redis
+    app.kubernetes.io/part-of: attack-simulation
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        app.kubernetes.io/part-of: attack-simulation
+    spec:
+      initContainers:
+        - name: config-setup
+          image: redis:8-alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cp /etc/redis-config/redis.conf /data/redis.conf
+              echo "requirepass $REDIS_PASSWORD" >> /data/redis.conf
+              echo "masterauth $REDIS_PASSWORD" >> /data/redis.conf
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /etc/redis-config
+      containers:
+        - name: redis
+          image: redis:8-alpine
+          command: ["redis-server", "/data/redis.conf"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - redis-cli -a $REDIS_PASSWORD ping | grep PONG
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - redis-cli -a $REDIS_PASSWORD ping | grep PONG
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+      volumes:
+        - name: config
+          configMap:
+            name: redis-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nfs-client
+        resources:
+          requests:
+            storage: 5Gi

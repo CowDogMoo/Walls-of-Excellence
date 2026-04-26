@@ -1,0 +1,141 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ares-agent-config
+  namespace: attack-simulation
+data:
+  ARES_EXECUTION_MODE: "k8s"
+  ARES_WORKER_MODE: "tool_exec"
+  REDIS_HOST: "redis.attack-simulation.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  CHECKPOINT_INTERVAL: "60"
+  MAX_RETRIES: "3"
+  RETRY_DELAY: "5"
+  K8S_NAMESPACE: "attack-simulation"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  COORDINATION_MODE: "distributed"
+  STATE_TTL_HOURS: "24"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ares-blue-agent-config
+  namespace: attack-simulation
+  labels:
+    app.kubernetes.io/part-of: attack-simulation
+    ares.dreadnode.io/component: blue-team
+data:
+  ARES_EXECUTION_MODE: "k8s"
+  ARES_WORKER_MODE: "tool_exec"
+  ARES_TEAM: "blue"
+  K8S_LABEL_SELECTOR: "ares.dreadnode.io/component=blue-team"
+  INVESTIGATION_TIMEOUT: "3600"
+  REDIS_HOST: "redis.attack-simulation.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  CHECKPOINT_INTERVAL: "60"
+  MAX_RETRIES: "3"
+  RETRY_DELAY: "5"
+  K8S_NAMESPACE: "attack-simulation"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  COORDINATION_MODE: "distributed"
+  STATE_TTL_HOURS: "24"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ares-config
+  namespace: attack-simulation
+data:
+  ares.yaml: |
+    operation:
+      name: "ares-multi-agent"
+      namespace: "attack-simulation"
+      checkpoint_interval: 60
+      max_concurrent_tasks: 8
+      task_dispatch_delay: 1.0
+      rate_limit_backoff: 15.0
+      rate_limit_threshold: 2
+      stop_on_golden_ticket: false
+      strategy: comprehensive
+      continue_after_da: true
+
+    agents:
+      orchestrator:
+        model: "gpt-5.2"
+        max_steps: 200
+        pod_selector: "app.kubernetes.io/name=ares-orchestrator"
+
+      recon:
+        model: "gpt-5.2"
+        max_steps: 100
+        pod_selector: "ares.dreadnode.io/role=recon"
+
+      credential_access:
+        model: "gpt-5.2"
+        max_steps: 100
+        pod_selector: "ares.dreadnode.io/role=credential_access"
+
+      cracker:
+        model: "gpt-5.2"
+        max_steps: 150
+        pod_selector: "ares.dreadnode.io/role=cracker"
+
+      acl:
+        model: "gpt-5.2"
+        max_steps: 150
+        pod_selector: "ares.dreadnode.io/role=acl"
+
+      privesc:
+        model: "gpt-5.2"
+        max_steps: 100
+        pod_selector: "ares.dreadnode.io/role=privesc"
+
+      lateral:
+        model: "gpt-5.2"
+        max_steps: 300
+        pod_selector: "ares.dreadnode.io/role=lateral"
+
+      coercion:
+        model: "gpt-5.2"
+        max_steps: 30
+        pod_selector: "ares.dreadnode.io/role=coercion"
+
+      blue_orchestrator:
+        model: "gpt-5.2"
+        max_steps: 200
+        pod_selector: "app.kubernetes.io/name=ares-blue-orchestrator"
+
+      blue_triage:
+        model: "gpt-5.2"
+        max_steps: 100
+        pod_selector: "ares.dreadnode.io/role=triage,ares.dreadnode.io/component=blue-team"
+
+      blue_threat_hunter:
+        model: "gpt-5.2"
+        max_steps: 150
+        pod_selector: "ares.dreadnode.io/role=threat-hunter,ares.dreadnode.io/component=blue-team"
+
+      blue_lateral_analyst:
+        model: "gpt-5.2"
+        max_steps: 200
+        pod_selector: "ares.dreadnode.io/role=lateral-analyst,ares.dreadnode.io/component=blue-team"
+
+    timeouts:
+      agent_heartbeat: 180
+      task_timeout: 300
+      operation_timeout: 7200
+      lateral_movement: 180
+      hash_cracking: 600
+      exploitation: 900
+
+    recovery:
+      enabled: true
+      max_retries: 3
+      retry_delay: 10
+      checkpoint_on_credential: true
+      checkpoint_on_vulnerability: true

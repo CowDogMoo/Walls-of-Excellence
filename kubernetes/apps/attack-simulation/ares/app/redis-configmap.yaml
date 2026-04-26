@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: attack-simulation
+data:
+  redis.conf: |
+    appendonly yes
+    appendfsync everysec
+    save 900 1
+    save 300 10
+    save 60 10000
+    maxmemory 512mb
+    maxmemory-policy allkeys-lru
+    databases 16
+    tcp-keepalive 300
+    timeout 0

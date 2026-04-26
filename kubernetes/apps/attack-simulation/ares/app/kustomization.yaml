@@ -1,0 +1,33 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Secrets
+  - externalsecret-redis.yaml
+  - externalsecret-llm.yaml
+  # Infrastructure
+  - redis-configmap.yaml
+  - redis-statefulset.yaml
+  - redis-service.yaml
+  - postgresql.yaml
+  # RBAC
+  - rbac.yaml
+  # Ares Config
+  - ares-config.yaml
+  # Red Team Agents
+  - agents/orchestrator.yaml
+  - agents/recon.yaml
+  - agents/credential-access.yaml
+  - agents/cracker.yaml
+  - agents/acl.yaml
+  - agents/privesc.yaml
+  - agents/lateral-movement.yaml
+  - agents/coercion.yaml
+  # Blue Team Agents
+  - agents/blue-orchestrator.yaml
+  - agents/blue-triage.yaml
+  - agents/blue-threat-hunter.yaml
+  - agents/blue-lateral-analyst.yaml
+  # Network
+  - network-policy.yaml

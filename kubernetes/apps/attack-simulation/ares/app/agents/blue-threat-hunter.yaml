@@ -1,0 +1,151 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ares-blue-threat-hunter
+  namespace: attack-simulation
+  labels:
+    app.kubernetes.io/name: ares-blue-threat-hunter
+    app.kubernetes.io/part-of: attack-simulation
+    ares.dreadnode.io/role: threat-hunter
+    ares.dreadnode.io/component: blue-team
+spec:
+  serviceName: ares-blue-threat-hunter
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ares-blue-threat-hunter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ares-blue-threat-hunter
+        app.kubernetes.io/part-of: attack-simulation
+        ares.dreadnode.io/role: threat-hunter
+        ares.dreadnode.io/component: blue-team
+    spec:
+      serviceAccountName: ares-blue-agent
+      imagePullSecrets:
+        - name: ghcr-auth
+      hostAliases:
+        - ip: "10.1.10.10"
+          hostnames:
+            - "sevenkingdoms.local"
+            - "kingslanding.sevenkingdoms.local"
+            - "kingslanding"
+        - ip: "10.1.10.11"
+          hostnames:
+            - "north.sevenkingdoms.local"
+            - "winterfell.north.sevenkingdoms.local"
+            - "winterfell"
+        - ip: "10.1.10.12"
+          hostnames:
+            - "essos.local"
+            - "meereen.essos.local"
+            - "meereen"
+        - ip: "10.1.10.22"
+          hostnames:
+            - "castelblack.north.sevenkingdoms.local"
+            - "castelblack"
+        - ip: "10.1.10.23"
+          hostnames:
+            - "braavos.essos.local"
+            - "braavos"
+      containers:
+        - name: agent
+          image: ghcr.io/dreadnode/ares-blue-threat-hunter-agent:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              while true; do
+                ares blue-worker "$ARES_ROLE" --worker-args.redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
+                status=$?
+                echo "ares blue-worker exited with status $status; restarting in 5s" >&2
+                sleep 5
+              done
+          stdin: true
+          tty: true
+          env:
+            - name: ARES_ROLE
+              value: "threat-hunter"
+            - name: ARES_TEAM
+              value: "blue"
+            - name: ARES_BLUE_GLOBAL_POOL
+              value: "true"
+            - name: ARES_CONFIG
+              value: "/etc/ares/ares.yaml"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ares-llm-secret
+                  key: OPENAI_API_KEY
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: ares-blue-agent-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/ares
+            - name: workspace
+              mountPath: /ares
+          livenessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pgrep -f 'ares blue-worker'"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pgrep -f 'ares blue-worker'"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: config
+          configMap:
+            name: ares-config
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nfs-client
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ares-blue-threat-hunter
+  namespace: attack-simulation
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: ares-blue-threat-hunter
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

@@ -1,0 +1,66 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ares-persistent-store
+  namespace: attack-simulation
+  labels:
+    app.kubernetes.io/name: ares-persistent-store
+    app.kubernetes.io/part-of: attack-simulation
+    app.kubernetes.io/component: database
+spec:
+  instances: 3
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.5-3
+
+  storage:
+    size: 10Gi
+    storageClass: nfs-client
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "256MB"
+      effective_cache_size: "768MB"
+      maintenance_work_mem: "64MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      work_mem: "4MB"
+      min_wal_size: "1GB"
+      max_wal_size: "4GB"
+      max_worker_processes: "4"
+      max_parallel_workers_per_gather: "2"
+      max_parallel_workers: "4"
+      max_parallel_maintenance_workers: "2"
+      log_statement: "ddl"
+      log_min_duration_statement: "1000"
+
+  bootstrap:
+    initdb:
+      database: ares
+      owner: ares
+      encoding: UTF8
+      localeCType: en_US.utf8
+      localeCollate: en_US.utf8
+
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+  affinity:
+    enablePodAntiAffinity: true
+
+  monitoring:
+    enablePodMonitor: true
+
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: switchover
+
+  enableSuperuserAccess: true

@@ -1,0 +1,107 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ares-orchestrator
+  namespace: attack-simulation
+  labels:
+    app.kubernetes.io/name: ares-orchestrator
+    app.kubernetes.io/part-of: attack-simulation
+    ares.dreadnode.io/component: red-team
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ares-orchestrator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ares-orchestrator
+        app.kubernetes.io/part-of: attack-simulation
+        ares.dreadnode.io/component: red-team
+    spec:
+      serviceAccountName: ares-orchestrator
+      imagePullSecrets:
+        - name: ghcr-auth
+      hostAliases:
+        - ip: "10.1.10.10"
+          hostnames:
+            - "sevenkingdoms.local"
+            - "kingslanding.sevenkingdoms.local"
+            - "kingslanding"
+        - ip: "10.1.10.11"
+          hostnames:
+            - "north.sevenkingdoms.local"
+            - "winterfell.north.sevenkingdoms.local"
+            - "winterfell"
+        - ip: "10.1.10.12"
+          hostnames:
+            - "essos.local"
+            - "meereen.essos.local"
+            - "meereen"
+        - ip: "10.1.10.22"
+          hostnames:
+            - "castelblack.north.sevenkingdoms.local"
+            - "castelblack"
+        - ip: "10.1.10.23"
+          hostnames:
+            - "braavos.essos.local"
+            - "braavos"
+      containers:
+        - name: orchestrator
+          image: ghcr.io/dreadnode/ares-orchestrator:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Ares orchestrator ready. Use 'ares ops submit' to start operations."
+              sleep infinity
+          env:
+            - name: ARES_CONFIG
+              value: "/etc/ares/ares.yaml"
+            - name: ARES_EXECUTION_MODE
+              value: "k8s"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+            - name: REDIS_URL
+              value: "redis://:$(REDIS_PASSWORD)@redis.attack-simulation.svc.cluster.local:6379"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ares-llm-secret
+                  key: OPENAI_API_KEY
+            - name: ARES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: LOG_LEVEL
+              value: "INFO"
+          envFrom:
+            - configMapRef:
+                name: ares-agent-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/ares
+            - name: workspace
+              mountPath: /ares
+      volumes:
+        - name: config
+          configMap:
+            name: ares-config
+        - name: workspace
+          emptyDir: {}
