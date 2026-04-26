@@ -59,9 +59,9 @@ spec:
           args:
             - |
               while true; do
-                ares blue-worker "$ARES_ROLE" --worker-args.redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
+                ares blue worker "$ARES_ROLE" --worker-args.redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
                 status=$?
-                echo "ares blue-worker exited with status $status; restarting in 5s" >&2
+                echo "ares blue worker exited with status $status; restarting in 5s" >&2
                 sleep 5
               done
           stdin: true
@@ -110,14 +110,14 @@ spec:
               mountPath: /ares
           livenessProbe:
             exec:
-              command: ["/bin/sh", "-c", "pgrep -f 'ares blue-worker'"]
+              command: ["/bin/sh", "-c", "pgrep -f 'ares blue worker'"]
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             exec:
-              command: ["/bin/sh", "-c", "pgrep -f 'ares blue-worker'"]
+              command: ["/bin/sh", "-c", "pgrep -f 'ares blue worker'"]
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
