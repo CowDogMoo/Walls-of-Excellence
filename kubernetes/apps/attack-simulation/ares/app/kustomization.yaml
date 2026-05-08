@@ -6,6 +6,7 @@ resources:
   # Secrets
   - externalsecret-redis.yaml
   - externalsecret-llm.yaml
+  - externalsecret-grafana.yaml
   # Infrastructure
   - redis-configmap.yaml
   - redis-statefulset.yaml

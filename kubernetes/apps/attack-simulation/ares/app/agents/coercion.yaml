@@ -102,6 +102,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_SERVICE_NAME
+              value: "ares-coercion"
           envFrom:
             - configMapRef:
                 name: ares-agent-config

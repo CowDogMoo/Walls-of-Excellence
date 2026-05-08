@@ -1,0 +1,218 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ares-agents-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Attack Simulation"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+data:
+  ares-agents.json: |
+    {
+      "uid": "ares-agents",
+      "title": "Ares: Red and Blue Agents",
+      "tags": ["ares", "attack-simulation", "red-team", "blue-team"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Running agent pods",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_status_phase{namespace=\"attack-simulation\", phase=\"Running\", pod=~\"ares-.*\"})",
+              "legendFormat": "running",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+              "unit": "short"
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Pod restarts (1h)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"attack-simulation\", pod=~\"ares-.*\"}[1h]))",
+              "legendFormat": "restarts",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] },
+              "unit": "short"
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Log lines (1h)",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\"}[1h]))",
+              "legendFormat": "lines",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "steps": [{ "color": "blue", "value": null }] },
+              "unit": "short"
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Errors (1h)",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\"} |~ \"(?i)error|panic|fatal\" [1h]))",
+              "legendFormat": "errors",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 50 }] },
+              "unit": "short"
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Log volume per agent",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "sum by (pod) (rate({namespace=\"attack-simulation\", pod=~\"ares-.*\"}[1m]))",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "spanNulls": false },
+              "unit": "short"
+            }
+          },
+          "options": { "legend": { "showLegend": true, "placement": "right" }, "tooltip": { "mode": "multi" } },
+          "gridPos": { "h": 10, "w": 12, "x": 0, "y": 4 }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Pod CPU (per agent)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"attack-simulation\", pod=~\"ares-.*\", container!=\"\", container!=\"POD\"}[5m]))",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "spanNulls": false },
+              "unit": "short"
+            }
+          },
+          "options": { "legend": { "showLegend": true, "placement": "right" }, "tooltip": { "mode": "multi" } },
+          "gridPos": { "h": 10, "w": 12, "x": 12, "y": 4 }
+        },
+        {
+          "id": 7,
+          "type": "logs",
+          "title": "Red team agent logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", pod=~\"ares-(orchestrator|recon-agent|credential-access-agent|acl-agent|privesc-agent|lateral-movement-agent|coercion-agent).*\"}",
+              "refId": "A"
+            }
+          ],
+          "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
+          "gridPos": { "h": 12, "w": 12, "x": 0, "y": 14 }
+        },
+        {
+          "id": 8,
+          "type": "logs",
+          "title": "Blue team agent logs",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", pod=~\"ares-blue-.*\"}",
+              "refId": "A"
+            }
+          ],
+          "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
+          "gridPos": { "h": 12, "w": 12, "x": 12, "y": 14 }
+        },
+        {
+          "id": 9,
+          "type": "table",
+          "title": "Pod status (live)",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum by (pod, phase) (kube_pod_status_phase{namespace=\"attack-simulation\", pod=~\"ares-.*\"}) > 0",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true }, "indexByName": { "pod": 0, "phase": 1, "Value": 2 }, "renameByName": { "Value": "count" } } }
+          ],
+          "gridPos": { "h": 10, "w": 12, "x": 0, "y": 26 }
+        },
+        {
+          "id": 10,
+          "type": "logs",
+          "title": "Errors and warnings (all agents)",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", pod=~\"ares-.*\"} |~ \"(?i)error|panic|fatal|warn\"",
+              "refId": "A"
+            }
+          ],
+          "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "exact", "sortOrder": "Descending" },
+          "gridPos": { "h": 10, "w": 12, "x": 12, "y": 26 }
+        }
+      ]
+    }

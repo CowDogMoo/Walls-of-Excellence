@@ -57,8 +57,12 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Ares blue orchestrator ready."
-              sleep infinity
+              while true; do
+                ares orchestrator
+                rc=$?
+                echo "ares blue orchestrator exited with status $rc; restarting in 10s" >&2
+                sleep 10
+              done
           env:
             - name: ARES_CONFIG
               value: "/etc/ares/ares.yaml"
@@ -84,6 +88,13 @@ spec:
                 secretKeyRef:
                   name: ares-llm-secret
                   key: OPENAI_API_KEY
+            - name: GRAFANA_SERVICE_ACCOUNT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ares-grafana-secret
+                  key: GRAFANA_SERVICE_ACCOUNT_TOKEN
+            - name: OTEL_SERVICE_NAME
+              value: "ares-blue-orchestrator"
             - name: ARES_DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -118,6 +129,20 @@ spec:
               mountPath: /etc/ares
             - name: workspace
               mountPath: /ares
+          livenessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pgrep -f 'ares orchestrator'"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "pgrep -f 'ares orchestrator'"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
       volumes:
         - name: config
           configMap:

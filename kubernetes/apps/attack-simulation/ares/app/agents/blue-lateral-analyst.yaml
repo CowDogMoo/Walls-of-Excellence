@@ -58,13 +58,19 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Ares blue lateral-analyst agent ready."
-              sleep infinity
+              while true; do
+                ares worker --redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
+                rc=$?
+                echo "ares blue worker exited with status $rc; restarting in 5s" >&2
+                sleep 5
+              done
           stdin: true
           tty: true
           env:
+            - name: ARES_WORKER_ROLE
+              value: "lateral_analyst"
             - name: ARES_ROLE
-              value: "lateral-analyst"
+              value: "lateral_analyst"
             - name: ARES_TEAM
               value: "blue"
             - name: ARES_BLUE_GLOBAL_POOL
@@ -81,6 +87,13 @@ spec:
                 secretKeyRef:
                   name: ares-llm-secret
                   key: OPENAI_API_KEY
+            - name: GRAFANA_SERVICE_ACCOUNT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ares-grafana-secret
+                  key: GRAFANA_SERVICE_ACCOUNT_TOKEN
+            - name: OTEL_SERVICE_NAME
+              value: "ares-blue-lateral-analyst"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -106,15 +119,15 @@ spec:
               mountPath: /ares
           livenessProbe:
             exec:
-              command: ["/bin/sh", "-c", "true"]
-            initialDelaySeconds: 10
+              command: ["/bin/sh", "-c", "pgrep -f 'ares worker'"]
+            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             exec:
-              command: ["/bin/sh", "-c", "true"]
-            initialDelaySeconds: 5
+              command: ["/bin/sh", "-c", "pgrep -f 'ares worker'"]
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
