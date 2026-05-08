@@ -93,11 +93,21 @@ jobs:
           sudo mv helmfile /usr/local/bin/
           helmfile version
 
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
       - name: Create test cluster
         run: task -y test:create
 
       - name: Install Flux in test cluster
         run: task -y test:install-flux
+
+      - name: Install bootstrap CRDs
+        run: |
+          helmfile -f kubernetes/bootstrap/helmfile.d/00-crds.yaml template -q \
+            | kubectl apply --server-side --force-conflicts -f -
 
       - name: Apply testable apps
         run: task -y test:apply
