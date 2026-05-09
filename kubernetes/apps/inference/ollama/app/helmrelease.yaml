@@ -55,7 +55,7 @@ spec:
               OLLAMA_CONTEXT_LENGTH: "8192"
               OLLAMA_DEBUG: "true"
             ports:
-              http:
+              - name: http
                 containerPort: 11434
                 protocol: TCP
             probes:
