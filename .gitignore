@@ -19,3 +19,6 @@ keys.txt
 
 # VSCode artifacts
 node_modules
+
+# Local Claude Code config
+.claude/

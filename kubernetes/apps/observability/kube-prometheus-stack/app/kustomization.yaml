@@ -9,4 +9,5 @@ resources:
   - ./helmrelease.yaml
   - ./ocirepository.yaml
   - ./poddisruptionbudget.yaml
+  - ./recovery-rules.yaml
   - ./scrapeconfig.yaml

@@ -1,0 +1,45 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: blackbox-rules
+  namespace: observability
+spec:
+  groups:
+    - name: blackbox.probes
+      rules:
+        - alert: NFSServerUnreachable
+          annotations:
+            summary: Synology NAS NFS port not reachable
+            description: |
+              TCP probe to {{ $labels.instance }} (NFS 2049) has been failing
+              for 2m. Most cluster PVCs depend on this NAS — workloads will
+              start failing to mount on restart.
+          expr: probe_success{target="synology-nas",port_role="nfs"} == 0
+          for: 2m
+          labels:
+            severity: critical
+
+        - alert: KubeApiVipUnreachable
+          annotations:
+            summary: Kubernetes API VIP not reachable
+            description: |
+              TCP probe to {{ $labels.instance }} (kube-apiserver VIP) has
+              been failing for 1m. Either kube-vip failed to fail over or
+              all masters are down.
+          expr: probe_success{target="kube-api-vip"} == 0
+          for: 1m
+          labels:
+            severity: critical
+
+        - alert: SignalBridgeUnreachable
+          annotations:
+            summary: Signal bridge LXC not reachable
+            description: |
+              Alertmanager will not be able to deliver Signal notifications.
+              Pushover continues to deliver. Check LXC 109 on proxmox.
+          expr: probe_success{target="signal-bridge"} == 0
+          for: 5m
+          labels:
+            severity: warning
