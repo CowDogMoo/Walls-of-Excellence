@@ -1,0 +1,124 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: robusta
+  namespace: observability
+spec:
+  interval: 1h
+  timeout: 15m
+  chart:
+    spec:
+      chart: robusta
+      # Pinned to a recent stable OSS release of Robusta.
+      # Robusta publishes multi-arch images (amd64 + arm64) on its public registry
+      # since 0.10.x; arm64 RPI nodes (k8s7) are supported. If a future bump regresses
+      # arm64 support, fall back to nodeSelector kubernetes.io/hostname: k8s8 (amd64 VM).
+      version: 0.18.6
+      sourceRef:
+        kind: HelmRepository
+        name: robusta
+        namespace: observability
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # ---------------------------------------------------------------------------
+    # Open-source Robusta only. No SaaS account, no signing_key, no account_id.
+    # Disable platform integration so we don't accidentally call out to robusta.dev.
+    # ---------------------------------------------------------------------------
+    enablePlatformPlaybooks: false
+    disableCloudRouting: true
+    enablePrometheusStack: false
+    enabledManagedConfiguration: false
+
+    globalConfig:
+      cluster_name: woe
+      # Reuse the existing in-cluster kube-prometheus-stack endpoints.
+      alertmanager_url: http://kube-prometheus-stack-alertmanager.observability.svc.cluster.local:9093
+      prometheus_url: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090
+      grafana_url: ""
+
+    # ---------------------------------------------------------------------------
+    # Sinks: a single webhook that POSTs alert events to the Signal adapter LXC,
+    # the same target Alertmanager already uses for its `signal` receiver.
+    # ---------------------------------------------------------------------------
+    sinksConfig:
+      - webhook_sink:
+          name: signal_adapter
+          url: http://192.168.20.45:8081/
+          # Forward all severities; the adapter does any final filtering.
+          stop: false
+
+    # ---------------------------------------------------------------------------
+    # Custom playbooks (action triggers) layered on top of the chart defaults.
+    # ---------------------------------------------------------------------------
+    customPlaybooks:
+      # 1. PodStuckTerminating -> force delete the pod (grace_period=0).
+      #    `delete_pod` is a built-in Robusta action.
+      - triggers:
+          - on_prometheus_alert:
+              alert_name: PodStuckTerminating
+        actions:
+          - delete_pod:
+              grace_period_seconds: 0
+        sinks:
+          - signal_adapter
+
+      # 2. FluxReconciliationFailure -> kick a Flux reconcile by annotating the
+      #    failing resource with reconcile.fluxcd.io/requestedAt=<now>.
+      #
+      #    NOTE / UNCERTAINTY: Robusta does not ship a dedicated built-in
+      #    "kick-flux-reconcile" action. The closest built-ins are
+      #    `resource_events_enricher` / `alert_explanation_enricher` (informational
+      #    only). To actually re-trigger Flux we would need either:
+      #      a) a custom Python action (explicitly out of scope here), or
+      #      b) the generic `node_bash_enricher` / a future `kubectl_action` style
+      #         built-in.
+      #    For now we fire the well-known logging/enrichment actions so the alert
+      #    is still routed to Signal with context, and leave a TODO to wire a
+      #    real reconcile-kick action when one exists.
+      - triggers:
+          - on_prometheus_alert:
+              alert_name: FluxReconciliationFailure
+        actions:
+          - logs_enricher: {}
+          - resource_events_enricher: {}
+        sinks:
+          - signal_adapter
+
+    # ---------------------------------------------------------------------------
+    # Pin to k8s7 (Ready arm64 RPI, 8GB) and avoid k8s9 (cordoned/unstable).
+    # ---------------------------------------------------------------------------
+    runner:
+      sendAdditionalTelemetry: false
+      nodeSelector:
+        kubernetes.io/hostname: k8s7
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 512Mi
+
+    kubewatch:
+      nodeSelector:
+        kubernetes.io/hostname: k8s7
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
+
+    grafanaRenderer:
+      enabled: false

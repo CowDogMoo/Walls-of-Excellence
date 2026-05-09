@@ -7,10 +7,12 @@ resources:
   - ./namespace.yaml
   # Flux-Kustomizations
   - ./alloy/ks.yaml
+  - ./blackbox-exporter/ks.yaml
   - ./goldilocks/ks.yaml
   - ./grafana/ks.yaml
   - ./kube-prometheus-stack/ks.yaml
   - ./loki/ks.yaml
+  - ./robusta/ks.yaml
   - ./tempo/ks.yaml
   - ./unpoller/ks.yaml
   - ./vector/ks.yaml
