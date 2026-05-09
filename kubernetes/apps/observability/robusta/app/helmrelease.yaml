@@ -37,8 +37,9 @@ spec:
     enablePrometheusStack: false
     enabledManagedConfiguration: false
 
+    clusterName: woe
+
     globalConfig:
-      cluster_name: woe
       # Reuse the existing in-cluster kube-prometheus-stack endpoints.
       alertmanager_url: http://kube-prometheus-stack-alertmanager.observability.svc.cluster.local:9093
       prometheus_url: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090
