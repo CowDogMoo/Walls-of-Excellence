@@ -31,11 +31,27 @@ spec:
       - receiver: pushover
         groupWait: 0s
         repeatInterval: 1h
+        continue: true
+        matchers:
+          - name: severity
+            value: critical
+            matchType: =
+      - receiver: signal
+        groupWait: 0s
+        repeatInterval: 1h
         matchers:
           - name: severity
             value: critical
             matchType: =
       - receiver: pushover
+        groupWait: 5m
+        repeatInterval: 6h
+        continue: true
+        matchers:
+          - name: severity
+            value: warning
+            matchType: =
+      - receiver: signal
         groupWait: 5m
         repeatInterval: 6h
         matchers:
@@ -56,6 +72,10 @@ spec:
           matchType: =
   receivers:
     - name: "null"
+    - name: signal
+      webhookConfigs:
+        - url: http://192.168.20.45:8081/
+          sendResolved: true
     - name: pushover
       pushoverConfigs:
         - html: true

@@ -1,0 +1,219 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-recovery-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: Recovery
+    description: At-a-glance recovery view — what's stuck and what's stalled
+data:
+  cluster-recovery.json: |
+    {
+      "title": "Cluster Recovery",
+      "uid": "cluster-recovery",
+      "tags": ["recovery", "incident", "cluster"],
+      "schemaVersion": 39,
+      "timezone": "browser",
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          { "name": "datasource", "type": "datasource", "query": "prometheus", "hide": 0 }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Control-plane masters Ready",
+          "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "targets": [{
+            "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 1 and on (node) kube_node_role{role=\"control-plane\"})",
+            "refId": "A"
+          }],
+          "options": {
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+            "graphMode": "none",
+            "textMode": "value_and_name",
+            "colorMode": "background"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 2},
+                  {"color": "green", "value": 3}
+                ]
+              },
+              "unit": "none",
+              "min": 0, "max": 3
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Worker nodes Ready",
+          "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "targets": [{
+            "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 1 unless on (node) kube_node_role{role=\"control-plane\"}) / count(kube_node_info unless on (node) kube_node_role{role=\"control-plane\"})",
+            "refId": "A",
+            "format": "time_series"
+          }, {
+            "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 1 unless on (node) kube_node_role{role=\"control-plane\"})",
+            "refId": "B"
+          }],
+          "options": {
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/B/", "values": false},
+            "graphMode": "none",
+            "colorMode": "background"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 4},
+                  {"color": "green", "value": 5}
+                ]
+              },
+              "unit": "none"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "NAS NFS reachable",
+          "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "targets": [{
+            "expr": "probe_success{target=\"synology-nas\",port_role=\"nfs\"}",
+            "refId": "A"
+          }],
+          "options": {
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "green", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "kube-api VIP reachable",
+          "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "targets": [{
+            "expr": "probe_success{target=\"kube-api-vip\"}",
+            "refId": "A"
+          }],
+          "options": {
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "green", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "table",
+          "title": "Stuck pods",
+          "description": "Terminating with deletionTimestamp set (likely on a NotReady node — force-delete), Pending too long, or CrashLoopBackOff",
+          "gridPos": {"h": 10, "w": 12, "x": 0, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "targets": [
+            {
+              "expr": "kube_pod_deletion_timestamp",
+              "refId": "Terminating",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "Terminating"
+            },
+            {
+              "expr": "kube_pod_status_phase{phase=\"Pending\"} == 1",
+              "refId": "Pending",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "max_over_time(kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\"}[5m]) >= 1",
+              "refId": "CrashLooping",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {"id": "merge", "options": {}},
+            {"id": "organize", "options": {
+              "excludeByName": {"Time": true, "__name__": true, "job": true, "service": true, "endpoint": true, "container": true, "uid": true, "instance": true, "prometheus": true, "cluster": true},
+              "renameByName": {"namespace": "ns", "pod": "pod", "phase": "phase", "reason": "reason"}
+            }}
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {"align": "auto", "displayMode": "auto"}
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "table",
+          "title": "Flux reconcile failures",
+          "description": "Kustomization or HelmRelease with Ready=False",
+          "gridPos": {"h": 10, "w": 12, "x": 12, "y": 5},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "targets": [{
+            "expr": "max(gotk_reconcile_condition{status=\"False\",type=\"Ready\"}) by (namespace, name, kind) == 1",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }],
+          "transformations": [
+            {"id": "organize", "options": {
+              "excludeByName": {"Time": true, "__name__": true, "job": true, "service": true, "endpoint": true, "container": true, "uid": true, "instance": true, "prometheus": true, "cluster": true, "status": true, "type": true, "Value": true},
+              "indexByName": {"kind": 0, "namespace": 1, "name": 2}
+            }}
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {"align": "auto", "displayMode": "auto"}
+            }
+          }
+        }
+      ]
+    }
