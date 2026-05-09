@@ -50,7 +50,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    revisionHistoryLimit: 3
     # Core configs
     image:
       registry: ghcr.io
@@ -91,7 +90,7 @@ spec:
         loadBalancerIP: 192.168.20.10
         externalTrafficPolicy: Local
 
-    extraEnvs:
+    env:
       - name: TZ
         value: "America/Denver"
 
@@ -136,16 +135,6 @@ spec:
       limits:
         memory: 500Mi
 
-    pilot:
-      enabled: false
-
-    restartPolicy: Always
-
-    dnsConfig:
-      options:
-        - name: ndots
-          value: "1"
-
     persistence:
       config:
         enabled: true
@@ -188,6 +177,3 @@ spec:
         expose:
           default: true
         exposedPort: 443
-        tls:
-          enabled: true
-          options: "default"
