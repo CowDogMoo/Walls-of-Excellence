@@ -147,8 +147,7 @@ spec:
                 }
               }
 
-              // Add labels for querying
-              stage.labels {
+              stage.structured_metadata {
                 values = {
                   query_host   = "",
                   query_type   = "",

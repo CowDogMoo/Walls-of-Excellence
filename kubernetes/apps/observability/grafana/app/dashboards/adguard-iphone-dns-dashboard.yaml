@@ -32,7 +32,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "topk(25, sum by (query_host) (count_over_time({job=\"adguard-querylog\", client_ip=~\"192.168.10.*\"}[$__range])))",
+              "expr": "topk(25, sum by (query_host) (count_over_time({job=\"adguard-querylog\"} | client_ip=~\"192.168.10.*\"[$__range])))",
               "legendFormat": "{{query_host}}",
               "refId": "A"
             }
@@ -60,7 +60,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({job=\"adguard-querylog\", client_ip=~\"192.168.10.*\"}[1m]))",
+              "expr": "sum(count_over_time({job=\"adguard-querylog\"} | client_ip=~\"192.168.10.*\"[1m]))",
               "legendFormat": "Queries/min",
               "refId": "A"
             }
