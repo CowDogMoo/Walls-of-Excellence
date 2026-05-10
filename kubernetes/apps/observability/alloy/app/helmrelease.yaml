@@ -189,11 +189,22 @@ spec:
           memory: 259Mi
         limits:
           memory: 400Mi
+      storagePath: /var/lib/alloy
+      mounts:
+        extra:
+          - name: alloy-data
+            mountPath: /var/lib/alloy
 
     controller:
       type: daemonset
       tolerations:
         - operator: Exists
+      volumes:
+        extra:
+          - name: alloy-data
+            hostPath:
+              path: /var/lib/alloy
+              type: DirectoryOrCreate
       extraPorts:
         - name: syslog-udp
           port: 1514
