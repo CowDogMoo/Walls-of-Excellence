@@ -156,7 +156,7 @@ data:
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "targets": [
             {
-              "expr": "(time() - kube_pod_deletion_timestamp) > 300",
+              "expr": "(time() - kube_pod_deletion_timestamp > 300) and (kube_pod_deletion_timestamp > 0)",
               "refId": "Terminating",
               "format": "table",
               "instant": true
