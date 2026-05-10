@@ -19,7 +19,7 @@ spec:
             description: "Authentik identity provider has been unavailable for more than 5 minutes. Authentication services are offline."
         - alert: AuthentikOutpostDisconnected
           expr: |
-            authentik_outposts_connected < 1
+            max by (outpost, namespace) (authentik_outposts_connected) < 1
           for: 5m
           labels:
             severity: warning
@@ -37,7 +37,7 @@ spec:
             description: "Authentik 95th percentile request latency is above 2 seconds for more than 10 minutes."
         - alert: AuthentikWorkersDegraded
           expr: |
-            authentik_admin_workers < 1
+            max by (namespace) (authentik_admin_workers) < 1
           for: 5m
           labels:
             severity: warning
