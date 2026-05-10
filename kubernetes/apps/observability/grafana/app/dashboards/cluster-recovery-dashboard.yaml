@@ -38,7 +38,7 @@ data:
           "options": {
             "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
             "graphMode": "none",
-            "textMode": "value_and_name",
+            "textMode": "value",
             "colorMode": "background"
           },
           "fieldConfig": {
@@ -69,7 +69,7 @@ data:
           "options": {
             "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
             "graphMode": "none",
-            "textMode": "value_and_name",
+            "textMode": "value",
             "colorMode": "background"
           },
           "fieldConfig": {
