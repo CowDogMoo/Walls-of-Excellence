@@ -20,6 +20,12 @@ spec:
               - op: replace
                 path: /spec/rules/0/http/paths/0/backend/service/port/number
                 value: 3200
+          - target:
+              kind: ServiceMonitor
+              name: tempo
+            patch: |
+              - op: remove
+                path: /spec/endpoints/1
   install:
     remediation:
       retries: -1

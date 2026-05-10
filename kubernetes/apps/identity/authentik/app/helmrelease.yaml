@@ -303,9 +303,6 @@ spec:
             memory: 1Gi
             cpu: 1000m
 
-        # Bitnami chart default probes use 5s timeout for pg_isready, which
-        # times out under CPU throttling on this flaky node and gets the pod
-        # SIGKILLed (exit 137). Widen the windows.
         livenessProbe:
           enabled: true
           initialDelaySeconds: 60

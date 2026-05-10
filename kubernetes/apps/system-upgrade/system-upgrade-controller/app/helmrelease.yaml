@@ -23,8 +23,6 @@ spec:
         strategy: RollingUpdate
         serviceAccount:
           name: system-upgrade-controller
-        # bjw-s app-template v5 defaults automountServiceAccountToken to false;
-        # the controller needs the SA token for inClusterConfig.
         pod:
           automountServiceAccountToken: true
         containers:
