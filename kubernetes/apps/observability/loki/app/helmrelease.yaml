@@ -52,7 +52,7 @@ spec:
       limits_config:
         retention_period: 14d
         reject_old_samples: true
-        reject_old_samples_max_age: 336h # 14 days - match retention
+        reject_old_samples_max_age: 8760h
         unordered_writes: true
         # Performance optimizations
         max_query_parallelism: 32
