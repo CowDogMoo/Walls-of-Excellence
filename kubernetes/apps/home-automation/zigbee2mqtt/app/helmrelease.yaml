@@ -136,6 +136,7 @@ spec:
             app:
               - path: /data/configuration.yaml
                 subPath: configuration.yaml
+                readOnly: false
       config:
         type: configMap
         name: zigbee2mqtt-config
