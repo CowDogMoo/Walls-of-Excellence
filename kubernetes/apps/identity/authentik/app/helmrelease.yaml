@@ -196,12 +196,19 @@ spec:
           memory: 776Mi
           cpu: 150m
         limits:
-          memory: 797Mi
+          memory: 1500Mi
 
       affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [k8s8, k8s9]
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            # Avoid same component (multiple worker replicas)
             - weight: 100
               podAffinityTerm:
                 labelSelector:
@@ -210,7 +217,6 @@ spec:
                     app.kubernetes.io/name: authentik
                     app.kubernetes.io/component: worker
                 topologyKey: kubernetes.io/hostname
-            # Avoid server pods
             - weight: 90
               podAffinityTerm:
                 labelSelector:
@@ -219,7 +225,6 @@ spec:
                     app.kubernetes.io/name: authentik
                     app.kubernetes.io/component: server
                 topologyKey: kubernetes.io/hostname
-            # Avoid postgresql pods
             - weight: 90
               podAffinityTerm:
                 labelSelector:
