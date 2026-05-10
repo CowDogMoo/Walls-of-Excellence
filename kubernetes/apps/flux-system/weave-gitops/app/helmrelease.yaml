@@ -39,10 +39,10 @@ spec:
       tag: "0.38.0"
     resources:
       requests:
-        cpu: 410m
-        memory: 110Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
-        memory: 110Mi
+        memory: 512Mi
     topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname

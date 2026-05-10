@@ -48,7 +48,7 @@ spec:
         chunk_encoding: snappy
         chunk_idle_period: 1h
         chunk_target_size: 2621440
-        max_chunk_age: 1h
+        max_chunk_age: 6h
       limits_config:
         retention_period: 14d
         reject_old_samples: true
