@@ -105,16 +105,13 @@ spec:
       resources:
         requests:
           memory: 1181Mi
-          cpu: 224m
+          cpu: 300m
         limits:
           memory: 1214Mi
-          cpu: 278m
 
-      # Spread authentik components across different nodes to prevent CPU saturation
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            # Avoid same component (multiple server replicas)
             - weight: 100
               podAffinityTerm:
                 labelSelector:
@@ -123,7 +120,6 @@ spec:
                     app.kubernetes.io/name: authentik
                     app.kubernetes.io/component: server
                 topologyKey: kubernetes.io/hostname
-            # Avoid worker pods
             - weight: 90
               podAffinityTerm:
                 labelSelector:
@@ -132,7 +128,6 @@ spec:
                     app.kubernetes.io/name: authentik
                     app.kubernetes.io/component: worker
                 topologyKey: kubernetes.io/hostname
-            # Avoid postgresql pods
             - weight: 90
               podAffinityTerm:
                 labelSelector:
@@ -199,12 +194,10 @@ spec:
       resources:
         requests:
           memory: 776Mi
-          cpu: 78m
+          cpu: 150m
         limits:
           memory: 797Mi
-          cpu: 111m
 
-      # Spread authentik components across different nodes to prevent CPU saturation
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
