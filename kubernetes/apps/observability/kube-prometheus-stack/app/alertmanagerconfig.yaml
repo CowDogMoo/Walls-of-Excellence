@@ -98,7 +98,7 @@ spec:
               {{- end }}
             {{- end }}
             {{- if gt $total $maxAlerts }}
-            <b>+{{ sub $total $maxAlerts }} more alerts</b>
+            <b>(showing {{ $maxAlerts }} of {{ $total }} alerts)</b>
             {{- end }}
           priority: |-
             {{ if eq .Status "firing" }}1{{ else }}0{{ end }}

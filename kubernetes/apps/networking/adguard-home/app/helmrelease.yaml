@@ -73,9 +73,10 @@ spec:
               - --server.http.listen-addr=0.0.0.0:12345
             resources:
               requests:
-                cpu: 10m
+                cpu: 50m
                 memory: 64Mi
               limits:
+                cpu: 250m
                 memory: 128Mi
 
     service:
