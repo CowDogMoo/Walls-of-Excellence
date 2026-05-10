@@ -63,16 +63,13 @@ data:
           "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "targets": [{
-            "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 1 unless on (node) kube_node_role{role=\"control-plane\"}) / count(kube_node_info unless on (node) kube_node_role{role=\"control-plane\"})",
-            "refId": "A",
-            "format": "time_series"
-          }, {
             "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 1 unless on (node) kube_node_role{role=\"control-plane\"})",
-            "refId": "B"
+            "refId": "A"
           }],
           "options": {
-            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/B/", "values": false},
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
             "graphMode": "none",
+            "textMode": "value_and_name",
             "colorMode": "background"
           },
           "fieldConfig": {
@@ -81,11 +78,12 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {"color": "red", "value": null},
-                  {"color": "yellow", "value": 4},
-                  {"color": "green", "value": 5}
+                  {"color": "yellow", "value": 5},
+                  {"color": "green", "value": 6}
                 ]
               },
-              "unit": "none"
+              "unit": "none",
+              "min": 0, "max": 6
             }
           }
         },
@@ -153,19 +151,18 @@ data:
           "id": 5,
           "type": "table",
           "title": "Stuck pods",
-          "description": "Terminating with deletionTimestamp set (likely on a NotReady node — force-delete), Pending too long, or CrashLoopBackOff",
+          "description": "Terminating > 5min (deletionTimestamp set, likely on a NotReady node — force-delete), Pending > 10min, or CrashLoopBackOff in last 5min",
           "gridPos": {"h": 10, "w": 12, "x": 0, "y": 5},
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "targets": [
             {
-              "expr": "kube_pod_deletion_timestamp",
+              "expr": "(time() - kube_pod_deletion_timestamp) > 300",
               "refId": "Terminating",
               "format": "table",
-              "instant": true,
-              "legendFormat": "Terminating"
+              "instant": true
             },
             {
-              "expr": "kube_pod_status_phase{phase=\"Pending\"} == 1",
+              "expr": "min_over_time(kube_pod_status_phase{phase=\"Pending\"}[10m]) == 1",
               "refId": "Pending",
               "format": "table",
               "instant": true
@@ -186,7 +183,8 @@ data:
           ],
           "fieldConfig": {
             "defaults": {
-              "custom": {"align": "auto", "displayMode": "auto"}
+              "custom": {"align": "auto", "displayMode": "auto"},
+              "noValue": "All clear"
             }
           }
         },
@@ -194,24 +192,26 @@ data:
           "id": 6,
           "type": "table",
           "title": "Flux reconcile failures",
-          "description": "Kustomization or HelmRelease with Ready=False",
+          "description": "HelmRelease, Kustomization, or other Flux resource with Ready=False (not suspended)",
           "gridPos": {"h": 10, "w": 12, "x": 12, "y": 5},
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "targets": [{
-            "expr": "max(gotk_reconcile_condition{status=\"False\",type=\"Ready\"}) by (namespace, name, kind) == 1",
+            "expr": "flux_resource_info{ready=\"False\",suspended=\"False\"}",
             "refId": "A",
             "format": "table",
             "instant": true
           }],
           "transformations": [
             {"id": "organize", "options": {
-              "excludeByName": {"Time": true, "__name__": true, "job": true, "service": true, "endpoint": true, "container": true, "uid": true, "instance": true, "prometheus": true, "cluster": true, "status": true, "type": true, "Value": true},
-              "indexByName": {"kind": 0, "namespace": 1, "name": 2}
+              "excludeByName": {"Time": true, "Value": true, "__name__": true, "job": true, "service": true, "endpoint": true, "container": true, "uid": true, "instance": true, "prometheus": true, "cluster": true, "namespace": true, "pod": true, "ready": true, "suspended": true, "source_name": true, "revision": true},
+              "renameByName": {"exported_namespace": "namespace"},
+              "indexByName": {"kind": 0, "exported_namespace": 1, "name": 2, "reason": 3}
             }}
           ],
           "fieldConfig": {
             "defaults": {
-              "custom": {"align": "auto", "displayMode": "auto"}
+              "custom": {"align": "auto", "displayMode": "auto"},
+              "noValue": "All clear"
             }
           }
         }
