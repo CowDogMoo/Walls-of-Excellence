@@ -312,7 +312,7 @@ spec:
           cpu: 50m
           memory: 96Mi
         limits:
-          cpu: 200m
+          cpu: 1000m
           memory: 256Mi
       dashboards:
         enabled: true
