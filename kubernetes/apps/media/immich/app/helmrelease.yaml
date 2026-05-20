@@ -1,0 +1,176 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: immich
+  namespace: media
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: immich
+  valuesFrom:
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: IMMICH_CLIENT_SECRET
+      targetPath: immich.configuration.oauth.clientSecret
+  install:
+    timeout: 15m
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    timeout: 15m
+    remediation:
+      strategy: rollback
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    # Shared across server, machine-learning, valkey
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              tag: v2.7.5
+            env:
+              - name: REDIS_HOSTNAME
+                value: immich-valkey
+              - name: IMMICH_MACHINE_LEARNING_URL
+                value: http://immich-machine-learning:3003
+              - name: DB_HOSTNAME
+                value: immich-postgres-rw.media.svc.cluster.local
+              - name: DB_DATABASE_NAME
+                value: immich
+              - name: DB_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-postgres-app
+                    key: username
+              - name: DB_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: immich-postgres-app
+                    key: password
+              - name: TZ
+                value: America/Denver
+              - name: IMMICH_CONFIG_FILE
+                value: /config/immich-config.yaml
+
+    # Pin every pod to k8s9 (NVMe + only node strong enough for ML)
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: k8s9
+
+    immich:
+      metrics:
+        enabled: true
+      persistence:
+        library:
+          existingClaim: immich-library
+      configurationKind: Secret
+      configuration:
+        oauth:
+          enabled: true
+          autoLaunch: false
+          autoRegister: true
+          buttonText: "Login with Authentik"
+          clientId: immich
+          clientSecret: "REPLACED_BY_VALUES_FROM"
+          issuerUrl: "https://auth.techvomit.xyz/application/o/immich/"
+          mobileOverrideEnabled: true
+          mobileRedirectUri: "https://immich.techvomit.xyz/api/oauth/mobile-redirect"
+          scope: "openid email profile"
+          signingAlgorithm: RS256
+          storageLabelClaim: preferred_username
+
+    server:
+      enabled: true
+      controllers:
+        main:
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 512Mi
+                limits:
+                  memory: 4Gi
+      persistence:
+        external:
+          enabled: true
+          type: persistentVolumeClaim
+          existingClaim: immich-external
+          accessMode: ReadWriteMany
+          globalMounts:
+            - path: /external
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 2283
+      ingress:
+        main:
+          enabled: true
+          className: ingress-traefik
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: immich.techvomit.xyz
+            external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          hosts:
+            - host: &host immich.techvomit.xyz
+              paths:
+                - path: /
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - *host
+              secretName: techvomit-xyz-production-tls
+
+    machine-learning:
+      enabled: true
+      controllers:
+        main:
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 1Gi
+                limits:
+                  memory: 6Gi
+      persistence:
+        cache:
+          enabled: true
+          type: persistentVolumeClaim
+          existingClaim: immich-ml-cache
+          accessMode: ReadWriteOnce
+          globalMounts:
+            - path: /cache
+
+    valkey:
+      enabled: true
+      controllers:
+        main:
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+      persistence:
+        data:
+          enabled: true
+          type: persistentVolumeClaim
+          accessMode: ReadWriteOnce
+          size: 1Gi
+          storageClass: local-path

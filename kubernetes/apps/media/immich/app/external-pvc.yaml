@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: immich-external
+  labels:
+    app.kubernetes.io/name: immich
+spec:
+  capacity:
+    storage: 2Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - nconnect=4
+  nfs:
+    server: 192.168.20.210
+    path: /volume1/photo/external
+  claimRef:
+    namespace: media
+    name: immich-external
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-external
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 2Ti
+  volumeName: immich-external

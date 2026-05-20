@@ -1,0 +1,61 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-postgres
+  namespace: media
+spec:
+  instances: 1
+
+  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.9-0.4.3
+
+  storage:
+    size: 20Gi
+    storageClass: local-path
+
+  postgresql:
+    shared_preload_libraries:
+      - "vchord.so"
+    parameters:
+      max_connections: "200"
+      shared_buffers: "512MB"
+      effective_cache_size: "1536MB"
+      maintenance_work_mem: "128MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      work_mem: "8MB"
+      min_wal_size: "1GB"
+      max_wal_size: "4GB"
+      log_min_duration_statement: "1000"
+
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+      encoding: UTF8
+      localeCType: en_US.utf8
+      localeCollate: en_US.utf8
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vchord CASCADE;
+        - CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;
+
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "3Gi"
+
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: k8s9
+
+  monitoring:
+    enablePodMonitor: true
+
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: restart

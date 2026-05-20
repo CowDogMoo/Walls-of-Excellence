@@ -66,6 +66,10 @@ spec:
       name: authentik-secrets
       valuesKey: SYNOLOGY_NAS_CLIENT_SECRET
       targetPath: blueprints.context.synology_nas_client_secret
+    - kind: Secret
+      name: authentik-secrets
+      valuesKey: IMMICH_CLIENT_SECRET
+      targetPath: blueprints.context.immich_client_secret
   values:
     global:
       image: {}
@@ -94,6 +98,10 @@ spec:
       configMaps:
         - authentik-oauth-blueprint
         - authentik-passkeys-blueprint
+      # User identities are loaded from a Secret rendered by ESO from 1Password
+      # so no usernames are committed to git.
+      secrets:
+        - authentik-users-blueprint
 
     server:
       replicas: 1

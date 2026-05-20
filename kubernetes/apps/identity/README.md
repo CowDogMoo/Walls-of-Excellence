@@ -39,13 +39,13 @@ sign-on experience.
 │  Outpost        │
 └────────┬────────┘
          │
-    ┌────┴─────┬─────────────┬──────────────┬──────────────┐
-    ▼          ▼             ▼              ▼              ▼
-┌─────────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────┐
-│ Grafana │ │ Traefik  │ │ Guacamole  │ │  Weave   │ │Synology │
-│ (OAuth) │ │ (Forward)│ │  (Forward) │ │  GitOps  │ │   NAS   │
-│         │ │          │ │            │ │  (OIDC)  │ │ (OIDC)  │
-└─────────┘ └──────────┘ └────────────┘ └──────────┘ └─────────┘
+    ┌────┴─────┬─────────────┬──────────────┬──────────────┬─────────┐
+    ▼          ▼             ▼              ▼              ▼         ▼
+┌─────────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────┐ ┌────────┐
+│ Grafana │ │ Traefik  │ │ Guacamole  │ │  Weave   │ │Synology │ │ Immich │
+│ (OAuth) │ │ (Forward)│ │  (Forward) │ │  GitOps  │ │   NAS   │ │ (OIDC) │
+│         │ │          │ │            │ │  (OIDC)  │ │ (OIDC)  │ │        │
+└─────────┘ └──────────┘ └────────────┘ └──────────┘ └─────────┘ └────────┘
 ```
 
 ## Configuration
@@ -54,37 +54,51 @@ sign-on experience.
 
 The deployment expects these secrets in the `authentik` 1Password item:
 
-- **grafana-client-secret**: OAuth2 client secret for Grafana
-- **weave-gitops-client-secret**: OAuth2 client secret for Weave GitOps
-- **synology-oidc-client-secret**: OIDC client secret for Synology NAS
-- **AUTHENTIK_BOOTSTRAP_PASSWORD**: Admin password for initial setup
-- **AUTHENTIK_BOOTSTRAP_TOKEN**: API token for automation
-- **AUTHENTIK_SECRET_KEY**: Django secret key
+- **GRAFANA_CLIENT_SECRET** — OAuth2 client secret for Grafana
+- **TRAEFIK_CLIENT_SECRET** — Forward auth secret for Traefik
+- **WEAVE_GITOPS_CLIENT_SECRET** — OAuth2 client secret for Weave GitOps
+- **GUACAMOLE_CLIENT_SECRET** — Forward auth secret for Guacamole
+- **TAILSCALE_CLIENT_SECRET** — OAuth2 client secret for Tailscale
+- **HOMEASSISTANT_CLIENT_SECRET** / **HOMEASSISTANT_TEST_CLIENT_SECRET**
+- **SYNOLOGY_NAS_CLIENT_SECRET** — OIDC client secret for Synology NAS
+- **IMMICH_CLIENT_SECRET** — OIDC client secret for Immich
+- **AUTHENTIK_BOOTSTRAP_PASSWORD** — Admin password for initial setup
+- **AUTHENTIK_BOOTSTRAP_TOKEN** — API token for automation
+- **AUTHENTIK_SECRET_KEY** — Django secret key
+- **AUTHENTIK_POSTGRESQL_PASSWORD** — Embedded PostgreSQL password
+- **AUTHENTIK_USERS_BLUEPRINT** — user→group memberships (see [Add Users to Groups](#add-users-to-groups))
 
 ### Blueprint Configuration
 
 Authentik uses blueprints to declaratively configure providers, applications,
-groups, and policies:
+groups, policies, and user/group memberships:
 
-- **Location**: `kubernetes/apps/identity/authentik/app/authentik-oauth-blueprint.yaml`
-- **Auto-applied**: On deployment by authentik-worker
-- **Manual trigger**:
+- `authentik-oauth-blueprint.yaml` — providers, applications, groups, policies
+- `authentik-passkeys-blueprint.yaml` — passkey enrollment flow
+- `externalsecret-users-blueprint.yaml` — user→group memberships
+  (see [Add Users to Groups](#add-users-to-groups))
 
-  ```bash
-  kubectl exec -n identity deploy/authentik-worker -- \
-    ak apply_blueprint /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
-  ```
+Discovered and applied by `authentik-worker` on deployment and on ConfigMap
+change. Manual trigger if needed:
+
+```bash
+kubectl exec -n identity deploy/authentik-worker -- \
+  ak apply_blueprint /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
+```
 
 ### User Groups
 
-Navigate to https://auth.techvomit.xyz/if/admin/ and create/verify groups:
+Groups are defined declaratively in `authentik-oauth-blueprint.yaml`:
 
-- **Grafana Admins** - Full Grafana access
-- **Grafana Editors** - Editor access to Grafana
-- **Traefik Admins** - Traefik dashboard access
-- **Weave GitOps Admins** - GitOps dashboard access
-- **Guacamole Users** - Remote desktop access
-- **Synology NAS Users** - NAS access
+- **Grafana Admins** / **Grafana Editors**
+- **Traefik Admins**
+- **Weave GitOps Admins**
+- **Guacamole Users**
+- **Tailscale Users**
+- **Home Assistant Admins** / **Home Assistant Users** (and Test variants)
+- **NAS Admins** / **NAS Users**
+- **AdGuard Admins**
+- **Immich Users**
 
 ## Deployment
 
@@ -187,6 +201,26 @@ Uses forward authentication similar to Guacamole. Access at https://traefik.tech
 
 OAuth2 authentication with role mapping from Authentik groups. Access at https://grafana.techvomit.xyz
 
+### Immich (OIDC)
+
+- **Issuer URL**: `https://auth.techvomit.xyz/application/o/immich/`
+  (trailing slash required)
+- **Client ID**: `immich`
+- **Redirect URIs**: `/auth/login`, `/user-settings`, `/api/oauth/mobile-redirect`,
+  and `app.immich:///oauth-callback` (mobile deep link)
+- **Required group**: `Immich Users`
+- **Storage label claim**: `preferred_username`
+
+The OIDC client secret lives on the `authentik-secrets` 1Password item as
+`IMMICH_CLIENT_SECRET`. The `media` namespace receives a reflected copy of
+the `authentik-secrets` Kubernetes Secret (via the
+`reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces` annotation
+on the source ExternalSecret), and the Immich HelmRelease injects the
+client secret into the Immich config Secret via Flux's `valuesFrom`
+mechanism — Immich does **not** support `${VAR}` substitution in its
+config file, so the secret is rendered into the Kubernetes Secret at
+deploy time rather than expanded at container start.
+
 ## Operations
 
 ### View Logs
@@ -207,11 +241,66 @@ kubectl logs -n identity deploy/authentik-worker | grep blueprint
 
 ### Add Users to Groups
 
-1. Navigate to https://auth.techvomit.xyz/if/admin/
-2. Go to **Directory** → **Users**
-3. Select user
-4. Click **Groups** tab
-5. Add to appropriate groups
+User → group memberships live **entirely in 1Password**, in the
+`AUTHENTIK_USERS_BLUEPRINT` field on the `authentik-secrets` item. ESO
+renders that field into a Kubernetes Secret named `authentik-users-blueprint`
+(via `externalsecret-users-blueprint.yaml`), which the authentik chart mounts
+into the worker pod under `/blueprints/mounted/secret-authentik-users-blueprint/`.
+
+The blueprint is the **single source of truth** — memberships added manually
+through the Authentik UI will be pruned on the next reconcile (~60 min).
+
+To grant a user access to a new application:
+
+1. Pull the current value:
+
+   ```bash
+   op item get ochrsulp443vs2guyehbk6tqxe --vault automation \
+     --fields label=AUTHENTIK_USERS_BLUEPRINT --format json \
+     | jq -r '.value' > /tmp/users.yaml
+   ```
+
+2. Edit `/tmp/users.yaml`. Add or update the `authentik_core.user` entry,
+   listing **every** group the user should be in (the `groups` list is
+   replaced wholesale on each apply, not appended):
+
+   ```yaml
+   - model: authentik_core.user
+     identifiers:
+       username: alice
+     state: present
+     attrs:
+       groups:
+         - !Find [authentik_core.group, [name, "Immich Users"]]
+         - !Find [authentik_core.group, [name, "Home Assistant Users"]]
+   ```
+
+3. Push it back:
+
+   ```bash
+   op item edit ochrsulp443vs2guyehbk6tqxe --vault automation \
+     "AUTHENTIK_USERS_BLUEPRINT[text]=$(cat /tmp/users.yaml)"
+   ```
+
+4. ESO refreshes the Secret on its interval (~1h). To expedite, force a sync:
+
+   ```bash
+   kubectl -n identity annotate externalsecret authentik-users-blueprint \
+     force-sync=$(date +%s) --overwrite
+   ```
+
+   authentik-worker discovers the new file content within a couple minutes
+   and re-applies it.
+
+Notes:
+
+- `state: present` with no `password` attr preserves the existing password
+  hash, MFA factors, and `last_login` across reconciles — safe to commit
+  without exposing credentials.
+- If a user doesn't yet exist, the entry creates them with no password; they
+  then enroll via the recovery flow or an admin sets one in the UI once.
+- The previous `authentik-group-sync` CronJob (which auto-added the admin
+  user to every group) was retired when this blueprint was adopted.
 
 ### Generate Client Secret
 

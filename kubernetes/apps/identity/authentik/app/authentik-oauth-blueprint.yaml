@@ -22,6 +22,7 @@ data:
       homeassistant_test_client_secret: !Env HOMEASSISTANT_TEST_CLIENT_SECRET
       homeassistant_client_secret: !Env HOMEASSISTANT_CLIENT_SECRET
       synology_nas_client_secret: !Env SYNOLOGY_NAS_CLIENT_SECRET
+      immich_client_secret: !Env IMMICH_CLIENT_SECRET
     entries:
       # Groups for role mapping
       - model: authentik_core.group
@@ -127,6 +128,14 @@ data:
         state: present
         attrs:
           name: AdGuard Admins
+
+      - model: authentik_core.group
+        id: immich-users
+        identifiers:
+          name: Immich Users
+        state: present
+        attrs:
+          name: Immich Users
 
       # Custom Scope Mapping for Home Assistant groups and admin status
       - model: authentik_providers_oauth2.scopemapping
@@ -364,6 +373,39 @@ data:
           access_token_validity: "minutes=5"
           refresh_token_validity: "days=30"
 
+      # OAuth2 Provider for Immich
+      - model: authentik_providers_oauth2.oauth2provider
+        id: immich-provider
+        identifiers:
+          name: Immich
+        state: present
+        attrs:
+          name: Immich
+          client_id: immich
+          client_secret: !Context immich_client_secret
+          client_type: confidential
+          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
+          redirect_uris:
+            - matching_mode: strict
+              url: "https://immich.techvomit.xyz/auth/login"
+            - matching_mode: strict
+              url: "https://immich.techvomit.xyz/user-settings"
+            - matching_mode: strict
+              url: "https://immich.techvomit.xyz/api/oauth/mobile-redirect"
+            - matching_mode: strict
+              url: "app.immich:///oauth-callback"
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+          sub_mode: user_username
+          access_code_validity: "minutes=1"
+          access_token_validity: "hours=1"
+          refresh_token_validity: "days=30"
+
       # Application for Grafana
       - model: authentik_core.application
         id: grafana-app
@@ -476,6 +518,20 @@ data:
           meta_description: "Synology NAS - Network Attached Storage"
           policy_engine_mode: any
 
+      # Application for Immich
+      - model: authentik_core.application
+        id: immich-app
+        identifiers:
+          slug: immich
+        state: present
+        attrs:
+          name: Immich
+          slug: immich
+          provider: !KeyOf immich-provider
+          meta_launch_url: "https://immich.techvomit.xyz"
+          meta_description: "Immich - Self-hosted Photo and Video Backup"
+          policy_engine_mode: any
+
       # Application for AdGuard Home
       - model: authentik_core.application
         id: adguard-app
@@ -571,6 +627,16 @@ data:
           expression: |
             return ak_is_group_member(request.user, name="AdGuard Admins")
 
+      - model: authentik_policies_expression.expressionpolicy
+        id: immich-user-policy
+        identifiers:
+          name: immich-user-policy
+        state: present
+        attrs:
+          name: immich-user-policy
+          expression: |
+            return ak_is_group_member(request.user, name="Immich Users")
+
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
         identifiers:
@@ -653,6 +719,17 @@ data:
         identifiers:
           target: !KeyOf adguard-app
           policy: !KeyOf adguard-admin-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Immich application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf immich-app
+          policy: !KeyOf immich-user-policy
           order: 0
         state: present
         attrs:

@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: immich
+      app.kubernetes.io/instance: immich
+namespace: media
+resources:
+  - ./ocirepository.yaml
+  - ./postgres-cluster.yaml
+  - ./library-pvc.yaml
+  - ./external-pvc.yaml
+  - ./ml-cache-pvc.yaml
+  - ./helmrelease.yaml
