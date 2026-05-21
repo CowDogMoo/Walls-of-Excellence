@@ -7,6 +7,7 @@ resources:
   - externalsecret-redis.yaml
   - externalsecret-llm.yaml
   - externalsecret-grafana.yaml
+  - externalsecret-hashcat.yaml
   # Infrastructure
   - redis-configmap.yaml
   - redis-statefulset.yaml
@@ -24,6 +25,7 @@ resources:
   - agents/privesc.yaml
   - agents/lateral-movement.yaml
   - agents/coercion.yaml
+  - agents/cracker.yaml
   # Blue Team Agents
   - agents/blue-orchestrator.yaml
   - agents/blue-triage.yaml
