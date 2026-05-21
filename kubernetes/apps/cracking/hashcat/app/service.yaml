@@ -1,0 +1,27 @@
+---
+# Service + manually-managed Endpoints pointing at crackd running on the
+# macOS host outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hashcat
+  namespace: cracking
+spec:
+  ports:
+    - name: http
+      port: 8787
+      protocol: TCP
+      targetPort: 8787
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: hashcat # name MUST match the Service
+  namespace: cracking
+subsets:
+  - addresses:
+      - ip: 192.168.20.25 # ouroboros (macOS host), Ethernet reservation
+    ports:
+      - name: http
+        port: 8787
+        protocol: TCP
