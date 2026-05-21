@@ -39,8 +39,8 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: agent
-          # Pulls from the fork's GHCR until the remote-hashcat patch
-          # (l50/ares#9) lands upstream and dreadnode rebuilds.
+          # Built from l50/ares (fork carries the remote-hashcat patch).
+          # Swap back to ghcr.io/dreadnode/... if/when the patch lands upstream.
           image: ghcr.io/l50/ares-cracker-agent:latest
           command: ["/bin/sh", "-c"]
           args:
