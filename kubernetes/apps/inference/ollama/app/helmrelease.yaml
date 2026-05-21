@@ -24,6 +24,7 @@ spec:
   values:
     controllers:
       ollama:
+        replicas: 0
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:

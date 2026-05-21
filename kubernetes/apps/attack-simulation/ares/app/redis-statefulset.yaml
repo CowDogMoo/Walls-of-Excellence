@@ -19,6 +19,23 @@ spec:
         app: redis
         app.kubernetes.io/part-of: attack-simulation
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - k8s7
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/part-of: attack-simulation
+                topologyKey: kubernetes.io/hostname
       initContainers:
         - name: config-setup
           image: redis:8-alpine
