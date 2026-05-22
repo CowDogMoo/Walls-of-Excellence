@@ -56,6 +56,14 @@ spec:
 
   affinity:
     enablePodAntiAffinity: true
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - k8s7
 
   monitoring:
     enablePodMonitor: true

@@ -29,6 +29,7 @@ spec:
       work_mem: "8MB"
       min_wal_size: "1GB"
       max_wal_size: "4GB"
+      wal_compression: "on"
       log_min_duration_statement: "1000"
 
   bootstrap:

@@ -74,6 +74,16 @@ spec:
           existingClaim: immich-library
       configurationKind: Secret
       configuration:
+        image:
+          thumbnail:
+            format: webp
+            size: 250
+            quality: 80
+          preview:
+            format: jpeg
+            size: 1080
+            quality: 80
+          colorspace: p3
         oauth:
           enabled: true
           autoLaunch: false
@@ -94,6 +104,49 @@ spec:
         main:
           containers:
             main:
+              env:
+                - name: REDIS_HOSTNAME
+                  value: immich-valkey
+                - name: IMMICH_MACHINE_LEARNING_URL
+                  value: http://immich-machine-learning:3003
+                - name: DB_HOSTNAME
+                  value: immich-postgres-rw.media.svc.cluster.local
+                - name: DB_DATABASE_NAME
+                  value: immich
+                - name: DB_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-postgres-app
+                      key: username
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-postgres-app
+                      key: password
+                - name: TZ
+                  value: America/Denver
+                - name: IMMICH_CONFIG_FILE
+                  value: /config/immich-config.yaml
+                - name: IMMICH_TELEMETRY_INCLUDE
+                  value: all
+                - name: IMMICH_JOB_THUMBNAIL_GENERATION_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_METADATA_EXTRACTION_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_SMART_SEARCH_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_FACE_DETECTION_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_FACIAL_RECOGNITION_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_VIDEO_CONVERSION_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_BACKGROUND_TASK_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_LIBRARY_CONCURRENCY
+                  value: "1"
+                - name: IMMICH_JOB_SIDECAR_CONCURRENCY
+                  value: "1"
               resources:
                 requests:
                   cpu: 100m
@@ -145,6 +198,7 @@ spec:
                   cpu: 200m
                   memory: 1Gi
                 limits:
+                  cpu: 4000m
                   memory: 6Gi
       persistence:
         cache:

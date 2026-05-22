@@ -2,41 +2,33 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: ares-blue-lateral-analyst
+  name: ares-cracker-agent
   namespace: attack-simulation
   labels:
-    app.kubernetes.io/name: ares-blue-lateral-analyst
+    app.kubernetes.io/name: ares-cracker-agent
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: lateral-analyst
-    ares.dreadnode.io/component: blue-team
+    ares.dreadnode.io/role: cracker
+    ares.dreadnode.io/component: red-team
 spec:
-  serviceName: ares-blue-lateral-analyst
+  serviceName: ares-cracker-agent
   replicas: 1
   updateStrategy:
     type: RollingUpdate
   selector:
     matchLabels:
-      app.kubernetes.io/name: ares-blue-lateral-analyst
+      app.kubernetes.io/name: ares-cracker-agent
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: ares-blue-lateral-analyst
+        app.kubernetes.io/name: ares-cracker-agent
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: lateral-analyst
-        ares.dreadnode.io/component: blue-team
+        ares.dreadnode.io/role: cracker
+        ares.dreadnode.io/component: red-team
     spec:
-      serviceAccountName: ares-blue-agent
+      serviceAccountName: ares-agent
       imagePullSecrets:
         - name: ghcr-auth
       affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: NotIn
-                    values:
-                      - k8s7
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
@@ -45,53 +37,25 @@ spec:
                   matchLabels:
                     app.kubernetes.io/part-of: attack-simulation
                 topologyKey: kubernetes.io/hostname
-      hostAliases:
-        - ip: "10.1.10.10"
-          hostnames:
-            - "sevenkingdoms.local"
-            - "kingslanding.sevenkingdoms.local"
-            - "kingslanding"
-        - ip: "10.1.10.11"
-          hostnames:
-            - "north.sevenkingdoms.local"
-            - "winterfell.north.sevenkingdoms.local"
-            - "winterfell"
-        - ip: "10.1.10.12"
-          hostnames:
-            - "essos.local"
-            - "meereen.essos.local"
-            - "meereen"
-        - ip: "10.1.10.22"
-          hostnames:
-            - "castelblack.north.sevenkingdoms.local"
-            - "castelblack"
-        - ip: "10.1.10.23"
-          hostnames:
-            - "braavos.essos.local"
-            - "braavos"
       containers:
         - name: agent
-          image: ghcr.io/dreadnode/ares-blue-lateral-analyst-agent:latest
+          # Built from l50/ares (fork carries the remote-hashcat patch).
+          # Swap back to ghcr.io/dreadnode/... if/when the patch lands upstream.
+          image: ghcr.io/l50/ares-cracker-agent:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
               while true; do
-                ares worker --redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
-                rc=$?
-                echo "ares blue worker exited with status $rc; restarting in 5s" >&2
+                ares worker cracker --redis-url "redis://:${REDIS_PASSWORD}@redis.attack-simulation.svc.cluster.local:6379"
+                status=$?
+                echo "ares worker exited with status $status; restarting in 5s" >&2
                 sleep 5
               done
           stdin: true
           tty: true
           env:
-            - name: ARES_WORKER_ROLE
-              value: "lateral_analyst"
             - name: ARES_ROLE
-              value: "lateral_analyst"
-            - name: ARES_TEAM
-              value: "blue"
-            - name: ARES_BLUE_GLOBAL_POOL
-              value: "true"
+              value: "cracker"
             - name: ARES_CONFIG
               value: "/etc/ares/ares.yaml"
             - name: REDIS_PASSWORD
@@ -104,13 +68,6 @@ spec:
                 secretKeyRef:
                   name: ares-llm-secret
                   key: OPENAI_API_KEY
-            - name: GRAFANA_SERVICE_ACCOUNT_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: ares-grafana-secret
-                  key: GRAFANA_SERVICE_ACCOUNT_TOKEN
-            - name: OTEL_SERVICE_NAME
-              value: "ares-blue-lateral-analyst"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -119,16 +76,28 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_SERVICE_NAME
+              value: "ares-cracker"
+            # Remote hashcat backend — delegates crack_with_hashcat to the
+            # crackd service running on the macOS host (M1 Max GPU via Metal).
+            # Requires the dreadnode/ares PR adding remote hashcat support.
+            - name: HASHCAT_SERVICE_URL
+              value: "http://hashcat.cracking.svc.cluster.local:8787"
+            - name: HASHCAT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hashcat-token
+                  key: token
           envFrom:
             - configMapRef:
-                name: ares-blue-agent-config
+                name: ares-agent-config
           resources:
             requests:
-              cpu: 100m
-              memory: 512Mi
+              cpu: 50m
+              memory: 256Mi
             limits:
-              cpu: 1000m
-              memory: 2Gi
+              cpu: 500m
+              memory: 1Gi
           volumeMounts:
             - name: config
               mountPath: /etc/ares
@@ -160,17 +129,17 @@ spec:
         storageClassName: nfs-client
         resources:
           requests:
-            storage: 5Gi
+            storage: 2Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ares-blue-lateral-analyst
+  name: ares-cracker-agent
   namespace: attack-simulation
 spec:
   clusterIP: None
   selector:
-    app.kubernetes.io/name: ares-blue-lateral-analyst
+    app.kubernetes.io/name: ares-cracker-agent
   ports:
     - name: http
       port: 80

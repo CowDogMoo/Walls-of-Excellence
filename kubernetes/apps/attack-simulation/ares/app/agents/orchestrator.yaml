@@ -25,6 +25,23 @@ spec:
       serviceAccountName: ares-orchestrator
       imagePullSecrets:
         - name: ghcr-auth
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - k8s7
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/part-of: attack-simulation
+                topologyKey: kubernetes.io/hostname
       hostAliases:
         - ip: "10.1.10.10"
           hostnames:
@@ -91,7 +108,7 @@ spec:
                 name: ares-agent-config
           resources:
             requests:
-              cpu: 250m
+              cpu: 100m
               memory: 256Mi
             limits:
               cpu: 1000m
