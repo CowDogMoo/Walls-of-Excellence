@@ -16,11 +16,11 @@ spec:
         name: authentik
         namespace: identity
   install:
-    timeout: 15m
+    timeout: 30m
     remediation:
       retries: 3
   upgrade:
-    timeout: 15m
+    timeout: 30m
     cleanupOnFail: true
     remediation:
       strategy: rollback
