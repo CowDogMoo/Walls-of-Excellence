@@ -17,12 +17,10 @@ spec:
         namespace: identity
   install:
     timeout: 30m
-    disableWait: true
     remediation:
       retries: 3
   upgrade:
     timeout: 30m
-    disableWait: true
     cleanupOnFail: true
     remediation:
       strategy: rollback
