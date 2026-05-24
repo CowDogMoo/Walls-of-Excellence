@@ -10,7 +10,7 @@ spec:
   version: "v1.36.1+k3s1"
   serviceAccountName: system-upgrade
   concurrency: 1
-  jobActiveDeadlineSecs: 1800 # 30 minutes timeout for upgrade jobs
+  jobActiveDeadlineSecs: 3600 # 60 minutes — agents host many pods; drain can exceed 30m
   nodeSelector:
     matchExpressions:
       - { key: node-role.kubernetes.io/control-plane, operator: DoesNotExist }
