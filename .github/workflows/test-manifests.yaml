@@ -21,6 +21,7 @@ env:
   KUBECTL_VERSION: v1.31.4
   FLUX_VERSION: v2.4.0
   HELMFILE_VERSION: v1.0.0-rc.1
+  KUSTOMIZE_VERSION: v5.8.1
 
 permissions:
   contents: read
@@ -41,8 +42,11 @@ jobs:
 
       - name: Install kustomize
         run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 -o kustomize.tar.gz \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${{ env.KUSTOMIZE_VERSION }}/kustomize_${{ env.KUSTOMIZE_VERSION }}_linux_amd64.tar.gz"
+          tar -xzf kustomize.tar.gz
           sudo mv kustomize /usr/local/bin/
+          rm kustomize.tar.gz
           kustomize version
 
       - name: Validate manifests
