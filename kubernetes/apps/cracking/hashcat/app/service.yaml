@@ -20,7 +20,7 @@ metadata:
   namespace: cracking
 subsets:
   - addresses:
-      - ip: 192.168.20.25 # ouroboros (macOS host), Ethernet reservation
+      - ip: 192.168.20.19 # ouroboros (macOS host), Ethernet reservation
     ports:
       - name: http
         port: 8787
