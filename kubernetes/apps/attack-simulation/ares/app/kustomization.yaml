@@ -12,6 +12,9 @@ resources:
   - redis-configmap.yaml
   - redis-statefulset.yaml
   - redis-service.yaml
+  - nats-configmap.yaml
+  - nats-statefulset.yaml
+  - nats-service.yaml
   - postgresql.yaml
   # RBAC
   - rbac.yaml

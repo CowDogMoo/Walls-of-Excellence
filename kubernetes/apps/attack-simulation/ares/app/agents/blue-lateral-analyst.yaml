@@ -71,7 +71,7 @@ spec:
             - "braavos"
       containers:
         - name: agent
-          image: ghcr.io/dreadnode/ares-blue-lateral-analyst-agent:latest
+          image: ghcr.io/l50/ares-blue-lateral-analyst-agent:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -136,14 +136,24 @@ spec:
               mountPath: /ares
           livenessProbe:
             exec:
-              command: ["/bin/sh", "-c", "pgrep -f 'ares worker'"]
+              command:
+                [
+                  "/bin/sh",
+                  "-c",
+                  "grep -q 'ares worker' /proc/[0-9]*/cmdline 2>/dev/null",
+                ]
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             exec:
-              command: ["/bin/sh", "-c", "pgrep -f 'ares worker'"]
+              command:
+                [
+                  "/bin/sh",
+                  "-c",
+                  "grep -q 'ares worker' /proc/[0-9]*/cmdline 2>/dev/null",
+                ]
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3

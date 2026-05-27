@@ -71,7 +71,7 @@ spec:
             - "braavos"
       containers:
         - name: agent
-          image: ghcr.io/dreadnode/ares-privesc-agent:latest
+          image: ghcr.io/l50/ares-privesc-agent:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
