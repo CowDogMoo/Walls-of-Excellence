@@ -113,6 +113,8 @@ spec:
               value: "INFO"
             - name: OTEL_SERVICE_NAME
               value: "ares-orchestrator"
+            - name: ARES_LLM_PREFLIGHT_SKIP
+              value: "1"
           envFrom:
             - configMapRef:
                 name: ares-agent-config
