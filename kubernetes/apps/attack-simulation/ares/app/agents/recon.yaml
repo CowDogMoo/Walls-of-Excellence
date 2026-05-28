@@ -121,6 +121,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: OTEL_SERVICE_NAME
               value: "ares-recon"
+            - name: ARES_AGENT_TASK_TIMEOUT
+              value: "600"
           envFrom:
             - configMapRef:
                 name: ares-agent-config
