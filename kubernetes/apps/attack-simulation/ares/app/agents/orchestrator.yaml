@@ -115,6 +115,8 @@ spec:
               value: "ares-orchestrator"
             - name: ARES_LLM_PREFLIGHT_SKIP
               value: "1"
+            - name: ARES_LISTENER_IP
+              value: "10.1.10.99"
           envFrom:
             - configMapRef:
                 name: ares-agent-config
