@@ -15,7 +15,7 @@ spec:
       # Robusta publishes multi-arch images (amd64 + arm64) on its public registry
       # since 0.10.x; arm64 RPI nodes (k8s7) are supported. If a future bump regresses
       # arm64 support, fall back to nodeSelector kubernetes.io/hostname: k8s8 (amd64 VM).
-      version: 0.39.0
+      version: 0.40.0
       sourceRef:
         kind: HelmRepository
         name: robusta
