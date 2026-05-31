@@ -38,7 +38,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: nats
-          image: nats:2.10-alpine
+          image: nats:2.14-alpine
           args:
             - "--config"
             - "/etc/nats/nats.conf"
