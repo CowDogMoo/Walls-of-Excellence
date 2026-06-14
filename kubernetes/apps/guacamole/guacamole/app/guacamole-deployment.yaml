@@ -112,7 +112,7 @@ spec:
                     echo "Stopping guacd..."
                     killall -TERM guacd || true
                     sleep 2
-        - image: ghcr.io/cowdogmoo/guacamole-provisioner:latest@sha256:f2a9a7be41812300ba7af1489dbe8f042035710bcd7dcc33c799d9da5773e6e2
+        - image: ghcr.io/cowdogmoo/guacamole-provisioner:latest@sha256:3c33db75a5ccd4e0652baff2b1376b51b60f2fec9c7e77c40a32a464d394ea71
           name: connection-provisioner
           env:
             - name: STARTUP_DELAY
