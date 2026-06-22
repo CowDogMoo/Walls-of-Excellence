@@ -29,6 +29,15 @@ spec:
       imagePullSecrets:
         - name: ghcr-auth
       affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - macworker
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
@@ -37,6 +46,11 @@ spec:
                   matchLabels:
                     app.kubernetes.io/part-of: attack-simulation
                 topologyKey: kubernetes.io/hostname
+      tolerations:
+        - key: node.homelab/laptop
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       containers:
         - name: agent
           image: ghcr.io/l50/ares-cracker-agent:latest

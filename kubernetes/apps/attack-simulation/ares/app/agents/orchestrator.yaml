@@ -34,6 +34,14 @@ spec:
                     operator: NotIn
                     values:
                       - k8s7
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - macworker
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
@@ -42,6 +50,11 @@ spec:
                   matchLabels:
                     app.kubernetes.io/part-of: attack-simulation
                 topologyKey: kubernetes.io/hostname
+      tolerations:
+        - key: node.homelab/laptop
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
       hostAliases:
         - ip: "10.1.10.10"
           hostnames:
