@@ -70,13 +70,12 @@ spec:
       dashboard:
         enabled: false
 
-    logs:
-      general:
-        format: json
-        level: DEBUG
-      access:
-        enabled: true
-        format: json
+    log:
+      format: json
+      level: DEBUG
+    accessLog:
+      enabled: true
+      format: json
 
     rbac:
       enabled: true
