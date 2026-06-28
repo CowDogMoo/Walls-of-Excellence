@@ -7,11 +7,3 @@ metadata:
 stringData:
   1password-credentials.json: op://automation/onepassword-connect-secret/1password-credentials.json
   token: op://automation/1password-access-token-secret/credential
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sops-age-secret
-  namespace: flux-system
-stringData:
-  age.agekey: op://automation/woe age key/privateKey

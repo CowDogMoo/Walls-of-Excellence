@@ -173,13 +173,13 @@ kubectl config use-context kind-test-a
 
 Automatically skipped:
 
-- SOPS-encrypted secrets (use `task test:mock-secrets`)
+- ExternalSecret-backed secrets (use `task test:mock-secrets`)
 - Deprecated resources
 - External dependencies
 
 Production differences:
 
-- Mock secrets vs real encrypted values
+- Mock secrets vs real 1Password values
 - NodePort vs LoadBalancer
 - emptyDir vs persistent volumes
 - Single node vs HA
@@ -378,14 +378,14 @@ task test:logs CONTROLLER=helm-controller
 kubectl get events -A --sort-by='.lastTimestamp'
 ```
 
-**Problem:** SOPS decryption errors
+**Problem:** ExternalSecret not syncing
 
 ```bash
 # Expected in test environment - use mock secrets
 task test:mock-secrets
 
-# Or skip encrypted apps
-task test:apply-app APP=cert-manager  # Non-encrypted apps only
+# Or apply apps that don't depend on external secrets
+task test:apply-app APP=cert-manager
 ```
 
 **Problem:** Pod CrashLoopBackOff
@@ -542,7 +542,7 @@ task test:reset
 
 6. **Document test dependencies** in app manifests
 
-7. **Use mock secrets** for testing encrypted apps:
+7. **Use mock secrets** for testing apps that depend on external secrets:
 
    ```bash
    task test:mock-secrets NAMESPACE=my-namespace
@@ -557,7 +557,7 @@ Before merging a PR:
 - [ ] `task test:validate` passes
 - [ ] Local test cluster deployment succeeds
 - [ ] GitHub Actions test workflow passes
-- [ ] No new SOPS encryption errors
+- [ ] No new ExternalSecret sync errors
 - [ ] HelmRelease reconciles successfully
 - [ ] Pods reach Running state
 - [ ] No resource limit issues
