@@ -30,7 +30,7 @@ a production-grade Kubernetes cluster.
 
 - **GitOps-Native**: Flux CD for continuous deployment and reconciliation
 - **Automated Provisioning**: Ansible-based k3s cluster deployment (7 nodes)
-- **Secrets Management**: SOPS encryption with 1Password integration
+- **Secrets Management**: External Secrets Operator with 1Password integration
 - **Comprehensive Observability**: Prometheus, Grafana, Loki, and Alloy
 - **Home Automation**: Home Assistant, MQTT, and smart home services
 - **Security Testing**: Atomic Red Team, TTPForge, and C2 infrastructure
@@ -42,7 +42,7 @@ a production-grade Kubernetes cluster.
 - **GitOps**: Flux CD v2.4.0+
 - **Provisioning**: Ansible 2.11+
 - **Package Management**: Helm, Helmfile
-- **Secrets**: SOPS with age encryption, 1Password
+- **Secrets**: External Secrets Operator, 1Password
 - **Automation**: Task (go-task)
 - **CI/CD**: GitHub Actions, Renovate
 
@@ -86,7 +86,6 @@ a production-grade Kubernetes cluster.
 - **[Kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/)**
   \- Manifest customization
 - **[yq](https://github.com/mikefarah/yq)** - YAML processor
-- **[age](https://github.com/FiloSottile/age)** - Encryption tool
 - **[1Password CLI](https://developer.1password.com/docs/cli/)** - Secret
   management
 - **[Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)**
@@ -103,7 +102,6 @@ brew install helm
 brew install helmfile
 brew install kustomize
 brew install yq
-brew install age
 brew install ansible
 brew install terraform
 brew install --cask 1password-cli
@@ -136,17 +134,7 @@ See [Developer Guide](docs/dev.md) for detailed Linux installation instructions.
    op signin
    ```
 
-3. **Configure SOPS encryption:**
-
-   ```bash
-   # Generate age key
-   age-keygen -o keys.txt
-
-   # Store private key in 1Password
-   # Add public key to .sops.yaml
-   ```
-
-4. **Provision k3s cluster:**
+3. **Provision k3s cluster:**
 
    ```bash
    # Provision all nodes
@@ -156,14 +144,14 @@ See [Developer Guide](docs/dev.md) for detailed Linux installation instructions.
    task bootstrap:wait
    ```
 
-5. **Bootstrap the cluster:**
+4. **Bootstrap the cluster:**
 
    ```bash
    # Run complete bootstrap
    task bootstrap
    ```
 
-6. **Verify Flux reconciliation:**
+5. **Verify Flux reconciliation:**
 
    ```bash
    flux get kustomizations -A
@@ -230,7 +218,6 @@ woe/
 │   │   └── resources.yaml.j2   # Secret templates
 │   ├── flux/                   # Flux GitOps configs
 │   └── deprecated/             # Legacy configs (skipped)
-├── .sops.yaml                  # SOPS encryption rules
 ├── ansible.cfg                 # Ansible configuration
 └── Taskfile.yaml               # Root task definitions
 ```
@@ -261,7 +248,7 @@ woe/
 
 ### Security
 
-- **Secrets Encryption**: SOPS with age
+- **Secrets Management**: External Secrets Operator with 1Password
 - **Authentication**: Authentik (OIDC provider)
 - **Certificate Management**: cert-manager with Let's Encrypt
 - **Network Policies**: Calico/Cilium network policies
@@ -557,7 +544,7 @@ This project was influenced by:
 - [Flux CD Documentation](https://fluxcd.io/flux/)
 - [k3s Documentation](https://docs.k3s.io/)
 - [Task Documentation](https://taskfile.dev/)
-- [SOPS Documentation](https://github.com/getsops/sops)
+- [External Secrets Operator](https://external-secrets.io/)
 - [Ansible k3s Role](https://github.com/k3s-io/k3s-ansible)
 
 ### Community

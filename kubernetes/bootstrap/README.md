@@ -64,8 +64,7 @@ bootstrap/
 ├── README.md                          # This file
 ├── flux/                              # Flux components
 │   ├── gotk-components.yaml          # Flux CRDs and controllers
-│   ├── gotk-sync.yaml                # GitRepository and Kustomization
-│   └── age-key.secret.sops.yaml      # SOPS age encryption key
+│   └── gotk-sync.yaml                # GitRepository and Kustomization
 ├── helmfile.d/                        # Helmfile configurations
 │   ├── 00-crds.yaml                  # CRD extraction from charts
 │   ├── 01-apps.yaml                  # Core bootstrap applications
@@ -137,13 +136,12 @@ flux get kustomizations -A
 
 ### Required Secrets
 
-Store the following secrets in 1Password vault `kubernetes`:
+Store the following secrets in 1Password vault `automation`:
 
-| Item | Field | Description |
-| ---- | ----- | ----------- |
-| `1password` | `OP_CREDENTIALS_JSON` | 1Password Connect credentials |
-| `1password` | `OP_CONNECT_TOKEN` | 1Password Connect API token |
-| `sops` | `SOPS_PRIVATE_KEY` | age private key for SOPS encryption |
+- Item `onepassword-connect-secret`, field `1password-credentials.json` —
+  1Password Connect credentials
+- Item `1password-access-token-secret`, field `credential` — 1Password
+  Connect API token
 
 ### Authentication
 
@@ -157,7 +155,7 @@ op signin
 op whoami
 
 # Test secret retrieval
-op read "op://kubernetes/sops/SOPS_PRIVATE_KEY"
+op read "op://automation/1password-access-token-secret/credential"
 ```
 
 ### Troubleshooting 1Password
@@ -182,79 +180,6 @@ op vault list
 
 # List items in vault
 op item list --vault kubernetes
-```
-
----
-
-## SOPS Setup (First-Time Only)
-
-For new clusters, set up SOPS encryption:
-
-### 1. Generate age Key
-
-```bash
-# Generate new age key pair
-age-keygen -o keys.txt
-
-# View the key
-cat keys.txt
-```
-
-Output:
-
-```text
-# created: 2024-01-01T00:00:00Z
-# public key: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-AGE-SECRET-KEY-1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-```
-
-### 2. Store Private Key in 1Password
-
-1. Open 1Password
-2. Create/edit item in `kubernetes` vault:
-   - Name: `sops`
-   - Field: `SOPS_PRIVATE_KEY`
-   - Value: The `AGE-SECRET-KEY-1...` line
-
-### 3. Update .sops.yaml
-
-Add the public key to `.sops.yaml` in the repository root:
-
-```yaml
-creation_rules:
-  - path_regex: kubernetes/.*\.sops\.yaml$
-    age: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-### 4. Create Flux age Secret
-
-Create `kubernetes/bootstrap/flux/age-key.secret.sops.yaml`:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sops-age
-  namespace: flux-system
-stringData:
-  age.agekey: |
-    # created: 2024-01-01T00:00:00Z
-    # public key: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    AGE-SECRET-KEY-1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-```
-
-Encrypt it:
-
-```bash
-sops --encrypt --in-place kubernetes/bootstrap/flux/age-key.secret.sops.yaml
-```
-
-### 5. Commit and Push
-
-```bash
-git add .sops.yaml kubernetes/bootstrap/flux/age-key.secret.sops.yaml
-git commit -m "feat: add SOPS age encryption key"
-git push
 ```
 
 ---
@@ -315,19 +240,11 @@ Template file with 1Password references:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: onepassword-credentials
+  name: onepassword-secret
   namespace: external-secrets
 stringData:
-  credentials.json: "op://kubernetes/1password/OP_CREDENTIALS_JSON"
-  token: "op://kubernetes/1password/OP_CONNECT_TOKEN"
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sops-age
-  namespace: flux-system
-stringData:
-  age.agekey: "op://kubernetes/sops/SOPS_PRIVATE_KEY"
+  1password-credentials.json: op://automation/onepassword-connect-secret/1password-credentials.json
+  token: op://automation/1password-access-token-secret/credential
 ```
 
 These are injected during bootstrap via:
@@ -450,7 +367,7 @@ op signin
 op whoami
 
 # Test secret access
-op read "op://kubernetes/sops/SOPS_PRIVATE_KEY"
+op read "op://automation/1password-access-token-secret/credential"
 ```
 
 **Problem:** CRD installation fails
@@ -505,19 +422,6 @@ kubectl describe gitrepository flux-system -n flux-system
 
 # Force reconcile
 flux reconcile source git flux-system
-```
-
-**Problem:** SOPS decryption errors
-
-```bash
-# Verify age secret exists
-kubectl get secret sops-age -n flux-system
-
-# Check age key format
-kubectl get secret sops-age -n flux-system -o yaml
-
-# Recreate secret
-task bootstrap:resources
 ```
 
 ### General Debugging
@@ -620,4 +524,3 @@ kubectl get pods -A -w
 - [cert-manager Documentation](https://cert-manager.io/)
 - [external-secrets Documentation](https://external-secrets.io/)
 - [1Password CLI Documentation](https://developer.1password.com/docs/cli/)
-- [SOPS Documentation](https://github.com/getsops/sops)

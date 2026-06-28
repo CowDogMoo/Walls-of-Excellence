@@ -136,8 +136,8 @@ tasks:
 
       This will:
       - Create required namespaces
-      - Apply non-SOPS configurations
-      - Skip encrypted secrets (use test:mock-secrets for testing)
+      - Apply configurations that don't depend on external secrets
+      - Skip secret-bearing apps (use test:mock-secrets for testing)
 
       Usage:
         task test:apply
@@ -209,15 +209,15 @@ tasks:
 
             dir=$(dirname "$kfile")
 
-            # Skip if it references SOPS
-            if grep -q "sops\|\.secret\." "$kfile" 2>/dev/null; then
-              echo "  ⊘ Skipped: $app_path (has SOPS encryption)"
+            # Skip if it references secrets
+            if grep -q "\.secret\." "$kfile" 2>/dev/null; then
+              echo "  ⊘ Skipped: $app_path (requires secrets)"
               SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
               continue
             fi
 
             echo "  ✓ Applied: $app_path"
-            (kubectl apply -k "$dir" 2>&1 || true) | grep -v "Warning:\|Error from server (BadRequest).*sops\|no matches for kind.*PrometheusRule\|ensure CRDs are installed first\|resource mapping not found\|error:" || true
+            (kubectl apply -k "$dir" 2>&1 || true) | grep -v "Warning:\|no matches for kind.*PrometheusRule\|ensure CRDs are installed first\|resource mapping not found\|error:" || true
             APPLIED_COUNT=$((APPLIED_COUNT + 1))
           fi
         done
@@ -414,9 +414,9 @@ tasks:
 
             dir=$(dirname "$kfile")
 
-            # Skip if it references SOPS
-            if grep -q "sops\|\.secret\." "$kfile" 2>/dev/null; then
-              echo "  ⊘ Skipped: $app_path (has SOPS)"
+            # Skip if it references secrets
+            if grep -q "\.secret\." "$kfile" 2>/dev/null; then
+              echo "  ⊘ Skipped: $app_path (requires secrets)"
               SKIP_COUNT=$((SKIP_COUNT + 1))
               continue
             fi
