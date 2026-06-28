@@ -7,7 +7,7 @@ metadata:
   namespace: system-upgrade
 spec:
   # renovate: datasource=github-releases depName=k3s-io/k3s
-  version: "v1.36.1+k3s1"
+  version: "v1.36.2+k3s1"
   serviceAccountName: system-upgrade
   concurrency: 1
   jobActiveDeadlineSecs: 3600 # 60 minutes — agents host many pods; drain can exceed 30m
