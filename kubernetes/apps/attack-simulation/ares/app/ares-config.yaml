@@ -31,7 +31,7 @@ metadata:
   namespace: attack-simulation
   labels:
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/component: blue-team
+    ares.local/component: blue-team
 data:
   ARES_EXECUTION_MODE: "k8s"
   ARES_WORKER_MODE: "blue_task"
@@ -39,7 +39,7 @@ data:
   ARES_BLUE_ENABLED: "1"
   ARES_LLM_MODEL: "gpt-5.2"
   ARES_BLUE_LLM_MODEL: "gpt-5.2"
-  K8S_LABEL_SELECTOR: "ares.dreadnode.io/component=blue-team"
+  K8S_LABEL_SELECTOR: "ares.local/component=blue-team"
   INVESTIGATION_TIMEOUT: "3600"
   REDIS_HOST: "redis.attack-simulation.svc.cluster.local"
   REDIS_PORT: "6379"
@@ -89,32 +89,32 @@ data:
       recon:
         model: "gpt-5.2"
         max_steps: 100
-        pod_selector: "ares.dreadnode.io/role=recon"
+        pod_selector: "ares.local/role=recon"
 
       credential_access:
         model: "gpt-5.2"
         max_steps: 100
-        pod_selector: "ares.dreadnode.io/role=credential_access"
+        pod_selector: "ares.local/role=credential_access"
 
       acl:
         model: "gpt-5.2"
         max_steps: 150
-        pod_selector: "ares.dreadnode.io/role=acl"
+        pod_selector: "ares.local/role=acl"
 
       privesc:
         model: "gpt-5.2"
         max_steps: 100
-        pod_selector: "ares.dreadnode.io/role=privesc"
+        pod_selector: "ares.local/role=privesc"
 
       lateral:
         model: "gpt-5.2"
         max_steps: 300
-        pod_selector: "ares.dreadnode.io/role=lateral"
+        pod_selector: "ares.local/role=lateral"
 
       coercion:
         model: "gpt-5.2"
         max_steps: 30
-        pod_selector: "ares.dreadnode.io/role=coercion"
+        pod_selector: "ares.local/role=coercion"
 
       blue_orchestrator:
         model: "gpt-5.2"
@@ -124,17 +124,17 @@ data:
       blue_triage:
         model: "gpt-5.2"
         max_steps: 100
-        pod_selector: "ares.dreadnode.io/role=triage,ares.dreadnode.io/component=blue-team"
+        pod_selector: "ares.local/role=triage,ares.local/component=blue-team"
 
       blue_threat_hunter:
         model: "gpt-5.2"
         max_steps: 150
-        pod_selector: "ares.dreadnode.io/role=threat-hunter,ares.dreadnode.io/component=blue-team"
+        pod_selector: "ares.local/role=threat-hunter,ares.local/component=blue-team"
 
       blue_lateral_analyst:
         model: "gpt-5.2"
         max_steps: 200
-        pod_selector: "ares.dreadnode.io/role=lateral-analyst,ares.dreadnode.io/component=blue-team"
+        pod_selector: "ares.local/role=lateral-analyst,ares.local/component=blue-team"
 
     timeouts:
       agent_heartbeat: 180

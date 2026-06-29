@@ -71,19 +71,6 @@ spec:
         sinks:
           - signal_adapter
 
-      # 2. FluxReconciliationFailure -> kick a Flux reconcile by annotating the
-      #    failing resource with reconcile.fluxcd.io/requestedAt=<now>.
-      #
-      #    NOTE / UNCERTAINTY: Robusta does not ship a dedicated built-in
-      #    "kick-flux-reconcile" action. The closest built-ins are
-      #    `resource_events_enricher` / `alert_explanation_enricher` (informational
-      #    only). To actually re-trigger Flux we would need either:
-      #      a) a custom Python action (explicitly out of scope here), or
-      #      b) the generic `node_bash_enricher` / a future `kubectl_action` style
-      #         built-in.
-      #    For now we fire the well-known logging/enrichment actions so the alert
-      #    is still routed to Signal with context, and leave a TODO to wire a
-      #    real reconcile-kick action when one exists.
       - triggers:
           - on_prometheus_alert:
               alert_name: FluxReconciliationFailure
@@ -93,9 +80,6 @@ spec:
         sinks:
           - signal_adapter
 
-    # ---------------------------------------------------------------------------
-    # Pin to k8s7 (Ready arm64 RPI, 8GB) and avoid k8s9 (cordoned/unstable).
-    # ---------------------------------------------------------------------------
     runner:
       sendAdditionalTelemetry: false
       nodeSelector:

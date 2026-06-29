@@ -20,9 +20,6 @@ spec:
   values:
     cleanPrometheusOperatorObjectNames: true
     prometheusOperator:
-      # Enable EndpointSlice (modern) alongside Endpoints (legacy) to use the newer
-      # discovery.k8s.io/v1 EndpointSlice API instead of the deprecated v1 Endpoints API.
-      # Both must remain enabled as the operator requires at least one to function.
       kubeletEndpointsEnabled: true
       kubeletEndpointSliceEnabled: true
       revisionHistoryLimit: 3
@@ -87,7 +84,6 @@ spec:
           - hosts:
               - *host
       prometheusSpec:
-        # Configure Prometheus to use EndpointSlice instead of deprecated Endpoints for Kubernetes service discovery
         serviceDiscoveryRole: EndpointSlice
         # Disable HTTP/2 to mitigate CVE risks (strategic merge patch on prometheus container)
         # See: https://github.com/kubernetes-sigs/controller-runtime/issues/3096

@@ -7,11 +7,11 @@ metadata:
   namespace: attack-simulation
   labels:
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/component: network-policy
+    ares.local/component: network-policy
 spec:
   podSelector:
     matchExpressions:
-      - key: ares.dreadnode.io/component
+      - key: ares.local/component
         operator: In
         values:
           - red-team

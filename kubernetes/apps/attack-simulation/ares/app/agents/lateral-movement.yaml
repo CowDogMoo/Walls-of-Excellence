@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-lateral-movement-agent
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: lateral_movement
-    ares.dreadnode.io/component: red-team
+    ares.local/role: lateral_movement
+    ares.local/component: red-team
 spec:
   serviceName: ares-lateral-movement-agent
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-lateral-movement-agent
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: lateral_movement
-        ares.dreadnode.io/component: red-team
+        ares.local/role: lateral_movement
+        ares.local/component: red-team
     spec:
       serviceAccountName: ares-agent
       imagePullSecrets:

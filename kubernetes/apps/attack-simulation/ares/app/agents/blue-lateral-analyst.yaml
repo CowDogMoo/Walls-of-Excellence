@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-blue-lateral-analyst
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: lateral-analyst
-    ares.dreadnode.io/component: blue-team
+    ares.local/role: lateral-analyst
+    ares.local/component: blue-team
 spec:
   serviceName: ares-blue-lateral-analyst
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-blue-lateral-analyst
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: lateral-analyst
-        ares.dreadnode.io/component: blue-team
+        ares.local/role: lateral-analyst
+        ares.local/component: blue-team
     spec:
       serviceAccountName: ares-blue-agent
       imagePullSecrets:

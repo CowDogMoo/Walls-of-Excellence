@@ -1,0 +1,89 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vector-ares-ingest
+  namespace: observability
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: vector
+      version: 0.56.0
+      sourceRef:
+        kind: HelmRepository
+        name: vector
+        namespace: observability
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # Aggregator (Deployment); this is a poller — no inbound service needed.
+    role: Stateless-Aggregator
+    replicas: 1
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY for the ares-logging ingestor
+    # IAM user (k3s has no IRSA), synced from 1Password by the ExternalSecret.
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: vector-ares-ingest-aws
+            key: access_key_id
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: vector-ares-ingest-aws
+            key: secret_access_key
+      - name: AWS_REGION
+        valueFrom:
+          secretKeyRef:
+            name: vector-ares-ingest-aws
+            key: region
+    customConfig:
+      data_dir: /vector-data-dir
+      api:
+        enabled: true
+        address: "0.0.0.0:8686"
+      sources:
+        # Poll the SQS queue fed by S3 ObjectCreated notifications, then read
+        # the gzipped newline-delimited JSON objects the ares-side Vector wrote.
+        ares_s3:
+          type: aws_s3
+          region: us-east-1
+          sqs:
+            queue_url: "https://sqs.us-east-1.amazonaws.com/898493401173/alpha-operator-range-prod-ares-logs-s3-events"
+            poll_secs: 15
+          framing:
+            method: newline_delimited
+          decoding:
+            codec: json
+      sinks:
+        to_loki:
+          type: loki
+          inputs: ["ares_s3"]
+          endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
+          encoding:
+            codec: json
+          # namespace=attack-simulation inherits Loki's 180d red-team retention.
+          # deployment/host/job come from the ares-side shipper's labels.
+          labels:
+            namespace: "attack-simulation"
+            app: "ares"
+            deployment: "{{`{{ deployment }}`}}"
+            environment: "{{`{{ environment }}`}}"
+            host: "{{`{{ host }}`}}"
+            job: "{{`{{ job }}`}}"
+          out_of_order_action: "accept"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 256Mi

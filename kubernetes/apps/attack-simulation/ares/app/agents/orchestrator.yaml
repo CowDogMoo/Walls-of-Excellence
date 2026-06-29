@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-orchestrator
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/component: red-team
+    ares.local/component: red-team
 spec:
   replicas: 1
   strategy:
@@ -20,7 +20,7 @@ spec:
       labels:
         app.kubernetes.io/name: ares-orchestrator
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/component: red-team
+        ares.local/component: red-team
     spec:
       serviceAccountName: ares-orchestrator
       imagePullSecrets:

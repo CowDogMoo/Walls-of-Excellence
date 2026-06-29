@@ -1,7 +1,7 @@
 # Managing 1Password Connect Secret
 
 The 1Password Connect secret is managed through the bootstrap process using
-1Password CLI injection, not SOPS encryption.
+1Password CLI injection.
 
 ## Bootstrap Secret Management
 

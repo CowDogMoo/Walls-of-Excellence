@@ -19,7 +19,7 @@ repos:
       - id: yamllint
         entry: yamllint --strict -c .hooks/linters/yamllint.yaml
         exclude: >-
-          ^(kubernetes/apps/(monitoring/kube-prometheus-stack/app/helmrelease.yaml|external-secrets/external-secrets/app/onepassword-connect.secret.sops.yaml))
+          ^kubernetes/apps/monitoring/kube-prometheus-stack/app/helmrelease.yaml$
 
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0

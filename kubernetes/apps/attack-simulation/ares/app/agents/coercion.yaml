@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-coercion-agent
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: coercion
-    ares.dreadnode.io/component: red-team
+    ares.local/role: coercion
+    ares.local/component: red-team
 spec:
   serviceName: ares-coercion-agent
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-coercion-agent
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: coercion
-        ares.dreadnode.io/component: red-team
+        ares.local/role: coercion
+        ares.local/component: red-team
     spec:
       serviceAccountName: ares-agent
       imagePullSecrets:

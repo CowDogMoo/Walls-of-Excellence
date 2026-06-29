@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-recon-agent
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: recon
-    ares.dreadnode.io/component: red-team
+    ares.local/role: recon
+    ares.local/component: red-team
 spec:
   serviceName: ares-recon-agent
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-recon-agent
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: recon
-        ares.dreadnode.io/component: red-team
+        ares.local/role: recon
+        ares.local/component: red-team
     spec:
       serviceAccountName: ares-agent
       imagePullSecrets:

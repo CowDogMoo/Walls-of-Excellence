@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-cracker-agent
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: cracker
-    ares.dreadnode.io/component: red-team
+    ares.local/role: cracker
+    ares.local/component: red-team
 spec:
   serviceName: ares-cracker-agent
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-cracker-agent
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: cracker
-        ares.dreadnode.io/component: red-team
+        ares.local/role: cracker
+        ares.local/component: red-team
     spec:
       serviceAccountName: ares-agent
       imagePullSecrets:
@@ -90,9 +90,6 @@ spec:
                   fieldPath: metadata.namespace
             - name: OTEL_SERVICE_NAME
               value: "ares-cracker"
-            # Remote hashcat backend — delegates crack_with_hashcat to the
-            # crackd service running on the macOS host (M1 Max GPU via Metal).
-            # Requires the dreadnode/ares PR adding remote hashcat support.
             - name: HASHCAT_SERVICE_URL
               value: "http://hashcat.cracking.svc.cluster.local:8787"
             - name: HASHCAT_TOKEN

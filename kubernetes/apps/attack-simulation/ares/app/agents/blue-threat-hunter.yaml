@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-blue-threat-hunter
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: threat-hunter
-    ares.dreadnode.io/component: blue-team
+    ares.local/role: threat-hunter
+    ares.local/component: blue-team
 spec:
   serviceName: ares-blue-threat-hunter
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-blue-threat-hunter
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: threat-hunter
-        ares.dreadnode.io/component: blue-team
+        ares.local/role: threat-hunter
+        ares.local/component: blue-team
     spec:
       serviceAccountName: ares-blue-agent
       imagePullSecrets:

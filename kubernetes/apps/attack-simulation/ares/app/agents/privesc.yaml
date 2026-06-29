@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-privesc-agent
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: privesc
-    ares.dreadnode.io/component: red-team
+    ares.local/role: privesc
+    ares.local/component: red-team
 spec:
   serviceName: ares-privesc-agent
   replicas: 1
@@ -22,8 +22,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-privesc-agent
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: privesc
-        ares.dreadnode.io/component: red-team
+        ares.local/role: privesc
+        ares.local/component: red-team
     spec:
       serviceAccountName: ares-agent
       imagePullSecrets:

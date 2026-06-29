@@ -7,8 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ares-blue-orchestrator
     app.kubernetes.io/part-of: attack-simulation
-    ares.dreadnode.io/role: orchestrator
-    ares.dreadnode.io/component: blue-team
+    ares.local/role: orchestrator
+    ares.local/component: blue-team
 spec:
   replicas: 1
   strategy:
@@ -21,8 +21,8 @@ spec:
       labels:
         app.kubernetes.io/name: ares-blue-orchestrator
         app.kubernetes.io/part-of: attack-simulation
-        ares.dreadnode.io/role: orchestrator
-        ares.dreadnode.io/component: blue-team
+        ares.local/role: orchestrator
+        ares.local/component: blue-team
     spec:
       serviceAccountName: ares-blue-orchestrator
       imagePullSecrets:

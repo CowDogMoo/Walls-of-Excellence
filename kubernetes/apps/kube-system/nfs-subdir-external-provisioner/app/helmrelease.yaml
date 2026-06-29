@@ -40,7 +40,6 @@ spec:
       path: /volume1/k8s
       mountOptions:
       volumeName: nfs-subdir-external-provisioner-root
-      # Reclaim policy for the main nfs volume
       reclaimPolicy: Retain
 
     # For creating the StorageClass automatically:
@@ -58,10 +57,8 @@ spec:
       # Allow volume to be expanded dynamically
       allowVolumeExpansion: true
 
-      # Method used to reclaim an obsoleted volume
       reclaimPolicy: Delete
 
-      # When set to false your PVs will not be archived by the provisioner upon deletion of the PVC.
       archiveOnDelete: true
 
       # Set access mode - ReadWriteOnce, ReadOnlyMany or ReadWriteMany
@@ -71,7 +68,6 @@ spec:
       volumeBindingMode: Immediate
 
     leaderElection:
-      # When set to false leader election will be disabled
       enabled: true
 
     rbac:

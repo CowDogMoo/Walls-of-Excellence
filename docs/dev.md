@@ -25,7 +25,6 @@ This project requires:
 - **Linux or macOS** - Development environment
 - **SSH access** - To cluster nodes (k8s1-k8s7)
 - **1Password CLI** - For secrets management
-- **age** - For SOPS encryption
 
 ---
 
@@ -118,23 +117,9 @@ Verify authentication:
 op whoami
 ```
 
-### 5. Configure SOPS (First-Time Setup Only)
-
-For a new cluster, generate age encryption keys:
-
-```bash
-# Generate age key
-age-keygen -o keys.txt
-
-# Store private key in 1Password
-# Item: kubernetes/sops
-# Field: SOPS_PRIVATE_KEY
-
-# Add public key to .sops.yaml
-```
-
-See [kubernetes/bootstrap/README.md](../kubernetes/bootstrap/README.md)
-for detailed SOPS setup.
+Secrets are synced from 1Password into the cluster by the External Secrets
+Operator. See [kubernetes/bootstrap/README.md](../kubernetes/bootstrap/README.md)
+for details.
 
 ---
 
@@ -497,7 +482,6 @@ woe/
 │   │   ├── helmfile.d/   # Helmfile configs
 │   │   └── resources.yaml.j2  # Secret templates
 │   └── flux/             # Flux GitOps configs
-├── .sops.yaml            # SOPS encryption rules
 ├── ansible.cfg           # Ansible configuration
 └── Taskfile.yaml         # Root task definitions
 ```
