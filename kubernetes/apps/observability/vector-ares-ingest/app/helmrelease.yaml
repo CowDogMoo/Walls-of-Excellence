@@ -30,9 +30,22 @@ spec:
       reloader.stakater.com/auto: "true"
     # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY for the ares-logging ingestor
     # IAM user (k3s has no IRSA), synced from 1Password by the ExternalSecret.
-    envFrom:
-      - secretRef:
-          name: vector-ares-ingest-aws
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: vector-ares-ingest-aws
+            key: access_key_id
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: vector-ares-ingest-aws
+            key: secret_access_key
+      - name: AWS_REGION
+        valueFrom:
+          secretKeyRef:
+            name: vector-ares-ingest-aws
+            key: region
     customConfig:
       data_dir: /vector-data-dir
       api:
