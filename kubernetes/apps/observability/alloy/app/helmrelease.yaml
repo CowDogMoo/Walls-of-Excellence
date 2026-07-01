@@ -64,11 +64,23 @@ spec:
               source_labels = ["__meta_kubernetes_pod_node_name"]
               target_label  = "node"
             }
+            rule {
+              action = "replace"
+              source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+              separator = "/"
+              replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
+              target_label  = "__path__"
+            }
           }
 
-          // Scrape Kubernetes pod logs
-          loki.source.kubernetes "pods" {
-            targets    = discovery.relabel.pods.output
+          // Match log files on the host
+          local.file_match "pods" {
+            path_targets = discovery.relabel.pods.output
+          }
+
+          // Scrape Kubernetes pod logs directly from filesystem
+          loki.source.file "pods" {
+            targets    = local.file_match.pods.targets
             forward_to = [loki.process.home_automation.receiver]
           }
 
@@ -194,6 +206,9 @@ spec:
         extra:
           - name: alloy-data
             mountPath: /var/lib/alloy
+          - name: varlog
+            mountPath: /var/log
+            readOnly: true
 
     controller:
       type: daemonset
@@ -205,6 +220,10 @@ spec:
             hostPath:
               path: /var/lib/alloy
               type: DirectoryOrCreate
+          - name: varlog
+            hostPath:
+              path: /var/log
+              type: Directory
       extraPorts:
         - name: syslog-udp
           port: 1514
