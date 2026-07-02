@@ -1,0 +1,1740 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: red-team-agent-logs-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  annotations:
+    grafana_folder: "Attack Simulation"
+data:
+  red-team-agent-logs.json: |
+    {
+      "uid": "red-team-agent-logs",
+      "title": "Red Team Agent Logs",
+      "description": "Red team agent logs ingested into woe's Loki from the external alpha-operator-range via vector-ares-ingest. Agents distinguished by the 'job' label (<role>.log); log bodies unwrapped from the JSON envelope.",
+      "tags": [
+        "attack-simulation",
+        "loki",
+        "logs",
+        "red-team",
+        "ares"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 300,
+      "refresh": "10s",
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "links": [
+        {
+          "title": "Overview",
+          "type": "link",
+          "url": "/d/attack-simulation-overview",
+          "icon": "apps",
+          "tooltip": "Back to overview dashboard"
+        },
+        {
+          "title": "Operation Deep Dive",
+          "type": "link",
+          "url": "/d/attack-operation-summary",
+          "icon": "search",
+          "tooltip": "Analyze specific operations"
+        },
+        {
+          "title": "Attack Graph",
+          "type": "link",
+          "url": "/d/attack-graph",
+          "icon": "sitemap",
+          "tooltip": "View network traversal graph"
+        },
+        {
+          "title": "Blue Team Detection",
+          "type": "link",
+          "url": "/d/blue-team-detection",
+          "icon": "shield",
+          "tooltip": "View security detections"
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "agent",
+            "type": "custom",
+            "current": {
+              "text": "All Red Team",
+              "value": "orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log",
+              "selected": true
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "label": "Agent",
+            "query": "All Red Team : orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log,Orchestrator : orchestrator.log,Recon : recon.log,Credential Access : credential_access.log,Lateral Movement : lateral.log,Privilege Escalation : privesc.log,Coercion : coercion.log,Cracker : cracker.log,ACL : acl.log",
+            "options": [
+              {
+                "text": "All Red Team",
+                "value": "orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log",
+                "selected": true
+              },
+              {
+                "text": "Orchestrator",
+                "value": "orchestrator.log",
+                "selected": false
+              },
+              {
+                "text": "Recon",
+                "value": "recon.log",
+                "selected": false
+              },
+              {
+                "text": "Credential Access",
+                "value": "credential_access.log",
+                "selected": false
+              },
+              {
+                "text": "Lateral Movement",
+                "value": "lateral.log",
+                "selected": false
+              },
+              {
+                "text": "Privilege Escalation",
+                "value": "privesc.log",
+                "selected": false
+              },
+              {
+                "text": "Coercion",
+                "value": "coercion.log",
+                "selected": false
+              },
+              {
+                "text": "Cracker",
+                "value": "cracker.log",
+                "selected": false
+              },
+              {
+                "text": "ACL",
+                "value": "acl.log",
+                "selected": false
+              }
+            ]
+          },
+          {
+            "name": "level",
+            "type": "custom",
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": ".*"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "label": "Log Level",
+            "query": ".* : All : .*,INFO|Info|info : INFO : INFO|Info|info,DEBUG|Debug|debug : DEBUG : DEBUG|Debug|debug,WARN|Warn|warn|WARNING : WARN : WARN|Warn|warn|WARNING,ERROR|Error|error : ERROR : ERROR|Error|error",
+            "options": [
+              {
+                "selected": true,
+                "text": "All",
+                "value": ".*"
+              },
+              {
+                "selected": false,
+                "text": "INFO",
+                "value": "INFO|Info|info"
+              },
+              {
+                "selected": false,
+                "text": "DEBUG",
+                "value": "DEBUG|Debug|debug"
+              },
+              {
+                "selected": false,
+                "text": "WARN",
+                "value": "WARN|Warn|warn|WARNING"
+              },
+              {
+                "selected": false,
+                "text": "ERROR",
+                "value": "ERROR|Error|error"
+              }
+            ]
+          },
+          {
+            "name": "search",
+            "type": "textbox",
+            "current": {
+              "selected": false,
+              "text": "",
+              "value": ""
+            },
+            "hide": 0,
+            "label": "Search",
+            "options": []
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "OVERVIEW",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": 2,
+          "title": "Total Logs (5m)",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"}[5m]))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Log Lines"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": 3,
+          "title": "Errors (5m)",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)ERROR\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Errors"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 1
+          }
+        },
+        {
+          "id": 4,
+          "title": "Warnings (5m)",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)WARN\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "orange",
+                    "value": 20
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Warnings"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 1
+          }
+        },
+        {
+          "id": 5,
+          "title": "Active Agents",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (job) (count_over_time({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"}[5m])))",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Active Agents"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 1
+          }
+        },
+        {
+          "id": 6,
+          "title": "Operations Detected (5m)",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (job) (count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"op-\\\\d{8}-\\\\d{6}\"[5m]))) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "purple",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Operations"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 1
+          }
+        },
+        {
+          "id": 7,
+          "title": "Task Executions (5m)",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)(executing|completed|task|dispatch)\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Tasks"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 1
+          }
+        },
+        {
+          "id": 8,
+          "title": "LOOT & RUNTIME",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": 80,
+          "title": "Credentials Broadcast",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Credentials broadcast to agents (publish_credential calls)",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"publish_credential|broadcast_credential|credential.*added|new credential\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Credentials"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "id": 81,
+          "title": "Hashes Cracked",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Hash cracking successes",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"cracked|report_cracked_credential|hashcat.*success\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Cracked"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 6
+          }
+        },
+        {
+          "id": 82,
+          "title": "Hosts Targeted",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Hosts enumerated or targeted in attacks",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"all_hosts|host.*added|target.*host|destination\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Hosts"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 6
+          }
+        },
+        {
+          "id": 83,
+          "title": "Ops Completed",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Operations completed successfully (with duration)",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"completed successfully.*duration\"[24h])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Completed"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 6
+          }
+        },
+        {
+          "id": 84,
+          "title": "Vulns Exploited",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Vulnerabilities successfully exploited",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"exploited_vulnerabilities|vuln.*exploited|exploit.*success\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 3
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Exploited"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 6
+          }
+        },
+        {
+          "id": 85,
+          "title": "Domain Admin",
+          "type": "stat",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Domain Admin achieved events",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"DOMAIN ADMIN|has_domain_admin|domain.*admin.*achieved\"[24h])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "DA"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 6
+          }
+        },
+        {
+          "id": 86,
+          "title": "Operation Runtime Log",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Operation start, completion, and duration messages",
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"orchestrator.log\"} |~ \"(completed successfully|started_at|Operation.*running|duration)\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 100
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 100,
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 0,
+            "y": 10
+          }
+        },
+        {
+          "id": 87,
+          "title": "Loot Summary",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Loot discovery events: credentials, hashes, hosts, domains, shares, weaknesses, domain admin achievements",
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(DOMAIN ADMIN ACHIEVED|GOLDEN TICKET OBTAINED|Hash added:|Credential added:|Domains \\\\(|Hosts \\\\(|Users \\\\(|Credentials \\\\(|Hashes \\\\(|Shares \\\\(|Weaknesses \\\\(|has_domain_admin|domain_admin_path|publish_credential|broadcast_credential|new credential|\\\\[hash\\\\]|\\\\[cred\\\\]|\\\\[user\\\\]|\\\\[host\\\\]|\\\\[domain\\\\])\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 500
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "prettifyLogMessage": false
+          },
+          "maxDataPoints": 500,
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 12,
+            "y": 10
+          }
+        },
+        {
+          "id": 10,
+          "title": "Log Volume by Agent",
+          "type": "timeseries",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum by (job) (rate({namespace=\"attack-simulation\", job=~\"$agent\"}[1m])) * 60",
+              "refId": "A",
+              "legendFormat": "{{app}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "lineInterpolation": "linear",
+                "barAlignment": 0,
+                "lineWidth": 1,
+                "fillOpacity": 80,
+                "gradientMode": "hue",
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "logs/min"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum",
+                "mean"
+              ]
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 22
+          }
+        },
+        {
+          "id": 11,
+          "title": "Log Level Distribution",
+          "type": "timeseries",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)ERROR\"[1m])) * 60",
+              "refId": "A",
+              "legendFormat": "ERROR"
+            },
+            {
+              "expr": "sum(rate({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)WARN\"[1m])) * 60",
+              "refId": "B",
+              "legendFormat": "WARN"
+            },
+            {
+              "expr": "sum(rate({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)INFO\" !~ \"(?i)(ERROR|WARN)\"[1m])) * 60",
+              "refId": "C",
+              "legendFormat": "INFO"
+            },
+            {
+              "expr": "sum(rate({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)DEBUG\"[1m])) * 60",
+              "refId": "D",
+              "legendFormat": "DEBUG"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 30
+              },
+              "unit": "logs/min"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "ERROR"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "WARN"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "INFO"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "DEBUG"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 22
+          }
+        },
+        {
+          "id": 20,
+          "title": "ORCHESTRATOR",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 30
+          }
+        },
+        {
+          "id": 21,
+          "title": "Red Orchestrator Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"orchestrator.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 500
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 500,
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 31
+          }
+        },
+        {
+          "id": 30,
+          "title": "ATTACK WORKERS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 41
+          }
+        },
+        {
+          "id": 31,
+          "title": "Recon Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"recon.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 42
+          }
+        },
+        {
+          "id": 32,
+          "title": "Credential Access Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"credential_access.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 42
+          }
+        },
+        {
+          "id": 33,
+          "title": "Lateral Movement Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"lateral.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 50
+          }
+        },
+        {
+          "id": 34,
+          "title": "Privilege Escalation Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"privesc.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 50
+          }
+        },
+        {
+          "id": 35,
+          "title": "Coercion Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"coercion.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 58
+          }
+        },
+        {
+          "id": 36,
+          "title": "Cracker Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"cracker.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 58
+          }
+        },
+        {
+          "id": 37,
+          "title": "ACL Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=\"acl.log\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 200
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 200,
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 66
+          }
+        },
+        {
+          "id": 40,
+          "title": "ERROR TRACKING",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 74
+          }
+        },
+        {
+          "id": 41,
+          "title": "Recent Errors",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)ERROR\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 500
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 500,
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 75
+          }
+        },
+        {
+          "id": 42,
+          "title": "Errors by Agent",
+          "type": "piechart",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum by (job) (count_over_time({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"} |~ \"(?i)ERROR\"[$__range]))",
+              "refId": "A",
+              "legendFormat": "{{app}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "donut",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 85
+          }
+        },
+        {
+          "id": 43,
+          "title": "Error Timeline",
+          "type": "timeseries",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum by (job) (rate({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"} |~ \"(?i)ERROR\"[1m])) * 60",
+              "refId": "A",
+              "legendFormat": "{{app}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "lineWidth": 1,
+                "fillOpacity": 80,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "errors/min"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 85
+          }
+        },
+        {
+          "id": 50,
+          "title": "REDIS & CONNECTIVITY",
+          "type": "row",
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 93
+          },
+          "panels": [
+            {
+              "id": 51,
+              "title": "Redis Connection Events",
+              "type": "logs",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "targets": [
+                {
+                  "expr": "{namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)(redis|connection|reconnect|disconnect)\" | json | line_format \"{{ .message }}\" | decolorize",
+                  "refId": "A",
+                  "maxLines": 300
+                }
+              ],
+              "options": {
+                "showTime": true,
+                "showLabels": true,
+                "wrapLogMessage": true,
+                "enableLogDetails": true,
+                "dedupStrategy": "none",
+                "sortOrder": "Descending"
+              },
+              "maxDataPoints": 300,
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 94
+              }
+            },
+            {
+              "id": 52,
+              "title": "Connection Errors",
+              "type": "stat",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "targets": [
+                {
+                  "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)(connection.*error|connection.*closed|connection.*refused)\"[$__range]))",
+                  "refId": "A"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 5
+                      },
+                      {
+                        "color": "red",
+                        "value": 20
+                      }
+                    ]
+                  },
+                  "unit": "short",
+                  "displayName": "Connection Errors"
+                }
+              },
+              "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "center"
+              },
+              "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 0,
+                "y": 104
+              }
+            },
+            {
+              "id": 53,
+              "title": "Reconnection Attempts",
+              "type": "stat",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "targets": [
+                {
+                  "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"(?i)reconnect\"[$__range]))",
+                  "refId": "A"
+                }
+              ],
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 10
+                      },
+                      {
+                        "color": "orange",
+                        "value": 50
+                      }
+                    ]
+                  },
+                  "unit": "short",
+                  "displayName": "Reconnects"
+                }
+              },
+              "options": {
+                "colorMode": "background",
+                "graphMode": "area",
+                "justifyMode": "center"
+              },
+              "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 8,
+                "y": 104
+              }
+            }
+          ]
+        },
+        {
+          "id": 60,
+          "title": "FULL LOG SEARCH",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 94
+          }
+        },
+        {
+          "id": 61,
+          "title": "All Red Team Agent Logs",
+          "type": "logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=~\"$agent\"} |~ \"$level\" |~ \"$search\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 1000
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 1000,
+          "gridPos": {
+            "h": 15,
+            "w": 24,
+            "x": 0,
+            "y": 95
+          }
+        },
+        {
+          "id": 70,
+          "title": "ORCHESTRATOR INFRA",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 110
+          }
+        },
+        {
+          "id": 71,
+          "title": "Orchestrator Pod Restarts",
+          "description": "Container restarts for the orchestrator pod over time. Folded in from the deprecated rust-orchestrator-metrics dashboard.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "count_over_time({namespace=\"attack-simulation\", job=\"orchestrator.log\"} |= \"starting\" [5m])",
+              "legendFormat": "Orchestrator Starts",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 50,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "stacking": {
+                  "mode": "none"
+                }
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 111
+          }
+        },
+        {
+          "id": 72,
+          "title": "Recovery Events",
+          "description": "Recovery manager events: state reconstruction after orchestrator restart. Folded in from the deprecated rust-orchestrator-metrics dashboard.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "count_over_time({namespace=\"attack-simulation\", job=\"orchestrator.log\"} |~ \"(?i)recovery|reconstructing|recovered\" [5m])",
+              "legendFormat": "Recovery Events",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 2,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "stacking": {
+                  "mode": "none"
+                }
+              },
+              "unit": "s"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 111
+          }
+        },
+        {
+          "id": 73,
+          "title": "Worker Agent Restart Rate",
+          "description": "Container restarts across all red team worker agents. Folded in from the deprecated rust-orchestrator-metrics dashboard.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum by (job) (count_over_time({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"} |~ \"(?i)starting|restarting|ares worker exited\" [5m]))",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 50,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "stacking": {
+                  "mode": "normal"
+                }
+              },
+              "unit": "short"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 119
+          }
+        }
+      ]
+    }

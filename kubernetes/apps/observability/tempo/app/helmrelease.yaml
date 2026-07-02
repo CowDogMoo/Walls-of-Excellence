@@ -87,9 +87,30 @@ spec:
             dimensions:
               - service.namespace
               - deployment.environment
+              - target.environment
+              - mitre.tactic
+              - mitre.technique.id
+              - mitre.technique.name
+              - attack_team
+              - attack_phase
+              - attack_tool_name
+              - attack_tool_category
+              - tool.status
+              - attack_operation_id
+              - destination.address
+              - user.name
+              - investigation_type
+              - investigation_phase
+          local_blocks:
+            flush_to_storage: false
+            complete_block_timeout: 30m
           service_graphs:
             wait: 10s
             max_items: 10000
+            dimensions:
+              - attack_team
+              - attack_phase
+              - mitre.tactic
         storage:
           path: /var/tempo/metrics
           remote_write:
@@ -107,8 +128,12 @@ spec:
             processors:
               - service-graphs
               - span-metrics
+              - local-blocks
 
     replicas: 1
+
+    nodeSelector:
+      kubernetes.io/hostname: k8s9
 
     persistence:
       enabled: true

@@ -1,0 +1,1989 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: attack-operation-summary-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  annotations:
+    grafana_folder: "Attack Simulation"
+    dashboard-version: "2.0.0"
+    last-modified: "2026-05-07"
+data:
+  attack-operation-summary.json: |
+    {
+      "uid": "attack-operation-summary",
+      "title": "Attack Operation Summary - Deep Dive",
+      "description": "Deep dive analysis of individual attack operations. Select an operation ID to view complete attack path, techniques used, hosts accessed, and credentials discovered.",
+      "tags": [
+        "attack-simulation",
+        "tempo",
+        "traces",
+        "operation-report",
+        "mitre-attack"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "links": [
+        {
+          "title": "Overview",
+          "type": "link",
+          "url": "/d/attack-simulation-overview",
+          "icon": "apps",
+          "tooltip": "Back to overview dashboard"
+        },
+        {
+          "title": "Attack Graph",
+          "type": "link",
+          "url": "/d/attack-graph?var-operation_id=$operation_id",
+          "icon": "sitemap",
+          "tooltip": "View network traversal graph"
+        },
+        {
+          "title": "Red Team Logs",
+          "type": "link",
+          "url": "/d/red-team-agent-logs",
+          "icon": "gf-logs",
+          "tooltip": "View agent logs"
+        },
+        {
+          "title": "Blue Team Detection",
+          "type": "link",
+          "url": "/d/blue-team-detection",
+          "icon": "shield",
+          "tooltip": "View security detections"
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "environment",
+            "type": "custom",
+            "current": {
+              "selected": true,
+              "text": "staging",
+              "value": "staging"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "label": "Environment",
+            "query": "dev,staging",
+            "options": [
+              {
+                "selected": false,
+                "text": "dev",
+                "value": "dev"
+              },
+              {
+                "selected": true,
+                "text": "staging",
+                "value": "staging"
+              }
+            ]
+          },
+          {
+            "name": "operation_id",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": "label_values(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", attack_operation_id!=\"\"}, attack_operation_id)",
+            "refresh": 2,
+            "includeAll": false,
+            "multi": false,
+            "label": "Operation ID",
+            "sort": 2
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "OPERATION OVERVIEW",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": 2,
+          "title": "Operation Duration",
+          "type": "stat",
+          "description": "Total duration from first to last span in this operation",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "max(max_over_time(traces_spanmetrics_latency_sum{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\"}[$__range])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 300
+                  },
+                  {
+                    "color": "red",
+                    "value": 3600
+                  }
+                ]
+              },
+              "unit": "s",
+              "displayName": "Duration"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": 3,
+          "title": "Total Techniques",
+          "type": "stat",
+          "description": "Count of unique MITRE techniques used in this operation",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (mitre_technique_id) (traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", mitre_technique_id!=\"\"})) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Techniques"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 6,
+            "y": 1
+          }
+        },
+        {
+          "id": 4,
+          "title": "Hosts Accessed",
+          "type": "stat",
+          "description": "Count of unique hosts/IPs accessed during this operation",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (destination_address) (traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", destination_address!=\"\"})) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 15
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Hosts"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 10,
+            "y": 1
+          }
+        },
+        {
+          "id": 5,
+          "title": "Credentials Used",
+          "type": "stat",
+          "description": "Count of unique user credentials used/discovered",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (user_name) (traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", user_name!=\"\"})) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 3
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Credentials"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 14,
+            "y": 1
+          }
+        },
+        {
+          "id": 6,
+          "title": "Success Rate",
+          "type": "stat",
+          "description": "Percentage of successful operations (OK status)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "(sum(increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", status_code=\"STATUS_CODE_OK\"}[$__range])) / sum(increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\"}[$__range])) * 100) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 50
+                  },
+                  {
+                    "color": "green",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percent",
+              "displayName": "Success",
+              "max": 100,
+              "min": 0
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 1
+          }
+        },
+        {
+          "id": 10,
+          "title": "OPERATION TIMELINE",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": 11,
+          "title": "Event Timeline",
+          "type": "timeseries",
+          "description": "Timeline of attack events, stacked by MITRE technique and colored by attack phase",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (mitre_technique_id, attack_phase) (rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", mitre_technique_id!=\"\"}[1m])) * 60",
+              "refId": "A",
+              "legendFormat": "{{attack_phase}}: {{mitre_technique_id}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "lineInterpolation": "linear",
+                "barAlignment": 0,
+                "lineWidth": 1,
+                "fillOpacity": 80,
+                "gradientMode": "hue",
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "ops/min"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ]
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "id": 12,
+          "title": "Operation Traces",
+          "type": "table",
+          "description": "All traces for this operation. Click trace ID to view in Explore.",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "targets": [
+            {
+              "queryType": "traceqlSearch",
+              "query": "{ resource.service.namespace = \"attack-simulation\" && span.attack_operation_id = \"$operation_id\" }",
+              "refId": "A",
+              "limit": 100,
+              "tableType": "traces"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "traceID"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 280
+                  },
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "View Trace",
+                        "url": "/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22queryType%22:%22traceqlSearch%22,%22query%22:%22${__value.raw}%22%7D%5D%7D",
+                        "targetBlank": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "traceDuration"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          }
+        },
+        {
+          "id": 20,
+          "title": "ATTACK PATH",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 26
+          }
+        },
+        {
+          "id": 21,
+          "title": "Attack Phases",
+          "type": "piechart",
+          "description": "Distribution of attack operations by phase",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (attack_phase) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", attack_phase!=\"\"}[$__range]))",
+              "refId": "A",
+              "legendFormat": "{{attack_phase}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "reconnaissance"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "credential-access"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "privilege-escalation"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "orange",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "lateral-movement"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "persistence"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "purple",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "exfiltration"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "donut",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 27
+          }
+        },
+        {
+          "id": 22,
+          "title": "MITRE Techniques",
+          "type": "bargauge",
+          "description": "Techniques used in this operation, sorted by count",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "topk(15, sum by (mitre_technique_id, mitre_technique_name) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", mitre_technique_id!=\"\"}[$__range])))",
+              "refId": "A",
+              "legendFormat": "{{mitre_technique_id}}: {{mitre_technique_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 15
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "minVizHeight": 10
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 16,
+            "x": 8,
+            "y": 27
+          }
+        },
+        {
+          "id": 23,
+          "title": "Technique Details",
+          "type": "table",
+          "description": "Full details of all techniques used: tactic, technique ID, name, and execution count",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (mitre_tactic, mitre_technique_id, mitre_technique_name) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", mitre_technique_id!=\"\"}[$__range]))",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "mitre_tactic"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Tactic"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "reconnaissance": {
+                            "text": "Reconnaissance",
+                            "color": "blue"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "credential-access": {
+                            "text": "Credential Access",
+                            "color": "yellow"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "privilege-escalation": {
+                            "text": "Privilege Escalation",
+                            "color": "orange"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "lateral-movement": {
+                            "text": "Lateral Movement",
+                            "color": "red"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "persistence": {
+                            "text": "Persistence",
+                            "color": "purple"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "defense-evasion": {
+                            "text": "Defense Evasion",
+                            "color": "dark-green"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "exfiltration": {
+                            "text": "Exfiltration",
+                            "color": "dark-red"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "mitre_technique_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Technique ID"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "mitre_technique_name"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Technique Name"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Count"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 5
+                        },
+                        {
+                          "color": "red",
+                          "value": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "indexByName": {
+                  "mitre_tactic": 0,
+                  "mitre_technique_id": 1,
+                  "mitre_technique_name": 2,
+                  "Value": 3
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Value",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 35
+          }
+        },
+        {
+          "id": 30,
+          "title": "DISCOVERED ASSETS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          }
+        },
+        {
+          "id": 31,
+          "title": "Hosts Accessed",
+          "type": "table",
+          "description": "All hosts accessed during this operation with type, domain, and access count",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (destination_address, attack_target_host, attack_target_type, attack_target_domain) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", destination_address!=\"\"}[$__range]))",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "destination_address"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "IP Address"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 130
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attack_target_host"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Hostname"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 200
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attack_target_type"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Type"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "domain_controller": {
+                            "text": "Domain Controller",
+                            "color": "red"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "server": {
+                            "text": "Server",
+                            "color": "yellow"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "workstation": {
+                            "text": "Workstation",
+                            "color": "green"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "": {
+                            "text": "Unknown",
+                            "color": "gray"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attack_target_domain"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Domain"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Access Count"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 5
+                        },
+                        {
+                          "color": "red",
+                          "value": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "indexByName": {
+                  "destination_address": 0,
+                  "attack_target_host": 1,
+                  "attack_target_domain": 2,
+                  "attack_target_type": 3,
+                  "Value": 4
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Value",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 0,
+            "y": 46
+          }
+        },
+        {
+          "id": 32,
+          "title": "Credentials Discovered",
+          "type": "table",
+          "description": "User credentials discovered or used during this operation",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (user_name, attack_target_domain) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", user_name!=\"\"}[$__range]))",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "count by (user_name) (count by (user_name, mitre_technique_id) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", user_name!=\"\", mitre_technique_id!=\"\"}[$__range]) > 0))",
+              "refId": "B",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "user_name"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "User"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attack_target_domain"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Domain"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Usage Count"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Techniques"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "merge"
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Time 1": true,
+                  "Time 2": true
+                },
+                "indexByName": {
+                  "user_name": 0,
+                  "attack_target_domain": 1,
+                  "Value #A": 2,
+                  "Value #B": 3
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Value #A",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 12,
+            "x": 12,
+            "y": 46
+          }
+        },
+        {
+          "id": 40,
+          "title": "TOOLS & INVESTIGATION",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 57
+          }
+        },
+        {
+          "id": 41,
+          "title": "Tools Used",
+          "type": "bargauge",
+          "description": "Attack tools used during this operation",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (attack_tool_name) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=\"$operation_id\", attack_tool_name!=\"\"}[$__range]))",
+              "refId": "A",
+              "legendFormat": "{{attack_tool_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 15
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "minVizHeight": 10
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 58
+          }
+        },
+        {
+          "id": 42,
+          "title": "Explore Links",
+          "type": "text",
+          "description": "Quick links to explore this operation in detail",
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 58
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## Quick Links\n\n- [Operation traces in Tempo](/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22queryType%22:%22traceqlSearch%22,%22query%22:%22%7B%20span.attack_operation_id%20%3D%20%5C%22$operation_id%5C%22%20%7D%22%7D%5D%7D)\n- [Service map](/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22queryType%22:%22serviceMap%22%7D%5D%7D)\n\nSee the TraceQL Query Examples panel for more."
+          }
+        },
+        {
+          "id": 50,
+          "title": "ATTACK PHASE ANALYSIS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 68
+          }
+        },
+        {
+          "id": 51,
+          "title": "Attack Phase Duration (p95)",
+          "type": "bargauge",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (attack_phase, le) (rate(traces_spanmetrics_latency_bucket{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_phase!=\"\"}[15m])))",
+              "refId": "A",
+              "legendFormat": "{{attack_phase}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 60
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "unit": "s"
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 69
+          }
+        },
+        {
+          "id": 60,
+          "title": "ATTACK PATHS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 77
+          }
+        },
+        {
+          "id": 61,
+          "title": "Lateral Movement Paths",
+          "type": "table",
+          "description": "Lateral movement with credentials used. Tracks attacker movement through the network.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (destination_address, destination_ip, host_name, user_name, attack_target_type) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id=~\"$operation_id\", mitre_tactic=\"lateral-movement\", destination_address=~\"[a-zA-Z0-9].*\\\\..*\", destination_address!~\".* .*|.*\\\\$\"}[$__range])) > 0",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "destination_address"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "FQDN"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "destination_ip"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "IP"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "host_name"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Hostname"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "user_name"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Credential Used"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attack_target_type"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Target Type"
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "domain_controller": {
+                            "text": "DC",
+                            "color": "red"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "server": {
+                            "text": "Server",
+                            "color": "yellow"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "workstation": {
+                            "text": "WS",
+                            "color": "green"
+                          }
+                        }
+                      },
+                      {
+                        "type": "value",
+                        "options": {
+                          "": {
+                            "text": "Unknown",
+                            "color": "gray"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Moves"
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "blue",
+                          "value": null
+                        },
+                        {
+                          "color": "purple",
+                          "value": 3
+                        },
+                        {
+                          "color": "red",
+                          "value": 10
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "indexByName": {
+                  "destination_address": 0,
+                  "destination_ip": 1,
+                  "host_name": 2,
+                  "attack_target_type": 3,
+                  "user_name": 4,
+                  "Value": 5
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Value",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 78
+          }
+        },
+        {
+          "id": 70,
+          "title": "RED VS BLUE CORRELATION",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 88
+          }
+        },
+        {
+          "id": 71,
+          "title": "Red Team Activity vs Blue Team Detection",
+          "type": "timeseries",
+          "description": "Compare red team attack operations against blue team investigation traces",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_team=\"red\"}[5m])) * 60",
+              "refId": "A",
+              "legendFormat": "Red Team Operations"
+            },
+            {
+              "expr": "sum(rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_team=\"blue\"}[5m])) * 60",
+              "refId": "B",
+              "legendFormat": "Blue Team Investigations"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 30
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "ops/min"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Red Team Operations"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Blue Team Investigations"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 89
+          }
+        },
+        {
+          "id": 72,
+          "title": "Detection Timing Gap",
+          "type": "timeseries",
+          "description": "Time between red team attack initiation and blue team detection (lower is better)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "avg(rate(traces_spanmetrics_latency_sum{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_team=\"blue\", investigation_type!=\"\"}[5m]) / rate(traces_spanmetrics_latency_count{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_team=\"blue\", investigation_type!=\"\"}[5m])) or vector(0)",
+              "refId": "A",
+              "legendFormat": "Avg Investigation Duration"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20
+              },
+              "color": {
+                "fixedColor": "purple",
+                "mode": "fixed"
+              },
+              "unit": "s"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "showLegend": true
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 89
+          }
+        },
+        {
+          "id": 80,
+          "title": "TRACE SEARCH",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 97
+          }
+        },
+        {
+          "id": 81,
+          "title": "Attack Traces Search",
+          "type": "table",
+          "description": "Search for attack traces using TraceQL. Click a trace ID to view details in Explore.",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "targets": [
+            {
+              "queryType": "traceqlSearch",
+              "query": "{ resource.service.namespace = \"attack-simulation\" && resource.deployment.environment =~ \"$environment\" }",
+              "refId": "A",
+              "limit": 50,
+              "tableType": "traces"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "traceID"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 280
+                  },
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "View Trace",
+                        "url": "/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22queryType%22:%22traceqlSearch%22,%22query%22:%22${__value.raw}%22%7D%5D%7D",
+                        "targetBlank": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "traceDuration"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 120
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 98
+          }
+        },
+        {
+          "id": 90,
+          "title": "INVESTIGATION GUIDANCE",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 108
+          }
+        },
+        {
+          "id": 91,
+          "title": "TraceQL Query Examples",
+          "type": "text",
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 109
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "## TraceQL Examples\n\n```\n{ span.attack_operation_id = \"$operation_id\" }\n{ span.attack_operation_id = \"$operation_id\" && status = error }\n{ span.mitre_tactic = \"lateral-movement\" }\n{ span.mitre_technique_id = \"T1003\" }\n{ span.destination.address = \"dc01.north.sevenkingdoms.local\" }\n```"
+          }
+        }
+      ]
+    }

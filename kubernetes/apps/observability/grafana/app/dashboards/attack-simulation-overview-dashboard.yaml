@@ -1,0 +1,1552 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: attack-simulation-overview-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  annotations:
+    grafana_folder: "Attack Simulation"
+data:
+  attack-simulation-overview.json: |
+    {
+      "uid": "attack-simulation-overview",
+      "title": "Attack Simulation - Overview",
+      "description": "Attack simulation overview. Span-metrics panels populate from local woe ares operations via Tempo; log panels read range logs ingested by vector-ares-ingest (job=<role>.log, deployment=alpha-operator-range-*). destination_address / attack_target_type panels stay empty unless those Tempo dimensions are promoted.",
+      "tags": [
+        "attack-simulation",
+        "overview",
+        "health",
+        "ares",
+        "mitre-attack"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "links": [
+        {
+          "title": "Operation Deep Dive",
+          "type": "link",
+          "url": "/d/attack-operation-summary",
+          "icon": "search",
+          "tooltip": "Deep dive into individual attack operations"
+        },
+        {
+          "title": "Attack Graph",
+          "type": "link",
+          "url": "/d/attack-graph",
+          "icon": "sitemap",
+          "tooltip": "Network traversal visualization"
+        },
+        {
+          "title": "Red Team Logs",
+          "type": "link",
+          "url": "/d/red-team-agent-logs",
+          "icon": "gf-logs",
+          "tooltip": "Ares agent logs and debugging"
+        },
+        {
+          "title": "Blue Team Detection",
+          "type": "link",
+          "url": "/d/blue-team-detection",
+          "icon": "shield",
+          "tooltip": "Windows & Linux security log detections"
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "environment",
+            "type": "custom",
+            "current": {
+              "text": "All",
+              "value": ".*",
+              "selected": true
+            },
+            "hide": 0,
+            "includeAll": true,
+            "allValue": ".*",
+            "multi": false,
+            "label": "Environment",
+            "query": "All : .*,woe : woe",
+            "options": [
+              {
+                "text": "All",
+                "value": ".*",
+                "selected": true
+              },
+              {
+                "text": "woe",
+                "value": "woe",
+                "selected": false
+              }
+            ]
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "ATTACK SIMULATION STATUS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": 2,
+          "title": "Active Agents",
+          "type": "stat",
+          "description": "Number of attack agents currently generating traces",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (service) (rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", service=~\"ares-.*\"}[5m]) > 0)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "green",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Active Agents"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "value"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": 3,
+          "title": "Operations (1h)",
+          "type": "stat",
+          "description": "Unique attack operations in the last hour",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (attack_operation_id) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id!=\"\"}[1h]) > 0)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Operations"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 1
+          }
+        },
+        {
+          "id": 4,
+          "title": "Hosts Targeted (1h)",
+          "type": "stat",
+          "description": "Unique hosts accessed in attack operations",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (destination_address) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", destination_address!=\"\", destination_address!~\"<.*>|unknown|AUTO_ENUM\"}[1h]) > 0)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 15
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Hosts"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 1
+          }
+        },
+        {
+          "id": 5,
+          "title": "Techniques Used (1h)",
+          "type": "stat",
+          "description": "Unique MITRE techniques executed",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "count(count by (mitre_technique_id) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", mitre_technique_id!=\"\"}[1h]) > 0)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 25
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Techniques"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 1
+          }
+        },
+        {
+          "id": 6,
+          "title": "Success Rate",
+          "type": "stat",
+          "description": "Percentage of successful attack operations",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "(sum(increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", status_code=\"STATUS_CODE_OK\"}[1h])) / sum(increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\"}[1h])) * 100) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 50
+                  },
+                  {
+                    "color": "green",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percent",
+              "displayName": "Success",
+              "max": 100,
+              "min": 0
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 1
+          }
+        },
+        {
+          "id": 7,
+          "title": "Errors (5m)",
+          "type": "stat",
+          "description": "Error count in agent logs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"} |~ \"(?i)ERROR\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Errors"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 1
+          }
+        },
+        {
+          "id": 10,
+          "title": "ATTACK ACTIVITY",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": 11,
+          "title": "Attack Activity by MITRE Tactic",
+          "type": "timeseries",
+          "description": "Attack operations over time, grouped by MITRE ATT&CK tactic",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (mitre_tactic) (rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", mitre_tactic!=\"\"}[5m])) * 60",
+              "refId": "A",
+              "legendFormat": "{{mitre_tactic}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "lineInterpolation": "linear",
+                "barAlignment": 0,
+                "lineWidth": 1,
+                "fillOpacity": 80,
+                "gradientMode": "hue",
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "ops/min"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "reconnaissance"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "credential-access"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "privilege-escalation"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "orange",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "lateral-movement"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "persistence"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "purple",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "defense-evasion"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "exfiltration"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum",
+                "lastNotNull"
+              ]
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 16,
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "id": 12,
+          "title": "Tactic Distribution",
+          "type": "piechart",
+          "description": "Distribution of attack operations by MITRE tactic",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (mitre_tactic) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", mitre_tactic!=\"\"}[$__range]))",
+              "refId": "A",
+              "legendFormat": "{{mitre_tactic}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "reconnaissance"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "credential-access"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "privilege-escalation"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "orange",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "lateral-movement"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "persistence"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "purple",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "defense-evasion"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "exfiltration"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "showLegend": true,
+              "displayMode": "table",
+              "placement": "right",
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "donut",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 6
+          }
+        },
+        {
+          "id": 20,
+          "title": "AGENT HEALTH",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          }
+        },
+        {
+          "id": 21,
+          "title": "Agent Status",
+          "type": "table",
+          "description": "Health status of all attack simulation agents",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", service=~\"ares-.*\"}[5m])) * 60",
+              "refId": "A",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "{{service}}"
+            },
+            {
+              "expr": "sum by (service) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", service=~\"ares-.*\", status_code=\"STATUS_CODE_ERROR\"}[1h]))",
+              "refId": "B",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "count by (service) (count by (service, mitre_technique_id) (traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", service=~\"ares-.*\", mitre_technique_id!=\"\"}))",
+              "refId": "C",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Agent"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 250
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Ops/min"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 0.1
+                        },
+                        {
+                          "color": "green",
+                          "value": 1
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Errors (1h)"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background-solid"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 1
+                        },
+                        {
+                          "color": "red",
+                          "value": 10
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #C"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Techniques"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "merge"
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "indexByName": {
+                  "service": 0,
+                  "Value #A": 1,
+                  "Value #B": 2,
+                  "Value #C": 3
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Value #A",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 15
+          }
+        },
+        {
+          "id": 22,
+          "title": "Agent Activity Over Time",
+          "type": "timeseries",
+          "description": "Trace volume by agent service",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", service=~\"ares-.*\"}[5m])) * 60",
+              "refId": "A",
+              "legendFormat": "{{service}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "gradientMode": "opacity",
+                "showPoints": "never"
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "ops/min"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 15
+          }
+        },
+        {
+          "id": 30,
+          "title": "RECENT OPERATIONS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          }
+        },
+        {
+          "id": 31,
+          "title": "Recent Attack Operations",
+          "type": "table",
+          "description": "Most recent attack operations with key metrics. Click operation ID for deep dive.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "topk(20, sum by (attack_operation_id) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id!=\"\"}[$__range])))",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "count by (attack_operation_id) (count by (attack_operation_id, mitre_technique_id) (traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id!=\"\", mitre_technique_id!=\"\"}))",
+              "refId": "B",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "expr": "count by (attack_operation_id) (count by (attack_operation_id, destination_address) (traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id!=\"\", destination_address!=\"\", destination_address!~\"<.*>|unknown\"}))",
+              "refId": "C",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto"
+              },
+              "links": [
+                {
+                  "title": "View Operation Details",
+                  "url": "/d/attack-operation-summary?var-operation_id=${__data.fields.attack_operation_id}&from=${__from}&to=${__to}",
+                  "targetBlank": true
+                }
+              ]
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attack_operation_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Operation ID"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Total Spans"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Techniques"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #C"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Hosts"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "merge"
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Time 1": true,
+                  "Time 2": true
+                },
+                "indexByName": {
+                  "attack_operation_id": 0,
+                  "Value #A": 1,
+                  "Value #B": 2,
+                  "Value #C": 3
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Value #A",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": [
+                "count"
+              ],
+              "countRows": true
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+          }
+        },
+        {
+          "id": 32,
+          "title": "Target Types",
+          "type": "bargauge",
+          "description": "Hosts accessed by target type",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum by (attack_target_type) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_target_type!=\"\"}[$__range]))",
+              "refId": "A",
+              "legendFormat": "{{attack_target_type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 50
+                  },
+                  {
+                    "color": "red",
+                    "value": 200
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "domain_controller"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "server"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "workstation"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "minVizHeight": 10
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 24
+          }
+        },
+        {
+          "id": 33,
+          "title": "Top Techniques",
+          "type": "bargauge",
+          "description": "Most frequently used MITRE techniques",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "topk(8, sum by (mitre_technique_id) (increase(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", mitre_technique_id!=\"\"}[$__range])))",
+              "refId": "A",
+              "legendFormat": "{{mitre_technique_id}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "red",
+                    "value": 100
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "unit": "short"
+            }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "minVizHeight": 10
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 24
+          }
+        },
+        {
+          "id": 40,
+          "title": "ERRORS & DETECTIONS",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 32
+          }
+        },
+        {
+          "id": 41,
+          "title": "Recent Errors",
+          "type": "logs",
+          "description": "Recent error logs from all attack agents",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "{namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"} |~ \"(?i)(ERROR|exception|failed)\" | json | line_format \"{{ .message }}\" | decolorize",
+              "refId": "A",
+              "maxLines": 100
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "maxDataPoints": 100,
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 33
+          }
+        },
+        {
+          "id": 42,
+          "title": "Blue Team Detections (5m)",
+          "type": "stat",
+          "description": "Security log detections triggered",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({deployment=~\"alpha-operator-range.*\"} |~ \"(?i)(exploit|payload|shell|reverse|meterpreter|mimikatz|bloodhound|rubeus|impacket|secretsdump)\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "Detections"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 12,
+            "y": 33
+          }
+        },
+        {
+          "id": 43,
+          "title": "DCSync Attempts (5m)",
+          "type": "stat",
+          "description": "DCSync attack detection events",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time({deployment=~\"alpha-operator-range.*\"} | json | event_id=\"4662\" |~ \"(?i)(1131f6aa|1131f6ad|89e95b76|DS-Replication)\"[5m])) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short",
+              "displayName": "DCSync Events"
+            }
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "center"
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 18,
+            "y": 33
+          }
+        },
+        {
+          "id": 44,
+          "title": "Log Volume by Agent",
+          "type": "timeseries",
+          "description": "Log output rate by agent service",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "targets": [
+            {
+              "expr": "sum by (job) (rate({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"}[1m])) * 60",
+              "refId": "A",
+              "legendFormat": "{{app}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "lineWidth": 1,
+                "fillOpacity": 80,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "logs/min"
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            }
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 12,
+            "x": 12,
+            "y": 36
+          }
+        }
+      ]
+    }

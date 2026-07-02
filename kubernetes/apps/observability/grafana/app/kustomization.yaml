@@ -18,3 +18,7 @@ resources:
   - ./dashboards/troy-backup-dashboard.yaml
   - ./dashboards/adguard-iphone-dns-dashboard.yaml
   - ./dashboards/cluster-recovery-dashboard.yaml
+  - ./dashboards/attack-operation-summary-dashboard.yaml
+  - ./dashboards/red-team-agent-logs-dashboard.yaml
+  - ./dashboards/attack-simulation-overview-dashboard.yaml
+  - ./dashboards/ares-agents-dashboard.yaml
