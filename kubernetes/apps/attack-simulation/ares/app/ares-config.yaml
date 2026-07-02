@@ -23,6 +23,15 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
   OTEL_SERVICE_NAMESPACE: "ares"
+  OTEL_METRICS_EXPORTER: "none"
+  OTEL_LOGS_EXPORTER: "none"
+  OTEL_RESOURCE_ATTRIBUTES: >-
+    service.namespace=attack-simulation,
+    deployment.environment=woe,
+    attack.team=red,
+    attack.framework=mitre-attack,
+    attack.platform=windows,
+    attack.domain=enterprise
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -60,6 +69,15 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
   OTEL_SERVICE_NAMESPACE: "ares-blue"
+  OTEL_METRICS_EXPORTER: "none"
+  OTEL_LOGS_EXPORTER: "none"
+  TEMPO_URL: "http://tempo.observability.svc.cluster.local:3200"
+  OTEL_RESOURCE_ATTRIBUTES: >-
+    service.namespace=attack-simulation,
+    deployment.environment=woe,
+    attack.team=blue,
+    attack.role=defender,
+    investigation.framework=mitre-defend
 ---
 apiVersion: v1
 kind: ConfigMap

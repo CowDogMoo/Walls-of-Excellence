@@ -117,8 +117,8 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (pod) (rate({namespace=\"attack-simulation\", pod=~\"ares-.*\"}[1m]))",
-              "legendFormat": "{{pod}}",
+              "expr": "sum by (job) (rate({namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"}[1m]))",
+              "legendFormat": "{{job}}",
               "refId": "A"
             }
           ],
@@ -161,7 +161,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"attack-simulation\", pod=~\"ares-(orchestrator|recon-agent|credential-access-agent|acl-agent|privesc-agent|lateral-movement-agent|coercion-agent).*\"}",
+              "expr": "{namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|acl.log|privesc.log|lateral.log|coercion.log|cracker.log\"} | json | line_format \"{{ .message }}\" | decolorize",
               "refId": "A"
             }
           ],
@@ -175,7 +175,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"attack-simulation\", pod=~\"ares-blue-.*\"}",
+              "expr": "{namespace=\"attack-simulation\", job=~\"blue.*\"} | json | line_format \"{{ .message }}\" | decolorize",
               "refId": "A"
             }
           ],
@@ -207,7 +207,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{namespace=\"attack-simulation\", pod=~\"ares-.*\"} |~ \"(?i)error|panic|fatal|warn\"",
+              "expr": "{namespace=\"attack-simulation\", job=~\"orchestrator.log|recon.log|credential_access.log|lateral.log|privesc.log|coercion.log|cracker.log|acl.log\"} |~ \"(?i)error|panic|fatal|warn\" | json | line_format \"{{ .message }}\" | decolorize",
               "refId": "A"
             }
           ],
