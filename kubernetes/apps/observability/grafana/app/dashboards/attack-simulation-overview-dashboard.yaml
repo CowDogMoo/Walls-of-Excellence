@@ -64,10 +64,14 @@ data:
         "list": [
           {
             "name": "environment",
-            "type": "custom",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
             "current": {
               "text": "All",
-              "value": ".*",
+              "value": "$__all",
               "selected": true
             },
             "hide": 0,
@@ -75,19 +79,9 @@ data:
             "allValue": ".*",
             "multi": false,
             "label": "Environment",
-            "query": "All : .*,woe : woe",
-            "options": [
-              {
-                "text": "All",
-                "value": ".*",
-                "selected": true
-              },
-              {
-                "text": "woe",
-                "value": "woe",
-                "selected": false
-              }
-            ]
+            "query": "label_values(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\"}, deployment_environment)",
+            "refresh": 2,
+            "sort": 1
           }
         ]
       },

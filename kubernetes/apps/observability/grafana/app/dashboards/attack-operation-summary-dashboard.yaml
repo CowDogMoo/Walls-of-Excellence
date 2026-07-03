@@ -9,8 +9,8 @@ metadata:
     kustomize.toolkit.fluxcd.io/substitute: disabled
   annotations:
     grafana_folder: "Attack Simulation"
-    dashboard-version: "2.0.0"
-    last-modified: "2026-05-07"
+    dashboard-version: "2.1.0"
+    last-modified: "2026-07-02"
 data:
   attack-operation-summary.json: |
     {
@@ -66,29 +66,24 @@ data:
         "list": [
           {
             "name": "environment",
-            "type": "custom",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
             "current": {
               "selected": true,
-              "text": "staging",
-              "value": "staging"
+              "text": "All",
+              "value": "$__all"
             },
             "hide": 0,
-            "includeAll": false,
+            "includeAll": true,
+            "allValue": ".*",
             "multi": false,
             "label": "Environment",
-            "query": "dev,staging",
-            "options": [
-              {
-                "selected": false,
-                "text": "dev",
-                "value": "dev"
-              },
-              {
-                "selected": true,
-                "text": "staging",
-                "value": "staging"
-              }
-            ]
+            "query": "label_values(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\"}, deployment_environment)",
+            "refresh": 2,
+            "sort": 1
           },
           {
             "name": "operation_id",
@@ -97,7 +92,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "query": "label_values(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", attack_operation_id!=\"\"}, attack_operation_id)",
+            "query": "label_values(traces_spanmetrics_calls_total{service_namespace=~\"attack-simulation|ares\", deployment_environment=~\"$environment\", attack_operation_id!=\"\"}, attack_operation_id)",
             "refresh": 2,
             "includeAll": false,
             "multi": false,
