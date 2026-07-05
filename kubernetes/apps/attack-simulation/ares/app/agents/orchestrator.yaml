@@ -81,7 +81,8 @@ spec:
             - "braavos"
       containers:
         - name: orchestrator
-          image: ghcr.io/l50/ares-orchestrator:latest
+          image: ghcr.io/l50/ares-orchestrator:latest@sha256:a5ec560dc1dd62d731a9cfe7df1d3134f89156875825a049449b600d180fe4a6
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |

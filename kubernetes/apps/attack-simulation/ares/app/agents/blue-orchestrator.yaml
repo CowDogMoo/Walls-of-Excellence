@@ -83,7 +83,8 @@ spec:
             - "braavos"
       containers:
         - name: orchestrator
-          image: ghcr.io/l50/ares-blue-agent:latest
+          image: ghcr.io/l50/ares-blue-agent:latest@sha256:02971bed021db57c258b1de11fd4d486cc399ad407cb57803484fb85a1627ba6
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |

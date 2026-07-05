@@ -73,7 +73,8 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: agent
-          image: ghcr.io/l50/ares-coercion-agent:latest
+          image: ghcr.io/l50/ares-coercion-agent:latest@sha256:0720778bf0e6927d069dda8e7a40092003fb4e187b59b027635188de4cda3341
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |

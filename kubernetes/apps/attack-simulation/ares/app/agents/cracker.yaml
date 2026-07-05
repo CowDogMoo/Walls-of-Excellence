@@ -53,7 +53,8 @@ spec:
           effect: NoSchedule
       containers:
         - name: agent
-          image: ghcr.io/l50/ares-cracker-agent:latest
+          image: ghcr.io/l50/ares-cracker-agent:latest@sha256:223047bc7f79df1a1bbf9b23d7620279e1b32acad0d6c75467cc38fdc9ee9bba
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |
