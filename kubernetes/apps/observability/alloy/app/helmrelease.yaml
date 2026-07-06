@@ -69,7 +69,8 @@ spec:
               source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name", "__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
               separator = "/"
               regex = "([^/]+)/([^/]+)/([^/]+)/([^/]+)"
-              replacement = "/var/log/pods/$1_$2_$3/$4/*.log"
+              // Braces are required: $1_ would parse as a group named "1_"
+              replacement = "/var/log/pods/${1}_${2}_${3}/${4}/*.log"
               target_label  = "__path__"
             }
           }
