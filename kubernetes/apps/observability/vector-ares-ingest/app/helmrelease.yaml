@@ -73,6 +73,9 @@ spec:
             codec: json
           # namespace=attack-simulation inherits Loki's 180d red-team retention.
           # deployment/host/job come from the ares-side shipper's labels.
+          # Pure-template label values; prefixing them would change the Loki
+          # label schema, so opt out of vector 0.57.0 template confinement.
+          dangerously_allow_unconfined_template_resolution: true
           labels:
             namespace: "attack-simulation"
             app: "ares"

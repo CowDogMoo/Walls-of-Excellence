@@ -323,6 +323,9 @@ spec:
           endpoint: "http://loki-gateway.observability.svc.cluster.local:80"
           encoding:
             codec: json
+          # Pure-template label values; prefixing them would change the Loki
+          # label schema, so opt out of vector 0.57.0 template confinement.
+          dangerously_allow_unconfined_template_resolution: true
           labels:
             source: "unifi"
             device: "{{`{{ unifi_host }}`}}"
