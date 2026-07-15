@@ -159,7 +159,6 @@ spec:
           enabled: true
           type: persistentVolumeClaim
           existingClaim: immich-external
-          accessMode: ReadWriteMany
           globalMounts:
             - path: /external
       service:
@@ -206,7 +205,6 @@ spec:
           enabled: true
           type: persistentVolumeClaim
           existingClaim: immich-ml-cache
-          accessMode: ReadWriteOnce
           globalMounts:
             - path: /cache
 
