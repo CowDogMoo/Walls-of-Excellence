@@ -16,4 +16,3 @@ resources:
   - ./tempo/ks.yaml
   - ./unpoller/ks.yaml
   - ./vector/ks.yaml
-  - ./vector-ares-ingest/ks.yaml
