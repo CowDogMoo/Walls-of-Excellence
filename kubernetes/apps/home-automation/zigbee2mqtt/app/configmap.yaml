@@ -18,6 +18,7 @@ data:
 
     serial:
       adapter: zstack
+      port: tcp://192.168.10.98:6638
 
     advanced:
       log_output:
