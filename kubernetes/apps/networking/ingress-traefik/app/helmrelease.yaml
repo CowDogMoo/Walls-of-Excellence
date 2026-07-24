@@ -176,3 +176,8 @@ spec:
         expose:
           default: true
         exposedPort: 443
+        transport:
+          respondingTimeouts:
+            # Traefik v3 defaults readTimeout to 60s, which aborts
+            # large uploads (e.g. Immich videos) mid-request.
+            readTimeout: 30m
