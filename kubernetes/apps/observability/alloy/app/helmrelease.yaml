@@ -202,10 +202,10 @@ spec:
           }
       resources:
         requests:
-          cpu: 1388m
-          memory: 259Mi
+          cpu: 300m
+          memory: 512Mi
         limits:
-          memory: 400Mi
+          memory: 768Mi
       storagePath: /var/lib/alloy
       mounts:
         extra:
