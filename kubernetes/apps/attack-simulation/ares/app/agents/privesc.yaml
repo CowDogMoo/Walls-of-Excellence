@@ -84,7 +84,7 @@ spec:
             - "braavos"
       containers:
         - name: agent
-          image: ghcr.io/l50/ares-privesc-agent:latest@sha256:a41fcd70bdb47b611c89eafc11886bd91462b154d7743b3715af6da554d3be17
+          image: ghcr.io/l50/ares-privesc-agent:latest@sha256:e107ed6de87153c61e155a65c279433702d787c1f85f54595425c48097bcc9a0
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
