@@ -122,6 +122,9 @@ spec:
     ingress:
       app:
         className: ingress-traefik
+        annotations:
+          traefik.ingress.kubernetes.io/service.serversscheme: https
+          traefik.ingress.kubernetes.io/service.serverstransport: home-automation-frigate-transport@kubernetescrd
         hosts:
           - host: &host frigate.techvomit.xyz
             paths:
@@ -167,7 +170,7 @@ spec:
       dshm:
         type: emptyDir
         medium: Memory
-        sizeLimit: 512Mi
+        sizeLimit: 1Gi
         globalMounts:
           - path: /dev/shm
       dev-dri:
