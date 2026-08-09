@@ -3,7 +3,7 @@
 NVR for the six wired cameras on VLAN 40. Pulls RTSP directly from the cameras;
 Synology Surveillance Station is not in the path.
 
-Runs on k8s9 (`node-role.kubernetes.io/storage=true`) — the only node with the
+Runs on k8s9 (`node-role.kubernetes.io/storage=true`), the only node with the
 Rockchip BSP kernel (`6.1.0-1025-rockchip`) and the RK3588 media devices.
 
 ## Verified on hardware
@@ -46,7 +46,7 @@ Setting one global hwaccel breaks half the fleet.
 
 Back Right (192.168.40.203) is pulled through Surveillance Station's RTSP
 restream rather than directly, because no password in the vault authenticates
-to that camera — both `Back Right Camera` items
+to that camera: both `Back Right Camera` items
 (`2bxl4dk7dzwf63lkkhfcpbets4`, `kajbbi33gkyhczluodyzmzidoa`) return HTTP 401,
 while the other five return 200. SS still holds working credentials for it.
 
@@ -69,7 +69,7 @@ Store the password portion in 1Password vault `automation` as item
 `synology-surveillance-rtsp`, field `password`.
 
 This bridge has real costs: it keeps Surveillance Station in the dependency
-chain, routes 4K video through the NAS, and exposes only the main stream — so
+chain, routes 4K video through the NAS, and exposes only the main stream, so
 Back Right decodes 3840x2160 for detection while its siblings decode 640x480.
 The clean fix is a physical factory reset of that camera, after which it moves
 to a direct pull like the others and gains a substream.
@@ -80,7 +80,7 @@ back_right=12, living_room=13, garage=14.
 ### 2. Raise the detect-stream resolution
 
 Face recognition runs on the **detect** stream only. The Hikvision substreams
-are 640x480, which yields roughly a 13-pixel-wide face at 10 ft — far below the
+are 640x480, which yields roughly a 13-pixel-wide face at 10 ft, far below the
 ~80 px ArcFace needs. Raise each Hikvision substream to 1280x720 or 1920x1080 in
 the camera web UI, then update `detect.width` / `detect.height` to match.
 
@@ -89,7 +89,7 @@ recognition is gated by this.
 
 ### 3. Enable the Amcrest substreams
 
-`subtype=1` returns 404 on 192.168.40.204 — the substream is disabled. Until
+`subtype=1` returns 404 on 192.168.40.204: the substream is disabled. Until
 it is enabled, those cameras decode their full 2560x1440 main stream for
 detection, which is far more expensive than necessary. Enable the substream in
 the Amcrest UI, add a `*_sub` go2rtc entry, and point the `detect` role at it.
