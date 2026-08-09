@@ -16,6 +16,15 @@ data:
       topic_prefix: frigate
       client_id: frigate
 
+    auth:
+      enabled: false
+
+    proxy:
+      header_map:
+        user: x-authentik-username
+      default_role: admin
+      logout_url: /outpost.goauthentik.io/sign_out
+
     detectors:
       rknn:
         type: rknn
