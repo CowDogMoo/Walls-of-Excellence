@@ -100,6 +100,9 @@ spec:
     service:
       app:
         controller: frigate
+        annotations:
+          traefik.ingress.kubernetes.io/service.serversscheme: https
+          traefik.ingress.kubernetes.io/service.serverstransport: home-automation-frigate-transport@kubernetescrd
         ports:
           http:
             port: 8971
@@ -122,9 +125,6 @@ spec:
     ingress:
       app:
         className: ingress-traefik
-        annotations:
-          traefik.ingress.kubernetes.io/service.serversscheme: https
-          traefik.ingress.kubernetes.io/service.serverstransport: home-automation-frigate-transport@kubernetescrd
         hosts:
           - host: &host frigate.techvomit.xyz
             paths:
