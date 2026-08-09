@@ -1,0 +1,204 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frigate-config
+  namespace: home-automation
+data:
+  config.yml: |-
+    mqtt:
+      enabled: true
+      host: mosquitto.home-automation.svc.cluster.local
+      port: 1883
+      user: "{FRIGATE_MQTT_USER}"
+      password: "{FRIGATE_MQTT_PASSWORD}"
+      topic_prefix: frigate
+      client_id: frigate
+
+    detectors:
+      rknn:
+        type: rknn
+        num_cores: 3
+
+    model:
+      path: deci-fp16-yolonas_s
+      model_type: yolonas
+      width: 320
+      height: 320
+      input_pixel_format: bgr
+      input_tensor: nhwc
+
+    objects:
+      track:
+        - person
+        - car
+        - dog
+
+    face_recognition:
+      enabled: true
+      model_size: large
+      unknown_score: 0.8
+      recognition_threshold: 0.9
+      min_faces: 2
+      save_attempts: 200
+      blur_confidence_filter: true
+
+    semantic_search:
+      enabled: false
+
+    record:
+      enabled: true
+      continuous:
+        days: 3
+      motion:
+        days: 14
+      alerts:
+        retain:
+          days: 30
+      detections:
+        retain:
+          days: 14
+
+    snapshots:
+      enabled: true
+      timestamp: false
+      bounding_box: true
+      retain:
+        default: 30
+
+    review:
+      alerts:
+        labels:
+          - person
+      detections:
+        labels:
+          - car
+          - dog
+
+    go2rtc:
+      webrtc:
+        candidates:
+          - 192.168.20.18:8555
+          - stun:8555
+      streams:
+        front_left:
+          - rtsp://admin:{FRIGATE_FRONT_LEFT_PASSWORD}@192.168.40.200:554/Streaming/Channels/101
+        front_left_sub:
+          - rtsp://admin:{FRIGATE_FRONT_LEFT_PASSWORD}@192.168.40.200:554/Streaming/Channels/102
+        front_right:
+          - rtsp://admin:{FRIGATE_FRONT_RIGHT_PASSWORD}@192.168.40.201:554/Streaming/Channels/101
+        front_right_sub:
+          - rtsp://admin:{FRIGATE_FRONT_RIGHT_PASSWORD}@192.168.40.201:554/Streaming/Channels/102
+        back_left:
+          - rtsp://admin:{FRIGATE_BACK_LEFT_PASSWORD}@192.168.40.202:554/Streaming/Channels/101
+        back_left_sub:
+          - rtsp://admin:{FRIGATE_BACK_LEFT_PASSWORD}@192.168.40.202:554/Streaming/Channels/102
+        back_right:
+          - rtsp://syno:{FRIGATE_SYNO_RTSP_PASSWORD}@192.168.20.210:554/Sms=12.unicast
+        living_room:
+          - rtsp://admin:{FRIGATE_LIVING_ROOM_PASSWORD}@192.168.40.204:554/cam/realmonitor?channel=1&subtype=0
+        garage:
+          - rtsp://admin:{FRIGATE_GARAGE_PASSWORD}@192.168.40.205:554/cam/realmonitor?channel=1&subtype=0
+
+    cameras:
+      front_left:
+        detect:
+          enabled: true
+          width: 640
+          height: 480
+          fps: 5
+        ffmpeg:
+          hwaccel_args: preset-rk-h265
+          inputs:
+            - path: rtsp://127.0.0.1:8554/front_left
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/front_left_sub
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+
+      front_right:
+        detect:
+          enabled: true
+          width: 640
+          height: 480
+          fps: 5
+        ffmpeg:
+          hwaccel_args: preset-rk-h265
+          inputs:
+            - path: rtsp://127.0.0.1:8554/front_right
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/front_right_sub
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+
+      back_left:
+        detect:
+          enabled: true
+          width: 640
+          height: 480
+          fps: 5
+        ffmpeg:
+          hwaccel_args: preset-rk-h265
+          inputs:
+            - path: rtsp://127.0.0.1:8554/back_left
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/back_left_sub
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+
+      back_right:
+        detect:
+          enabled: true
+          width: 3840
+          height: 2160
+          fps: 5
+        ffmpeg:
+          hwaccel_args: preset-rk-h265
+          inputs:
+            - path: rtsp://127.0.0.1:8554/back_right
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+                - detect
+
+      living_room:
+        detect:
+          enabled: true
+          width: 2560
+          height: 1440
+          fps: 5
+        ffmpeg:
+          hwaccel_args: preset-rk-h264
+          inputs:
+            - path: rtsp://127.0.0.1:8554/living_room
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+                - detect
+
+      garage:
+        detect:
+          enabled: true
+          width: 2560
+          height: 1440
+          fps: 5
+        ffmpeg:
+          hwaccel_args: preset-rk-h264
+          inputs:
+            - path: rtsp://127.0.0.1:8554/garage
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+                - detect
+
+    version: 0.17
