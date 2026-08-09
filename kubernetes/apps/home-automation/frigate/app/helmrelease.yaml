@@ -125,6 +125,8 @@ spec:
     ingress:
       app:
         className: ingress-traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - host: &host frigate.techvomit.xyz
             paths:
