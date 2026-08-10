@@ -103,6 +103,10 @@ data:
           - rtsp://admin:{FRIGATE_BACK_LEFT_PASSWORD}@192.168.40.202:554/Streaming/Channels/101
         back_left_sub:
           - rtsp://admin:{FRIGATE_BACK_LEFT_PASSWORD}@192.168.40.202:554/Streaming/Channels/102
+        back_right:
+          - rtsp://admin:{FRIGATE_BACK_RIGHT_PASSWORD}@192.168.40.203:554/Streaming/Channels/101
+        back_right_sub:
+          - rtsp://admin:{FRIGATE_BACK_RIGHT_PASSWORD}@192.168.40.203:554/Streaming/Channels/102
         living_room:
           - rtsp://admin:{FRIGATE_LIVING_ROOM_PASSWORD}@192.168.40.204:554/cam/realmonitor?channel=1&subtype=0
         garage:
@@ -166,18 +170,19 @@ data:
       back_right:
         detect:
           enabled: true
-          width: 3840
-          height: 2160
+          width: 640
+          height: 480
           fps: 5
         ffmpeg:
           hwaccel_args: preset-rk-h265
-          input_args: preset-rtsp-generic
-          output_args:
-            record: preset-record-generic
           inputs:
-            - path: rtsp://syno:{FRIGATE_SYNO_RTSP_PASSWORD}@192.168.20.210:554/Sms=12.unicast
+            - path: rtsp://127.0.0.1:8554/back_right
+              input_args: preset-rtsp-restream
               roles:
                 - record
+            - path: rtsp://127.0.0.1:8554/back_right_sub
+              input_args: preset-rtsp-restream
+              roles:
                 - detect
 
       living_room:
