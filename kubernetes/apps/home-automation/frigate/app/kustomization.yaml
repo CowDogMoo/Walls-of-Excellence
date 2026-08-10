@@ -11,5 +11,5 @@ resources:
   - ./ocirepository.yaml
   - ./helmrelease.yaml
   - ./externalsecret.yaml
-  - ./configmap.yaml
+  - ./externalsecret-config.yaml
   - ./serverstransport.yaml

@@ -148,7 +148,7 @@ spec:
         globalMounts:
           - path: /config
       config-file:
-        type: configMap
+        type: secret
         name: frigate-config
         advancedMounts:
           frigate:

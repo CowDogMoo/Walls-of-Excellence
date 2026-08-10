@@ -1,7 +1,10 @@
 # Frigate
 
-NVR for the six wired cameras on VLAN 40. Pulls RTSP directly from the cameras;
+NVR for the wired cameras on VLAN 40. Pulls RTSP directly from the cameras;
 Synology Surveillance Station is not in the path.
+
+Camera names, addresses, stream paths, and the whole `config.yml` body live in
+1Password, not in this repo — see [Configuration](#configuration).
 
 Runs on k8s9 (`node-role.kubernetes.io/storage=true`), the only node with the
 Rockchip BSP kernel (`6.1.0-1025-rockchip`) and the RK3588 media devices.
@@ -19,17 +22,75 @@ Rockchip BSP kernel (`6.1.0-1025-rockchip`) and the RK3588 media devices.
 
 ## Camera facts (measured, not assumed)
 
-| Camera | IP | Main stream | Sub stream |
-| --- | --- | --- | --- |
-| front_left | .200 | HEVC 3840x2160 | HEVC 640x480 |
-| front_right | .201 | assumed same as .200 | assumed same |
-| back_left | .202 | assumed same as .200 | assumed same |
-| back_right | .203 | HEVC 3840x2160 (via SS bridge) | not reachable |
-| living_room | .204 | H.264 2560x1440 | **absent (404)** |
-| garage | .205 | assumed same as .204 | assumed absent |
+The per-camera table — names, addresses, brands, measured main/sub stream
+codecs and resolutions, and Surveillance Station camera IDs — is the
+`FRIGATE_CAMERA_INVENTORY` field on the `frigate-config` 1Password item:
 
-Hikvisions are HEVC (`preset-rk-h265`); Amcrests are H.264 (`preset-rk-h264`).
-Setting one global hwaccel breaks half the fleet.
+```sh
+op item get frigate-config --vault automation \
+  --fields label=FRIGATE_CAMERA_INVENTORY --format json | jq -r '.value'
+```
+
+The fleet is mixed: some cameras are HEVC (`preset-rk-h265`), others H.264
+(`preset-rk-h264`). Setting one global hwaccel breaks half of them.
+
+## Configuration
+
+`config.yml` lives **entirely in 1Password**, in the `FRIGATE_CONFIG` field on
+the `frigate-config` item (vault `automation`). ESO renders that field into a
+Secret named `frigate-config` (via `externalsecret-config.yaml`), which the chart
+mounts read-only at `/config/config.yml` through the `config-file` persistence
+entry. Camera names, addresses, and stream paths never appear in git.
+
+Camera RTSP credentials are inlined into that same field, so no camera name or
+address appears in this repo at all. The per-camera 1Password items remain the
+human record of each credential, but Frigate no longer reads them — **rotating a
+camera password means updating both the camera's own item and `FRIGATE_CONFIG`.**
+
+Only the MQTT credentials still arrive via `envFrom` as `{FRIGATE_MQTT_USER}` /
+`{FRIGATE_MQTT_PASSWORD}` placeholders, sourced from `mosquitto-secret` by
+`externalsecret.yaml`.
+
+Because the field now holds live credentials, treat any local copy pulled for
+editing as secret material and delete it when done.
+
+To change the config:
+
+1. Pull the current value:
+
+   ```sh
+   op item get frigate-config --vault automation \
+     --fields label=FRIGATE_CONFIG --format json \
+     | jq -r '.value' > /tmp/frigate-config.yml
+   ```
+
+2. Edit `/tmp/frigate-config.yml`, then validate it parses before pushing:
+
+   ```sh
+   yq -e '.cameras | keys' /tmp/frigate-config.yml
+   ```
+
+3. Push it back:
+
+   ```sh
+   op item edit frigate-config --vault automation \
+     "FRIGATE_CONFIG[text]=$(cat /tmp/frigate-config.yml)"
+   rm -f /tmp/frigate-config.yml
+   ```
+
+4. ESO refreshes the Secret on its interval (~1h). To expedite:
+
+   ```sh
+   kubectl -n home-automation annotate externalsecret frigate-config \
+     force-sync=$(date +%s) --overwrite
+   ```
+
+   Reloader restarts the pod on the Secret change. Because `strategy: Recreate`
+   is set, expect a short recording gap.
+
+A bad config keeps Frigate crash-looping on a readOnly mount it cannot repair
+itself — check `kubectl -n home-automation logs deploy/frigate` and fix the
+1Password field, not the pod.
 
 ## Storage layout
 
@@ -42,13 +103,13 @@ Setting one global hwaccel breaks half the fleet.
 
 ## Pre-flight
 
-### 1. Store the Surveillance Station RTSP credential
+### 1. Store the Surveillance Station RTSP credential (retired)
 
-Back Right (192.168.40.203) is pulled through Surveillance Station's RTSP
-restream rather than directly, because no password in the vault authenticates
-to that camera: both `Back Right Camera` items
-(`2bxl4dk7dzwf63lkkhfcpbets4`, `kajbbi33gkyhczluodyzmzidoa`) return HTTP 401,
-while the other five return 200. SS still holds working credentials for it.
+**No longer in the path.** Back Right was originally pulled through
+Surveillance Station's RTSP restream because no password in the vault
+authenticated to it directly. A working password was later recovered, and the
+config now pulls it directly like the rest. Kept here because the restream is
+the fallback if that camera's credential is lost again.
 
 Retrieve the restream credential (stable across calls; re-check if SS is
 reconfigured):
@@ -61,38 +122,35 @@ SID=$(curl -sk -G https://192.168.20.210:5001/webapi/entry.cgi \
   --data-urlencode format=sid | jq -r .data.sid)
 curl -sk -G https://192.168.20.210:5001/webapi/entry.cgi \
   --data-urlencode api=SYNO.SurveillanceStation.Camera --data-urlencode version=9 \
-  --data-urlencode method=GetLiveViewPath --data-urlencode idList=12 \
+  --data-urlencode method=GetLiveViewPath --data-urlencode idList=<ss-camera-id> \
   --data-urlencode _sid=$SID | jq -r '.data[].rtspPath'
 ```
 
 Store the password portion in 1Password vault `automation` as item
 `synology-surveillance-rtsp`, field `password`.
 
-This bridge has real costs: it keeps Surveillance Station in the dependency
-chain, routes 4K video through the NAS, and exposes only the main stream, so
-Back Right decodes 3840x2160 for detection while its siblings decode 640x480.
-The clean fix is a physical factory reset of that camera, after which it moves
-to a direct pull like the others and gains a substream.
-
-Camera IDs in Surveillance Station: front_left=9, front_right=10, back_left=11,
-back_right=12, living_room=13, garage=14.
+The bridge has real costs: it keeps Surveillance Station in the dependency
+chain, routes 4K video through the NAS, and exposes only the main stream, so the
+bridged camera decodes its full main stream for detection while its siblings
+decode a substream. Per-camera Surveillance Station IDs are in the
+`FRIGATE_CAMERA_INVENTORY` field on the `frigate-config` 1Password item.
 
 ### 2. Raise the detect-stream resolution
 
-Face recognition runs on the **detect** stream only. The Hikvision substreams
+Face recognition runs on the **detect** stream only. The HEVC cameras' substreams
 are 640x480, which yields roughly a 13-pixel-wide face at 10 ft, far below the
-~80 px ArcFace needs. Raise each Hikvision substream to 1280x720 or 1920x1080 in
-the camera web UI, then update `detect.width` / `detect.height` to match.
+~80 px ArcFace needs. Raise each substream to 1280x720 or 1920x1080 in the camera
+web UI, then update `detect.width` / `detect.height` to match.
 
 Object detection ("a person is there") works fine at 640x480. Only face
 recognition is gated by this.
 
-### 3. Enable the Amcrest substreams
+### 3. Enable the H.264 cameras' substreams
 
-`subtype=1` returns 404 on 192.168.40.204: the substream is disabled. Until
-it is enabled, those cameras decode their full 2560x1440 main stream for
-detection, which is far more expensive than necessary. Enable the substream in
-the Amcrest UI, add a `*_sub` go2rtc entry, and point the `detect` role at it.
+`subtype=1` returns 404 on those cameras: the substream is disabled. Until it is
+enabled, they decode their full 2560x1440 main stream for detection, which is far
+more expensive than necessary. Enable the substream in the camera UI, add a
+`*_sub` go2rtc entry, and point the `detect` role at it.
 
 ### 4. Exclude Frigate recordings from HyperBackup
 
@@ -102,7 +160,7 @@ pg_dump backups, which HyperBackup replicates to Backblaze B2.
 DSM → HyperBackup → the B2 task → Edit source → deselect
 `k8s/home-automation-frigate-media-*`.
 
-Note the cameras are 4K/1440p, not 4MP: continuous recording across all six is
+Note the cameras are 4K/1440p, not 4MP: continuous recording across the fleet is
 closer to 475 GB/day than the 250 GB/day originally estimated. The configured
 retention (3d continuous / 14d motion / 30d alerts) keeps steady state near
 1.5 TB.
@@ -151,10 +209,13 @@ RFC1918 addresses, so remote access requires the UDM Pro VPN.
 
 ## Known trade-offs
 
-- `config.yml` is mounted read-only from a ConfigMap, so git stays the source of
-  truth. This disables the 0.17 camera wizard and the live zone/mask editor. To
-  draw zones: temporarily remove the `config-file` mount, draw them in the UI,
-  copy the coordinates back into the ConfigMap, restore the mount.
+- `config.yml` is mounted read-only from a Secret, so 1Password stays the source
+  of truth. This disables the 0.17 camera wizard and the live zone/mask editor.
+  To draw zones: temporarily remove the `config-file` mount, draw them in the UI,
+  copy the coordinates back into 1Password, restore the mount.
+- Config changes are invisible to `git diff` and to PR review — the repo holds
+  only the ExternalSecret wrapper. That is the deliberate trade for keeping
+  camera names, addresses, and stream paths out of a public repo.
 - No zones are defined yet. Alert quality depends almost entirely on them.
 - `strategy: Recreate` is required. Two pods against one SQLite database
   corrupts it.
