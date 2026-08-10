@@ -22,25 +22,29 @@ _... managed with Flux, Renovate and GitHub Actions_ 🤖
 
 ## 📖 Overview
 
-**Walls of Excellence (woe)** is a comprehensive home operations monorepo
-implementing Infrastructure as Code (IaC) and GitOps practices for managing
-a production-grade Kubernetes cluster.
+**Walls of Excellence (woe)** is a home operations monorepo implementing
+Infrastructure as Code (IaC) and GitOps practices for a multi-architecture
+k3s cluster.
 
 ### Key Features
 
-- **GitOps-Native**: Flux CD for continuous deployment and reconciliation
-- **Automated Provisioning**: Ansible-based k3s cluster deployment (7 nodes)
-- **Secrets Management**: External Secrets Operator with 1Password integration
-- **Comprehensive Observability**: Prometheus, Grafana, Loki, and Alloy
-- **Home Automation**: Home Assistant, MQTT, and smart home services
-- **Security Testing**: Atomic Red Team, TTPForge, and C2 infrastructure
-- **CI/CD**: Automated testing, validation, and dependency updates
+- **GitOps-Native**: Flux (flux-operator + flux-instance) reconciles
+  everything under `kubernetes/apps/`
+- **Automated Provisioning**: Ansible-based k3s deployment across Raspberry
+  Pis, a Radxa ROCK 5B, and VM workers
+- **Secrets Management**: External Secrets Operator backed by 1Password
+- **Comprehensive Observability**: kube-prometheus-stack, Grafana, Loki,
+  Tempo, Alloy, and Vector
+- **Home Automation & Media**: Home Assistant, Frigate, Zigbee2MQTT,
+  Music Assistant, and Immich
+- **Security Testing**: Atomic Red Team, TTPForge, Sliver C2, and hashcat
+- **CI/CD**: GitHub Actions (self-hosted runners via ARC) and Renovate
 
 ### Technology Stack
 
-- **Kubernetes**: k3s (lightweight, production-ready)
-- **GitOps**: Flux CD v2.4.0+
-- **Provisioning**: Ansible 2.11+
+- **Kubernetes**: k3s
+- **GitOps**: Flux CD (managed by flux-operator)
+- **Provisioning**: Ansible
 - **Package Management**: Helm, Helmfile
 - **Secrets**: External Secrets Operator, 1Password
 - **Automation**: Task (go-task)
@@ -59,18 +63,25 @@ a production-grade Kubernetes cluster.
 - [Deployed Applications](#deployed-applications)
 - [Usage](#usage)
 - [Task Categories](#task-categories)
+- [CI/CD](#cicd)
 - [Resources](#resources)
 
 ---
 
 ## 📚 Documentation
 
-- **[Developer Environment Setup](docs/dev.md)** - Complete development
-  workflow guide
-- **[Test Environment](docs/test-environment.md)** - Local testing with
-  kind clusters
-- **[Bootstrap Instructions](kubernetes/bootstrap/README.md)** - Initial
-  cluster setup
+<!-- BEGIN GENERATED: docs -->
+
+- [Developer Environment Setup](docs/dev.md)
+- [Rock5B NVMe Boot Setup](docs/rock5b-nvme-boot.md)
+- [Test Environment](docs/test-environment.md)
+
+<!-- END GENERATED: docs -->
+
+For initial cluster setup, see the
+[Bootstrap Instructions](kubernetes/bootstrap/README.md). Several
+applications also carry a README next to their manifests under
+[`kubernetes/apps/`](kubernetes/apps).
 
 ---
 
@@ -122,6 +133,7 @@ See [Developer Guide](docs/dev.md) for detailed Linux installation instructions.
    ```bash
    gh repo clone CowDogMoo/Walls-of-Excellence woe
    cd woe
+   git submodule update --init
    ```
 
 2. **Set up development environment:**
@@ -179,47 +191,17 @@ task apply-secrets
 
 ```text
 woe/
-├── .github/                    # GitHub Actions workflows
-│   ├── workflows/              # CI/CD pipelines
-│   └── renovate/               # Dependency update configs
-├── .taskfiles/                 # Task definitions
-│   ├── bootstrap/              # Bootstrap tasks
-│   └── test/                   # Testing tasks
-├── docs/                       # Documentation
-│   ├── dev.md                  # Development guide
-│   └── test-environment.md     # Testing guide
-├── hack/                       # Utility scripts
-├── infrastructure/             # Terraform/Terragrunt
-├── k3s-ansible/                # Ansible k3s provisioning
-│   ├── inventory/cowdogmoo/    # 7-node inventory
-│   ├── roles/                  # Ansible roles
-│   ├── molecule/               # Testing scenarios
-│   ├── site.yml                # Main playbook
-│   └── reset.yml               # Teardown playbook
-├── kubernetes/
-│   ├── apps/                   # 16 namespaces, 35+ apps
-│   │   ├── attack-simulation/  # Red team tools
-│   │   ├── c2/                 # Command & control
-│   │   ├── cert-manager/       # TLS management
-│   │   ├── database/           # MySQL
-│   │   ├── external-secrets/   # Secret sync
-│   │   ├── flux-system/        # Flux components
-│   │   ├── guacamole/          # Remote desktop
-│   │   ├── home-automation/    # Smart home services
-│   │   ├── identity/           # Authentik (OIDC)
-│   │   ├── kube-system/        # System components
-│   │   ├── monitoring/         # RunZero
-│   │   ├── networking/         # Traefik, ExternalDNS
-│   │   ├── observability/      # Grafana, Loki, Prometheus
-│   │   └── system-upgrade/     # Upgrade controller
-│   ├── bootstrap/              # Initial setup
-│   │   ├── flux/               # Flux CRDs
-│   │   ├── helmfile.d/         # Helmfile configs
-│   │   └── resources.yaml.j2   # Secret templates
-│   ├── flux/                   # Flux GitOps configs
-│   └── deprecated/             # Legacy configs (skipped)
-├── ansible.cfg                 # Ansible configuration
-└── Taskfile.yaml               # Root task definitions
+├── .github/          # CI workflows and Renovate configuration
+├── .taskfiles/       # Local task definitions (bootstrap, test, ...)
+├── docs/             # Guides and runbooks
+├── hack/             # Utility scripts
+├── infrastructure/   # Terraform/Terragrunt
+├── k3s-ansible/      # Ansible k3s provisioning (git submodule)
+└── kubernetes/
+    ├── apps/         # Flux-managed applications, one directory per namespace
+    ├── bootstrap/    # Initial cluster setup (helmfile.d, Flux install)
+    ├── flux/         # Flux entry-point configuration
+    └── deprecated/   # Retired configs kept for reference
 ```
 
 ---
@@ -228,91 +210,66 @@ woe/
 
 ### Nodes
 
-- **7-node cluster**: k8s1 through k8s7
-- **High Availability**: Multi-master control plane with etcd
-- **Load Balancing**: kube-vip (control plane), MetalLB (services)
-- **CNI Options**: Calico or Cilium (configurable)
+- **Multi-architecture k3s cluster**: PoE-powered Raspberry Pis, a Radxa
+  ROCK 5B (NVMe), and VM workers on Proxmox and macOS (Lima)
+- **High Availability**: Multi-master control plane with embedded etcd
+- **Control Plane VIP**: kube-vip
 
 ### Networking
 
-- **Cluster CIDR**: 10.52.0.0/16
-- **Service CIDR**: 10.53.0.0/16
-- **Load Balancer Range**: 192.168.30.80-192.168.30.90
 - **Ingress**: Traefik with TLS termination
-- **DNS**: External DNS with automatic record management
+- **Load Balancing**: MetalLB for LoadBalancer services
+- **DNS**: ExternalDNS with automatic record management, AdGuard Home for
+  filtering
+- **Remote Access**: Tailscale operator
 
 ### Storage
 
-- **NFS Provisioner**: Dynamic persistent volume provisioning
-- **Persistent Volumes**: Backed by NFS server
+- **NFS**: Dynamic persistent volumes via nfs-subdir-external-provisioner,
+  backed by a Synology NAS
+- **Local**: local-path volumes for latency-sensitive workloads
+
+### Data
+
+- **PostgreSQL**: CloudNative-PG operator
+- **MySQL**: Standalone instance
 
 ### Security
 
 - **Secrets Management**: External Secrets Operator with 1Password
 - **Authentication**: Authentik (OIDC provider)
 - **Certificate Management**: cert-manager with Let's Encrypt
-- **Network Policies**: Calico/Cilium network policies
 
 ---
 
 ## Deployed Applications
 
-### System & Infrastructure
+<!-- BEGIN GENERATED: apps -->
 
-- **NFS Subdir External Provisioner** - Dynamic PVC provisioning
-- **Reflector** - ConfigMap/Secret mirroring
-- **Reloader** - Auto-restart on config changes
-- **System Upgrade Controller** - Coordinated node upgrades
+Flux reconciles **48 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
-### GitOps & Deployment
+| Namespace | Applications |
+| --------- | ------------ |
+| `actions-runner-system` | [actions-runner-controller](kubernetes/apps/actions-runner-system/actions-runner-controller) |
+| `attack-simulation` | [ares](kubernetes/apps/attack-simulation/ares), [atomic-red-team](kubernetes/apps/attack-simulation/atomic-red-team), [ttpforge](kubernetes/apps/attack-simulation/ttpforge) |
+| `c2` | [sliver](kubernetes/apps/c2/sliver) |
+| `cert-manager` | [cert-manager](kubernetes/apps/cert-manager/cert-manager), [synology-cert-sync](kubernetes/apps/cert-manager/synology-cert-sync) |
+| `cracking` | [hashcat](kubernetes/apps/cracking/hashcat) |
+| `database` | [cloudnative-pg](kubernetes/apps/database/cloudnative-pg), [mysql](kubernetes/apps/database/mysql) |
+| `external-secrets` | [external-secrets](kubernetes/apps/external-secrets/external-secrets), [onepassword](kubernetes/apps/external-secrets/onepassword) |
+| `flux-system` | [addons](kubernetes/apps/flux-system/addons), [flux-instance](kubernetes/apps/flux-system/flux-instance), [flux-operator](kubernetes/apps/flux-system/flux-operator), [weave-gitops](kubernetes/apps/flux-system/weave-gitops) |
+| `guacamole` | [guacamole](kubernetes/apps/guacamole/guacamole) |
+| `home-automation` | [frigate](kubernetes/apps/home-automation/frigate), [grocy](kubernetes/apps/home-automation/grocy), [home-assistant](kubernetes/apps/home-automation/home-assistant), [mosquitto](kubernetes/apps/home-automation/mosquitto), [music-assistant](kubernetes/apps/home-automation/music-assistant), [printer-monitor](kubernetes/apps/home-automation/printer-monitor), [troy-backup](kubernetes/apps/home-automation/troy-backup), [zigbee2mqtt](kubernetes/apps/home-automation/zigbee2mqtt) |
+| `identity` | [authentik](kubernetes/apps/identity/authentik) |
+| `inference` | [ollama](kubernetes/apps/inference/ollama) |
+| `kube-system` | [descheduler](kubernetes/apps/kube-system/descheduler), [nfs-subdir-external-provisioner](kubernetes/apps/kube-system/nfs-subdir-external-provisioner), [reflector](kubernetes/apps/kube-system/reflector), [reloader](kubernetes/apps/kube-system/reloader) |
+| `media` | [immich](kubernetes/apps/media/immich) |
+| `monitoring` | [runzero-explorer](kubernetes/apps/monitoring/runzero-explorer) |
+| `networking` | [adguard-home](kubernetes/apps/networking/adguard-home), [external-dns](kubernetes/apps/networking/external-dns), [ingress-traefik](kubernetes/apps/networking/ingress-traefik), [tailscale-operator](kubernetes/apps/networking/tailscale-operator) |
+| `observability` | [alloy](kubernetes/apps/observability/alloy), [blackbox-exporter](kubernetes/apps/observability/blackbox-exporter), [goldilocks](kubernetes/apps/observability/goldilocks), [grafana](kubernetes/apps/observability/grafana), [kube-prometheus-stack](kubernetes/apps/observability/kube-prometheus-stack), [loki](kubernetes/apps/observability/loki), [robusta](kubernetes/apps/observability/robusta), [tempo](kubernetes/apps/observability/tempo), [unpoller](kubernetes/apps/observability/unpoller), [vector](kubernetes/apps/observability/vector) |
+| `system-upgrade` | [system-upgrade-controller](kubernetes/apps/system-upgrade/system-upgrade-controller) |
 
-- **Flux Operator** - Flux cluster management
-- **Flux Instance** - Git synchronization
-- **Weave GitOps** - Flux UI
-
-### Security & Identity
-
-- **Authentik** - OIDC authentication provider
-- **cert-manager** - TLS certificate lifecycle
-- **external-secrets** - 1Password integration
-- **Guacamole** - Remote desktop gateway
-
-### Network Services
-
-- **Traefik** - Ingress controller
-- **External DNS** - DNS automation
-
-### Observability
-
-- **Prometheus** - Metrics collection
-- **Grafana** - Visualization and dashboards
-- **Loki** - Log aggregation
-- **Alloy** - Telemetry collection
-- **Vector** - Log processing
-- **AlertManager** - Alert routing
-- **Unpoller** - UniFi metrics
-
-### Home Automation
-
-- **Home Assistant** - Home automation platform
-- **Mosquitto** - MQTT broker
-- **Music Assistant** - Music server
-- **Grocy** - Inventory management
-- **Printer Monitor** - Printer status monitoring
-
-### Security Testing
-
-- **Atomic Red Team** - Attack simulation
-- **TTPForge** - Threat modeling
-- **Sliver** - C2 framework
-
-### Monitoring
-
-- **RunZero Explorer** - Network discovery
-
-### Database
-
-- **MySQL** - SQL database backend
+<!-- END GENERATED: apps -->
 
 ---
 
@@ -330,17 +287,12 @@ task provision-nodes
 
 # Check cluster status
 task ping
-task ping-masters
-task ping-nodes
+task check-inventory
 
 # Reboot nodes
 task reboot NODE=k8s1
 task reboot-all
-```
 
-### Node Operations
-
-```bash
 # Run command on all nodes
 task run-cmd-all -- 'uptime'
 
@@ -374,9 +326,6 @@ task apply-secrets
 # Sync Flux system
 flux reconcile ks flux-system --with-source
 
-# Sync cluster apps
-flux reconcile ks cluster-apps --with-source -n flux-system
-
 # Check Flux status
 flux get all -A
 
@@ -404,63 +353,48 @@ task test:status
 task test:destroy
 ```
 
-### Ansible Operations
-
-```bash
-# Lint Ansible playbooks
-task ansible:lint-ansible
-
-# Run Molecule tests
-task ansible:run-molecule-tests
-
-# List Ansible hosts
-task ansible:list-hosts
-```
-
-### Terraform Operations
-
-```bash
-# Format and validate
-task terraform:tf-check
-
-# Plan infrastructure changes
-task terraform:tf-plan
-
-# Apply infrastructure changes
-task terraform:tf-apply
-```
-
 ### Troubleshooting
 
 ```bash
 # Remove stuck namespaces
 task k8s:destroy-stuck-ns
 
-# Completely remove Rancher (if installed)
-task destroy-rancher
-
 # Reset cluster (destroy and rebuild)
 task reset
-task reset-masters
-task reset-nodes
+task provision
+task bootstrap
 ```
 
 ---
 
 ## Task Categories
 
-The project uses [Task](https://taskfile.dev/) with the following categories:
+The project uses [Task](https://taskfile.dev/). Remote categories are pulled
+from [taskfile-templates](https://github.com/CowDogMoo/taskfile-templates)
+at runtime; the first run prompts to trust them (or run `task -y`).
 
-| Category       | Description                | Example Tasks               |
-| -------------- | -------------------------- | --------------------------- |
-| **Root tasks** | Core cluster operations    | `provision`, `ping`         |
-| `ansible:*`    | Ansible automation/testing | `ansible:lint-ansible`      |
-| `k8s:*`        | Kubernetes management      | `k8s:destroy-stuck-ns`      |
-| `terraform:*`  | Infrastructure as Code     | `terraform:tf-check`        |
-| `pre-commit:*` | Code quality/linting       | `pre-commit:run-pre-commit` |
-| `renovate:*`   | Renovate bot operations    | `renovate:dry-run`          |
-| `bootstrap:*`  | Cluster bootstrap          | `bootstrap:wait`            |
-| `test:*`       | Local testing with kind    | `test:create`, `test:apply` |
+<!-- BEGIN GENERATED: tasks -->
+
+Root tasks (run as `task <name>`): `default`, `check-inventory`,
+`run-cmd-all`, `run-cmd`, `reboot`, `reboot-all`, `shutdown-cluster`, `ping`,
+`ping-masters`, `ping-nodes`, `provision`, `provision-masters`,
+`provision-nodes`, `reset`, `reset-masters`, `reset-nodes`, `apply-secrets`,
+`destroy-rancher`, `reconcile`.
+
+| Category | Defined in |
+| -------- | ---------- |
+| `ansible:*` | [CowDogMoo/taskfile-templates/ansible](https://github.com/CowDogMoo/taskfile-templates/blob/main/ansible/Taskfile.yaml) |
+| `bootstrap:*` | [.taskfiles/bootstrap](.taskfiles/bootstrap/Taskfile.yaml) |
+| `guacamole:*` | [.taskfiles/guacamole](.taskfiles/guacamole/Taskfile.yaml) |
+| `k8s:*` | [CowDogMoo/taskfile-templates/k8s](https://github.com/CowDogMoo/taskfile-templates/blob/main/k8s/Taskfile.yaml) |
+| `onepassword:*` | [CowDogMoo/taskfile-templates/secrets/onepassword](https://github.com/CowDogMoo/taskfile-templates/blob/main/secrets/onepassword/Taskfile.yaml) |
+| `pre-commit:*` | [CowDogMoo/taskfile-templates/pre-commit](https://github.com/CowDogMoo/taskfile-templates/blob/main/pre-commit/Taskfile.yaml) |
+| `proxmox:*` | [.taskfiles/proxmox](.taskfiles/proxmox/Taskfile.yaml) |
+| `renovate:*` | [CowDogMoo/taskfile-templates/renovate](https://github.com/CowDogMoo/taskfile-templates/blob/main/renovate/Taskfile.yaml) |
+| `terraform:*` | [CowDogMoo/taskfile-templates/terraform](https://github.com/CowDogMoo/taskfile-templates/blob/main/terraform/Taskfile.yaml) |
+| `test:*` | [.taskfiles/test](.taskfiles/test/Taskfile.yaml) |
+
+<!-- END GENERATED: tasks -->
 
 Run `task -l` to see all available tasks with descriptions.
 
@@ -470,63 +404,30 @@ Run `task -l` to see all available tasks with descriptions.
 
 ### Automated Workflows
 
-- **Pre-commit**: Runs on every commit and PR
-- **Test Manifests**: Validates and tests deployments in kind clusters
-- **Renovate**: Weekly dependency updates (Sunday & Wednesday 00:00 UTC)
-- **Semgrep**: Security linting
+<!-- BEGIN GENERATED: workflows -->
 
-### Renovate Features
+- [Labeler](.github/workflows/meta-labeler.yaml)
+- [Meta Sync labels](.github/workflows/meta-sync-labels.yaml)
+- [Pre-Commit](.github/workflows/pre-commit.yaml)
+- [🤖 Renovate](.github/workflows/renovate.yaml)
+- [🚨 Semgrep Analysis](.github/workflows/semgrep.yaml)
+- [🧪 Test Kubernetes Manifests](.github/workflows/test-manifests.yaml)
 
-- **Semantic commits**: Follows conventional commit format
-- **Auto-merge**: Digest updates and branch creation
-- **Custom managers**: Flux and helm-values detection
-- **Pre-commit integration**: Runs hooks on update PRs
+<!-- END GENERATED: workflows -->
 
-View workflow runs:
+### Renovate
 
-```bash
-gh run list
-gh run view <run-id>
-gh run watch
-```
+Renovate automatically opens PRs for Helm chart, container image, GitHub
+Action, and Flux component updates, using conventional commit messages and
+custom managers for Flux and helm-values detection.
 
----
+### README Generation
 
-## Maintenance
-
-### Regular Updates
-
-Renovate automatically creates PRs for:
-
-- Helm chart updates
-- Docker image updates
-- GitHub Action updates
-- Flux component updates
-
-### Manual Updates
-
-```bash
-# Update Flux
-flux install --export > kubernetes/bootstrap/flux/gotk-components.yaml
-
-# Update CRDs
-task bootstrap:crds
-
-# Reconcile changes
-flux reconcile ks flux-system --with-source
-```
-
-### Cluster Reset
-
-If the cluster becomes unrecoverable:
-
-```bash
-# Complete cluster reset and rebuild
-task reset          # Reset k3s cluster
-task provision      # Reprovision with Ansible
-task bootstrap      # Bootstrap from scratch
-flux get ks -A      # Verify reconciliation
-```
+The application, documentation, task, and workflow listings in this README
+are generated from repository state by
+[`hack/readme-gen.sh`](hack/readme-gen.sh). A pre-commit hook keeps them
+current — edit the source of truth (manifests, docs, taskfiles), not the
+generated blocks.
 
 ---
 
@@ -546,15 +447,3 @@ This project was influenced by:
 - [Task Documentation](https://taskfile.dev/)
 - [External Secrets Operator](https://external-secrets.io/)
 - [Ansible k3s Role](https://github.com/k3s-io/k3s-ansible)
-
-### Community
-
-- [Flux CD Slack](https://fluxcd.io/community/)
-- [k3s GitHub Discussions](https://github.com/k3s-io/k3s/discussions)
-- [Home Operations Discord](https://discord.gg/home-operations)
-
----
-
-## License
-
-See [LICENSE](LICENSE) file for details.

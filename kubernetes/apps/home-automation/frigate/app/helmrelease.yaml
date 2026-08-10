@@ -1,0 +1,201 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: frigate
+  namespace: home-automation
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: frigate
+  install:
+    timeout: 15m
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    timeout: 15m
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      frigate:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        strategy: Recreate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/blakeblackshear/frigate
+              tag: 0.17.2-rk
+            env:
+              TZ: "America/Denver"
+              LIBVA_DRIVER_NAME: rockchip
+            envFrom:
+              - secretRef:
+                  name: frigate-secret
+            ports:
+              - name: http
+                containerPort: 5000
+                protocol: TCP
+              - name: auth
+                containerPort: 8971
+                protocol: TCP
+              - name: rtsp
+                containerPort: 8554
+                protocol: TCP
+              - name: webrtc
+                containerPort: 8555
+                protocol: TCP
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/version
+                    port: 5000
+                  initialDelaySeconds: 120
+                  periodSeconds: 30
+                  timeoutSeconds: 10
+                  failureThreshold: 5
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/version
+                    port: 5000
+                  initialDelaySeconds: 60
+                  periodSeconds: 15
+                  timeoutSeconds: 10
+                  failureThreshold: 5
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/version
+                    port: 5000
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 60
+            resources:
+              requests:
+                cpu: "1"
+                memory: 4Gi
+              limits:
+                memory: 12Gi
+            securityContext:
+              privileged: true
+        pod:
+          automountServiceAccountToken: false
+          nodeSelector:
+            node-role.kubernetes.io/storage: "true"
+    service:
+      app:
+        controller: frigate
+        annotations:
+          traefik.ingress.kubernetes.io/service.serversscheme: https
+          traefik.ingress.kubernetes.io/service.serverstransport: home-automation-frigate-transport@kubernetescrd
+        ports:
+          http:
+            port: 8971
+      stream:
+        controller: frigate
+        type: LoadBalancer
+        loadBalancerIP: 192.168.20.18
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: frigate-stream.techvomit.xyz
+        ports:
+          rtsp:
+            port: 8554
+            protocol: TCP
+          webrtc-tcp:
+            port: 8555
+            protocol: TCP
+          webrtc-udp:
+            port: 8555
+            protocol: UDP
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
+        hosts:
+          - host: &host frigate.techvomit.xyz
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+    persistence:
+      config:
+        enabled: true
+        type: persistentVolumeClaim
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 20Gi
+        globalMounts:
+          - path: /config
+      config-file:
+        type: secret
+        name: frigate-config
+        advancedMounts:
+          frigate:
+            app:
+              - path: /config/config.yml
+                subPath: config.yml
+                readOnly: true
+      media:
+        enabled: true
+        type: persistentVolumeClaim
+        storageClass: nfs-client
+        accessMode: ReadWriteOnce
+        size: 2Ti
+        globalMounts:
+          - path: /media/frigate
+      cache:
+        type: emptyDir
+        sizeLimit: 8Gi
+        globalMounts:
+          - path: /tmp/cache
+      dshm:
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 1Gi
+        globalMounts:
+          - path: /dev/shm
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        hostPathType: Directory
+        globalMounts:
+          - path: /dev/dri
+      dev-mpp-service:
+        type: hostPath
+        hostPath: /dev/mpp_service
+        hostPathType: CharDevice
+        globalMounts:
+          - path: /dev/mpp_service
+      dev-rga:
+        type: hostPath
+        hostPath: /dev/rga
+        hostPathType: CharDevice
+        globalMounts:
+          - path: /dev/rga
+      dev-dma-heap:
+        type: hostPath
+        hostPath: /dev/dma_heap
+        hostPathType: Directory
+        globalMounts:
+          - path: /dev/dma_heap
