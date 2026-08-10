@@ -92,6 +92,85 @@ A bad config keeps Frigate crash-looping on a readOnly mount it cannot repair
 itself — check `kubectl -n home-automation logs deploy/frigate` and fix the
 1Password field, not the pod.
 
+## Cloud cameras (Nest / Ring)
+
+Two legacy Google Nest cams run through go2rtc's `nest:` source, but only
+one is live. The garage cam has been physically offline for about a year
+(its last HA motion event reads "Last year"), so its Frigate camera ships
+`enabled: false`. SDM will still mint stream sessions for a camera that is
+gone, those sessions 404 at the edge, and the dial churn rate-limits the
+whole SDM account. Set it back to true when the camera has power and WiFi
+again.
+
+The cams are RTSP-only via the SDM API; they predate the 2021+ WebRTC
+models, so their stream URLs carry `protocols=RTSP`. go2rtc calls
+`GenerateRtspStream` and re-extends the 5-minute session token on its own.
+Both nest cameras also carry an explicit `input_args` block instead of
+`preset-rtsp-restream`. The flags are identical except for ffmpeg's
+`-timeout`, raised from 10 s to 90 s: the session behind the restream can
+need several DESCRIBE retries from go2rtc before it warms up, and the
+preset's timeout expires first.
+
+The SDM OAuth credentials (client id/secret, refresh token, Device Access
+project id) are inlined into the config body in 1Password, the same as the
+camera passwords. Env-var indirection through `externalsecret.yaml` was
+tried first, and Flux reverted the uncommitted ExternalSecret, taking
+go2rtc and every camera with it offline. The `nest-sdm` item in vault
+`automation` is the human record of those credentials, copied from Home
+Assistant's Nest integration. HA keeps using the same refresh token, since
+Google refresh tokens are multi-use and non-rotating. Rotating them means
+updating both `nest-sdm` and `FRIGATE_CONFIG`.
+
+Stock go2rtc cannot start these streams at all. The Nest servers take
+about 8 s to answer the first DESCRIBE after `GenerateRtspStream` (a warm
+session answers in ~0.15 s), and go2rtc hardcodes a 5 s RTSP response
+deadline, so every dial times out. Frigate's watchdog then retries in a
+loop and burns the SDM `ExecuteDeviceCommand` rate limit. Sustained storms
+push the Nest side into a penalized state where even fresh sessions answer
+404 for a while, so kill the loop first
+(`mosquitto_pub -t frigate/<cam>/enabled/set -m OFF`) and let it cool
+before retrying. `/config` carries a patched go2rtc build that redials
+until the session warms up
+([go2rtc-nest-describe-retry.patch](go2rtc-nest-describe-retry.patch) on
+v1.9.14). The Frigate image prefers `/config/go2rtc` over its bundled
+1.9.10, so deleting the file falls back to stock. Rebuild with:
+
+```sh
+git clone --depth 1 --branch v1.9.14 https://github.com/AlexxIT/go2rtc
+cd go2rtc && git apply .../go2rtc-nest-describe-retry.patch
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -trimpath -o go2rtc .
+kubectl cp go2rtc "home-automation/$(kubectl get pods -n home-automation \
+  -l app.kubernetes.io/name=frigate -o name | cut -d/ -f2):/config/go2rtc"
+```
+
+The patched binary also brings the `ring:` source (added in 1.9.13, absent
+from bundled 1.9.10).
+
+Going through the cloud has a price. Video routes through Google's
+servers, so the bandwidth gets spent twice. Streams drop and re-dial on
+their own schedule. And revoking the Google OAuth grant takes out the
+cameras in HA and Frigate at the same time.
+
+The Ring doorbell is not a Frigate camera. It runs on battery, and
+Frigate decodes every configured camera continuously, which would flatten
+that battery; Ring terminates long-lived sessions anyway. It is instead a
+pair of on-demand go2rtc-only streams, `front_door` and
+`front_door_snapshot`, that dial Ring's cloud only while a client is
+actually watching: `rtsp://192.168.20.18:8554/front_door`, or WebRTC on
+`192.168.20.18:8555`. They do not appear in the Frigate camera UI, and
+should not.
+
+The `ring:` source needs go2rtc ≥ 1.9.13, which the patched `/config`
+binary provides. Its refresh token has to be separate from Home
+Assistant's, because Ring issues tokens per client; the dedicated one
+lives on the `ring-go2rtc` 1Password item and is inlined in the stream
+URLs in `FRIGATE_CONFIG`. Ring also rotates that token on every
+authentication, so the stored copy goes stale on its own. When
+`front_door` dials start failing auth, regenerate with
+`npx -p ring-client-api ring-auth-cli` and update the `ring-go2rtc` item
+along with the URLs in `FRIGATE_CONFIG`. If that becomes a regular chore,
+ring-mqtt persists rotated tokens and is the alternative.
+
 ## Storage layout
 
 | Path | Backing | Why |

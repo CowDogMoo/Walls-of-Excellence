@@ -1,0 +1,40 @@
+diff --git a/pkg/nest/client.go b/pkg/nest/client.go
+index 6a57091..fc2ab68 100644
+--- a/pkg/nest/client.go
++++ b/pkg/nest/client.go
+@@ -161,15 +161,28 @@ func rtspConn(nestAPI *API, rawURL, projectID, deviceID string) (*RTSPClient, er
+ 		return nil, err
+ 	}
+
+-	rtspClient := rtsp.NewClient(rtspURL)
+-	if err := rtspClient.Dial(); err != nil {
+-		return nil, err
+-	}
+-	if err := rtspClient.Describe(); err != nil {
+-		return nil, err
++	// Nest servers can take well over the RTSP response deadline to answer the
++	// first DESCRIBE after GenerateRtspStream while the stream spins up (~8s
++	// when healthy, longer under load). Redial the same session until it is
++	// warm — once ready it answers in well under a second.
++	var rtspClient *rtsp.Conn
++	var lastErr error
++	for attempt := 0; attempt < 6; attempt++ {
++		if attempt > 0 {
++			time.Sleep(time.Second * 2)
++		}
++		rtspClient = rtsp.NewClient(rtspURL)
++		if lastErr = rtspClient.Dial(); lastErr != nil {
++			continue
++		}
++		if lastErr = rtspClient.Describe(); lastErr != nil {
++			_ = rtspClient.Close()
++			continue
++		}
++		return &RTSPClient{conn: rtspClient, api: nestAPI}, nil
+ 	}
+
+-	return &RTSPClient{conn: rtspClient, api: nestAPI}, nil
++	return nil, lastErr
+ }
+
+ func (c *RTSPClient) GetMedias() []*core.Media {
