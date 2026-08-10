@@ -116,8 +116,8 @@ data:
       front_left:
         detect:
           enabled: true
-          width: 1280
-          height: 720
+          width: 640
+          height: 480
           fps: 5
         ffmpeg:
           hwaccel_args: preset-rk-h265
@@ -134,8 +134,8 @@ data:
       front_right:
         detect:
           enabled: true
-          width: 1280
-          height: 720
+          width: 640
+          height: 480
           fps: 5
         ffmpeg:
           hwaccel_args: preset-rk-h265
@@ -152,8 +152,8 @@ data:
       back_left:
         detect:
           enabled: true
-          width: 1280
-          height: 720
+          width: 640
+          height: 480
           fps: 5
         ffmpeg:
           hwaccel_args: preset-rk-h265
@@ -170,8 +170,8 @@ data:
       back_right:
         detect:
           enabled: true
-          width: 1280
-          height: 720
+          width: 640
+          height: 480
           fps: 5
         ffmpeg:
           hwaccel_args: preset-rk-h265
