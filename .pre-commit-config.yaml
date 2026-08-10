@@ -53,3 +53,11 @@ repos:
         language: script
         entry: .hooks/run-shfmt.sh
         files: \.sh$
+
+      - id: readme-gen
+        name: Regenerate README generated sections
+        language: script
+        entry: hack/readme-gen.sh
+        files: >-
+          ^(README\.md|Taskfile\.yaml|\.taskfiles/.*|docs/.*\.md|kubernetes/apps/.*|\.github/workflows/.*|hack/readme-gen\.sh)$
+        pass_filenames: false
