@@ -87,40 +87,13 @@ applications also carry a README next to their manifests under
 
 ## Prerequisites
 
-### Required Tools
+Managing the cluster requires [Task](https://taskfile.dev/),
+the [Flux CLI](https://fluxcd.io/flux/), kubectl, Helm, Helmfile, Kustomize,
+yq, the [1Password CLI](https://developer.1password.com/docs/cli/), Ansible,
+and Terraform.
 
-- **[Task](https://taskfile.dev/installation/)** - Task runner for automation
-- **[Flux CLI](https://fluxcd.io/flux/installation/)** - GitOps toolkit
-- **[kubectl](https://kubernetes.io/docs/tasks/tools/)** - Kubernetes CLI
-- **[Helm](https://helm.sh/docs/intro/install/)** - Package manager
-- **[Helmfile](https://helmfile.readthedocs.io/)** - Helm release orchestrator
-- **[Kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/)**
-  \- Manifest customization
-- **[yq](https://github.com/mikefarah/yq)** - YAML processor
-- **[1Password CLI](https://developer.1password.com/docs/cli/)** - Secret
-  management
-- **[Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)**
-  \- Infrastructure provisioning
-- **[Terraform](https://www.terraform.io/downloads)** - Infrastructure as Code
-
-### Quick Install (macOS)
-
-```bash
-brew install go-task/tap/go-task
-brew install fluxcd/tap/flux
-brew install kubectl
-brew install helm
-brew install helmfile
-brew install kustomize
-brew install yq
-brew install ansible
-brew install terraform
-brew install --cask 1password-cli
-```
-
-### Quick Install (Linux)
-
-See [Developer Guide](docs/dev.md) for detailed Linux installation instructions.
+See the [Developer Guide](docs/dev.md#dependencies) for installation
+instructions on macOS and Linux.
 
 ---
 
@@ -275,95 +248,12 @@ Flux reconciles **48 applications** across **18 namespaces** from [`kubernetes/a
 
 ## Usage
 
-### Cluster Management
+Day-to-day operations — provisioning, node management, Flux, debugging, and
+cluster recovery — are documented in the [Developer Guide](docs/dev.md).
+Local testing with kind is covered in the
+[Test Environment guide](docs/test-environment.md).
 
-```bash
-# Provision entire k3s cluster
-task provision
-
-# Provision specific node groups
-task provision-masters
-task provision-nodes
-
-# Check cluster status
-task ping
-task check-inventory
-
-# Reboot nodes
-task reboot NODE=k8s1
-task reboot-all
-
-# Run command on all nodes
-task run-cmd-all -- 'uptime'
-
-# Run command on specific node
-task run-cmd NODE=k8s1 -- 'df -h'
-```
-
-### GitOps Operations
-
-```bash
-# Bootstrap cluster from scratch
-task bootstrap
-
-# Individual bootstrap steps
-task bootstrap:wait        # Wait for nodes
-task bootstrap:namespaces  # Create namespaces
-task bootstrap:resources   # Apply secrets
-task bootstrap:crds        # Apply CRDs
-task bootstrap:apps        # Deploy core apps
-
-# Reconcile Kubernetes resources
-task reconcile
-
-# Apply secrets
-task apply-secrets
-```
-
-### Flux Synchronization
-
-```bash
-# Sync Flux system
-flux reconcile ks flux-system --with-source
-
-# Check Flux status
-flux get all -A
-
-# View Flux logs
-flux logs --all-namespaces --follow
-```
-
-### Development Workflow
-
-```bash
-# View all available tasks
-task -l
-
-# Run pre-commit hooks
-task pre-commit:run-pre-commit
-
-# Validate manifests locally
-task test:validate
-
-# Test in kind cluster
-task test:create
-task test:install-flux
-task test:apply
-task test:status
-task test:destroy
-```
-
-### Troubleshooting
-
-```bash
-# Remove stuck namespaces
-task k8s:destroy-stuck-ns
-
-# Reset cluster (destroy and rebuild)
-task reset
-task provision
-task bootstrap
-```
+Run `task -l` to list all available tasks.
 
 ---
 
