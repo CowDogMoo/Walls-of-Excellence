@@ -72,7 +72,8 @@ The deployment expects these 1Password items:
 Configured in `helmrelease.yaml`:
 
 - `GIT_SYNC_BRANCH`: Branch to sync (default: `main`)
-- Repository: `https://github.com/CowDogMoo/homeassistant`
+- Repository: the private Home Assistant config repo (URL set in
+  `helmrelease.yaml`)
 - Sync interval: 60 seconds
 
 ### NFS Storage
@@ -196,7 +197,7 @@ kubectl logs -n home-automation -l app.kubernetes.io/name=home-assistant -c git-
 
 2. Verify GitHub App permissions:
    - App must have **Contents: Read** permission
-   - App must be installed on the `CowDogMoo/homeassistant` repository
+   - App must be installed on the private Home Assistant config repository
 
 3. Verify External Secret is syncing:
 
@@ -264,9 +265,9 @@ continuous access without manual intervention.
 
 ## Configuration Repository
 
-Your Home Assistant configuration lives at:
+Your Home Assistant configuration lives in a private GitHub repository:
 
-- **Repository**: https://github.com/CowDogMoo/homeassistant
+- **Repository**: URL set in `helmrelease.yaml` (git-pull sidecar)
 - **Branch**: Configured via `GIT_SYNC_BRANCH` (default: `main`)
 
 ### Idiomatic Workflow
