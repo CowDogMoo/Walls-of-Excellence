@@ -85,6 +85,18 @@ data:
           - car
           - dog
 
+    camera_groups:
+      HD:
+        order: 1
+        icon: LuVideo
+        cameras:
+          - front_left
+          - front_right
+          - back_left
+          - back_right
+          - living_room
+          - garage
+
     go2rtc:
       webrtc:
         candidates:
