@@ -151,14 +151,33 @@ servers, so the bandwidth gets spent twice. Streams drop and re-dial on
 their own schedule. And revoking the Google OAuth grant takes out the
 cameras in HA and Frigate at the same time.
 
-The Ring doorbell is not a Frigate camera. It runs on battery, and
-Frigate decodes every configured camera continuously, which would flatten
-that battery; Ring terminates long-lived sessions anyway. It is instead a
-pair of on-demand go2rtc-only streams, `front_door` and
-`front_door_snapshot`, that dial Ring's cloud only while a client is
-actually watching: `rtsp://192.168.20.18:8554/front_door`, or WebRTC on
-`192.168.20.18:8555`. They do not appear in the Frigate camera UI, and
-should not.
+The Ring doorbell runs on battery, and Frigate decodes every configured
+camera continuously, which would flatten that battery; Ring terminates
+long-lived sessions anyway. So the real video lives in a pair of
+on-demand go2rtc streams, `front_door` and `front_door_snapshot`, that
+dial Ring's cloud only while a client is actually watching:
+`rtsp://192.168.20.18:8554/front_door`, or WebRTC on
+`192.168.20.18:8555`. The `front_door` camera tile in the Frigate UI is a
+locally generated lavfi placeholder card whose live view maps to that
+stream — the dashboard costs the battery nothing until someone opens the
+camera.
+
+Ring events still land in Review through a second camera entry,
+`front_door_events` (hidden from the dashboard via `ui.dashboard:
+false`), which consumes the same on-demand stream with detect and record
+enabled. It is `enabled: true` in the config because Frigate refuses the
+MQTT enable toggle for config-disabled cameras; the actual baseline-off
+state is a retained `OFF` on `frigate/front_door_events/enabled/set`,
+which mosquitto replays every time Frigate reconnects, so the camera
+shuts itself off seconds after any restart. A Home Assistant automation
+flips it `ON` for two minutes per Ring motion/ding push (extending while
+events keep coming) and re-publishes the retained `OFF` on HA startup so
+a restart mid-window can't leave the doorbell streaming. Detection and
+face recognition run on those windows like any wired camera, so a person
+at the door produces a Review alert. The camera's detect resolution is
+pinned to the stream's real 1920x1080 on purpose: leaving it unset makes
+Frigate probe the stream at config load to autodetect it, which dials
+the doorbell on every restart and stalls startup by ~30s.
 
 The `ring:` source needs go2rtc ≥ 1.9.13, which the patched `/config`
 binary provides. Its refresh token has to be separate from Home
