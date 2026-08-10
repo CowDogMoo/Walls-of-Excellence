@@ -207,6 +207,43 @@ pin the image tag rather than tracking `stable-rk`.
 DNS comes from external-dns. The zone is publicly resolvable but points at
 RFC1918 addresses, so remote access requires the UDM Pro VPN.
 
+## Alerting
+
+Frigate detects; Home Assistant notifies. The two are coupled only by MQTT
+topics, so the Frigate HACS integration is not installed and not required.
+
+### Person at the basement door
+
+- Frigate: `living_room.zones.basement_door`, filtered to `person`
+- Topic: `frigate/basement_door/person`, an occupancy count
+- Fires on any non-zero count, then holds two minutes
+
+### Crying heard
+
+- Frigate: `living_room.audio.listen: [crying]`
+- Topic: `frigate/living_room/audio/crying`, `ON` / `OFF`
+- Fires on `ON`, then holds five minutes
+
+The automations live in
+[CowDogMoo/homeassistant](https://github.com/CowDogMoo/homeassistant) at
+`automation/frigate_alerts.yaml`, not in this repo.
+
+Zone occupancy topics are keyed by **zone name, not camera** —
+`activity_manager` publishes `frigate/<zone>/<label>`. Zone names must stay
+unique across all cameras or two cameras will collide on one topic.
+
+Audio detection needs the `audio` role on an input whose stream actually
+carries audio. All the wired cameras do (G.711); the Nest cameras are not
+restreamed through go2rtc and cannot serve it. Frigate has no audio-only
+camera — `config/camera/ffmpeg.py` rejects any camera lacking a `detect`
+role — so hearing a room requires a video source in it.
+
+Tuning: Frigate only runs the audio model when the stream clears
+`audio.min_volume` (default 500 RMS; an idle living room reads about 8). Watch
+`frigate/living_room/audio/rms` during a real event and lower `min_volume` if
+detections are being missed. Per-label confidence lives in
+`audio.filters.<label>.threshold`.
+
 ## Known trade-offs
 
 - `config.yml` is mounted read-only from a Secret, so 1Password stays the source
@@ -216,7 +253,8 @@ RFC1918 addresses, so remote access requires the UDM Pro VPN.
 - Config changes are invisible to `git diff` and to PR review — the repo holds
   only the ExternalSecret wrapper. That is the deliberate trade for keeping
   camera names, addresses, and stream paths out of a public repo.
-- No zones are defined yet. Alert quality depends almost entirely on them.
+- `basement_door` on `living_room` is the only zone. Every other camera still
+  alerts on any tracked object anywhere in frame.
 - `strategy: Recreate` is required. Two pods against one SQLite database
   corrupts it.
 - `archiveOnDelete: "true"` on `nfs-client` means deleting the media PVC renames
