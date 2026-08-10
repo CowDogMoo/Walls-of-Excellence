@@ -151,16 +151,38 @@ servers, so the bandwidth gets spent twice. Streams drop and re-dial on
 their own schedule. And revoking the Google OAuth grant takes out the
 cameras in HA and Frigate at the same time.
 
-The Ring doorbell gets a Frigate tile without the battery cost. Frigate
-decodes every configured camera continuously, which would flatten the
-doorbell battery, so the `front_door` camera's decode input is a locally
-generated lavfi placeholder card (it needs `/config/placeholder-font.ttf`
-on the PVC, currently Arial Bold), with detect, record, and snapshots all
-off. Its live view maps to the on-demand go2rtc `ring:` stream instead:
-opening the camera dials Ring's cloud, closing it hangs up, the same
-idle-until-viewed behavior as the HA card. The streams are also reachable
-directly at `rtsp://192.168.20.18:8554/front_door` (plus
-`front_door_snapshot`), or WebRTC on `192.168.20.18:8555`.
+The Ring doorbell gets a Frigate tile and event recording without the
+battery cost. Frigate decodes every configured camera continuously, which
+would flatten the doorbell battery, so the doorbell is split across two
+cameras that share one on-demand go2rtc `ring:` stream.
+
+The `front_door` camera is the dashboard tile. Its decode input is a
+locally generated lavfi placeholder card (it needs
+`/config/placeholder-font.ttf` on the PVC, currently Arial Bold), with
+detect, record, and snapshots all off. Its live view maps to the go2rtc
+stream instead: opening the camera dials Ring's cloud, closing it hangs
+up, the same idle-until-viewed behavior as the HA card. The
+`front_door` and `front_door_snapshot` streams are also reachable
+through the restream endpoints in [Access](#access).
+
+The `front_door_events` camera is how Ring events land in Review with
+real detection and face recognition. It is hidden from the dashboard
+(`ui.dashboard: false`) and consumes the same `ring:` stream, but with
+detect and record on. Its baseline state is OFF via a retained message
+on `frigate/front_door_events/enabled/set`; a Home Assistant automation
+flips it ON for about two minutes whenever Ring pushes a motion or ding
+event, then re-asserts the retained OFF. The camera still ships
+`enabled: true` in the config because Frigate only honors the MQTT
+toggle for cameras enabled there — the retained message, not the config
+flag, is what keeps the doorbell out of the always-on pipeline.
+
+Two details keep the short event window usable. `detect.width`/`.height`
+are set explicitly (the stream is 1920x1080) so Frigate never dials the
+doorbell at config load just to probe the resolution — that probe fires
+on every restart and blocks startup about 30 s. And ffmpeg's `-timeout`
+is raised to 90 s, because go2rtc's cold dial through Ring's cloud WebRTC
+negotiation can outlast `preset-rtsp-restream`'s 10 s default right after
+the camera is enabled, burning part of the window on retries.
 
 The `ring:` source needs go2rtc ≥ 1.9.13, which the patched `/config`
 binary provides. Its refresh token has to be separate from Home
