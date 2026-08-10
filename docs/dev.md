@@ -23,7 +23,7 @@ and follow along.
 This project requires:
 
 - **Linux or macOS** - Development environment
-- **SSH access** - To cluster nodes (k8s1-k8s7)
+- **SSH access** - To cluster nodes (k8s1-k8s9 and the Lima VM workers)
 - **1Password CLI** - For secrets management
 
 ---
@@ -60,6 +60,7 @@ brew install pre-commit
 brew install ansible
 brew install terraform
 brew install terragrunt
+brew install --cask 1password-cli
 ```
 
 ### Optional Tools
@@ -67,9 +68,6 @@ brew install terragrunt
 ```bash
 # For local testing
 brew install kind
-
-# For 1Password CLI
-brew install --cask 1password-cli
 ```
 
 ### Python Dependencies
@@ -373,58 +371,9 @@ task destroy-rancher
 
 ## Testing
 
-### Local Testing with kind
-
-See [test-environment.md](test-environment.md) for comprehensive testing documentation.
-
-Quick start:
-
-```bash
-# Validate manifests
-task test:validate
-
-# Create test cluster
-task test:create
-
-# Install Flux
-task test:install-flux
-
-# Apply configurations
-task test:apply
-
-# Check status
-task test:status
-
-# Destroy cluster
-task test:destroy
-```
-
-### Testing Specific Apps
-
-```bash
-# Test single app
-task test:apply-app APP=cert-manager
-
-# Create mock secrets for testing
-task test:mock-secrets
-task test:mock-secrets NAMESPACE=home-automation
-```
-
-### CI/CD Testing
-
-GitHub Actions automatically:
-
-1. Validates manifests on every commit
-2. Tests deployments in kind clusters
-3. Runs pre-commit hooks
-4. Performs security scanning (Semgrep)
-
-View workflow runs:
-
-```bash
-gh run list
-gh run view <run-id>
-```
+Local testing with kind — cluster creation, per-app testing, mock secrets,
+CI/CD integration, and troubleshooting — is covered in
+[test-environment.md](test-environment.md).
 
 ---
 
@@ -463,34 +412,9 @@ task provision-nodes
 
 ---
 
-## Repository Structure
-
-```text
-woe/
-├── .github/              # GitHub Actions workflows
-├── .taskfiles/           # Task definitions (bootstrap, test)
-├── docs/                 # Documentation
-├── infrastructure/       # Terraform/Terragrunt configs
-├── k3s-ansible/          # Ansible k3s provisioning
-│   ├── inventory/        # Cluster inventory (7 nodes)
-│   ├── roles/            # Ansible roles
-│   └── site.yml          # Main playbook
-├── kubernetes/
-│   ├── apps/             # Application manifests (16 namespaces)
-│   ├── bootstrap/        # Bootstrap configuration
-│   │   ├── flux/         # Flux CRDs and components
-│   │   ├── helmfile.d/   # Helmfile configs
-│   │   └── resources.yaml.j2  # Secret templates
-│   └── flux/             # Flux GitOps configs
-├── ansible.cfg           # Ansible configuration
-└── Taskfile.yaml         # Root task definitions
-```
-
----
-
 ## Resources
 
-- [Main README](../README.md)
+- [Main README](../README.md) (includes repository structure)
 - [Test Environment Guide](test-environment.md)
 - [Bootstrap Instructions](../kubernetes/bootstrap/README.md)
 - [Flux Documentation](https://fluxcd.io/flux/)
