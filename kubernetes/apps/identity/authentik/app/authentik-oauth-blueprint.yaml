@@ -145,6 +145,14 @@ data:
         attrs:
           name: Frigate Users
 
+      - model: authentik_core.group
+        id: music-assistant-users
+        identifiers:
+          name: Music Assistant Users
+        state: present
+        attrs:
+          name: Music Assistant Users
+
       # Custom Scope Mapping for Home Assistant groups and admin status
       - model: authentik_providers_oauth2.scopemapping
         id: homeassistant-groups-scope
@@ -606,8 +614,7 @@ data:
           meta_description: "Frigate NVR - Camera Monitoring and Recording"
           policy_engine_mode: any
 
-      # Application for Music Assistant. No policy binding on purpose: any
-      # authenticated user may access it (household-wide music control).
+      # Application for Music Assistant
       - model: authentik_core.application
         id: music-assistant-app
         identifiers:
@@ -722,6 +729,16 @@ data:
           expression: |
             return ak_is_group_member(request.user, name="Frigate Users")
 
+      - model: authentik_policies_expression.expressionpolicy
+        id: music-assistant-user-policy
+        identifiers:
+          name: music-assistant-user-policy
+        state: present
+        attrs:
+          name: music-assistant-user-policy
+          expression: |
+            return ak_is_group_member(request.user, name="Music Assistant Users")
+
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
         identifiers:
@@ -826,6 +843,17 @@ data:
         identifiers:
           target: !KeyOf frigate-app
           policy: !KeyOf frigate-user-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Music Assistant application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf music-assistant-app
+          policy: !KeyOf music-assistant-user-policy
           order: 0
         state: present
         attrs:
