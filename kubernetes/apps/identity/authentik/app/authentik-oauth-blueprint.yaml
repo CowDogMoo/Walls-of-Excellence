@@ -290,6 +290,25 @@ data:
           access_token_validity: "minutes=5"
           refresh_token_validity: "days=30"
 
+      # Proxy Provider for Music Assistant (Forward Auth)
+      - model: authentik_providers_proxy.proxyprovider
+        id: music-assistant-provider
+        identifiers:
+          name: Music Assistant
+        state: present
+        attrs:
+          name: Music Assistant
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          mode: forward_single
+          external_host: "https://music.techvomit.xyz"
+          cookie_domain: "techvomit.xyz"
+          skip_path_regex: ""
+          basic_auth_enabled: false
+          intercept_header_auth: true
+          access_token_validity: "minutes=5"
+          refresh_token_validity: "days=30"
+
       # OAuth2 Provider for Tailscale
       - model: authentik_providers_oauth2.oauth2provider
         id: tailscale-provider
@@ -587,6 +606,21 @@ data:
           meta_description: "Frigate NVR - Camera Monitoring and Recording"
           policy_engine_mode: any
 
+      # Application for Music Assistant. No policy binding on purpose: any
+      # authenticated user may access it (household-wide music control).
+      - model: authentik_core.application
+        id: music-assistant-app
+        identifiers:
+          slug: music-assistant
+        state: present
+        attrs:
+          name: Music Assistant
+          slug: music-assistant
+          provider: !KeyOf music-assistant-provider
+          meta_launch_url: "https://music.techvomit.xyz"
+          meta_description: "Music Assistant - Whole Home Audio"
+          policy_engine_mode: any
+
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
@@ -808,3 +842,4 @@ data:
             - !KeyOf guacamole-provider
             - !KeyOf adguard-provider
             - !KeyOf frigate-provider
+            - !KeyOf music-assistant-provider
