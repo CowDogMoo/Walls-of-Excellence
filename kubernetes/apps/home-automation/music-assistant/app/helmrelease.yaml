@@ -70,8 +70,19 @@ spec:
         pod:
           hostNetwork: true # Required for Music Assistant to discover Sonos speakers
           dnsPolicy: ClusterFirstWithHostNet
-          nodeSelector:
-            kubernetes.io/arch: arm64 # k8s8's virtual CPU lacks x86-64-v2, which Music Assistant requires
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                          - arm64
+                      - key: kubernetes.io/hostname
+                        operator: NotIn
+                        values:
+                          - serpent # Lima VM bridge drops multicast discovery and streaming when socket_vmnet flaps
           securityContext:
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
