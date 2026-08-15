@@ -625,7 +625,7 @@ data:
           slug: music-assistant
           provider: !KeyOf music-assistant-provider
           meta_launch_url: "https://music.techvomit.xyz"
-          meta_description: "Music Assistant - Multi-room Audio Server"
+          meta_description: "Music Assistant - Whole Home Audio"
           policy_engine_mode: any
 
       # Expression policy for group checking
