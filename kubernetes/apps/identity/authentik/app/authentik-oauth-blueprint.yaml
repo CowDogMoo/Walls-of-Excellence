@@ -211,7 +211,7 @@ data:
           skip_path_regex: ""
           basic_auth_enabled: false
           intercept_header_auth: true
-          access_token_validity: "minutes=5"
+          access_token_validity: "hours=24"
           refresh_token_validity: "days=30"
 
       # OAuth2 Provider for Weave GitOps
@@ -257,7 +257,7 @@ data:
           skip_path_regex: ""
           basic_auth_enabled: false
           intercept_header_auth: true
-          access_token_validity: "minutes=5"
+          access_token_validity: "hours=24"
           refresh_token_validity: "days=30"
 
       # Proxy Provider for AdGuard Home (Forward Auth)
@@ -276,7 +276,7 @@ data:
           skip_path_regex: ""
           basic_auth_enabled: false
           intercept_header_auth: true
-          access_token_validity: "minutes=5"
+          access_token_validity: "hours=24"
           refresh_token_validity: "days=30"
 
       # Proxy Provider for Frigate (Forward Auth)
@@ -295,7 +295,7 @@ data:
           skip_path_regex: ""
           basic_auth_enabled: false
           intercept_header_auth: true
-          access_token_validity: "minutes=5"
+          access_token_validity: "hours=24"
           refresh_token_validity: "days=30"
 
       # Proxy Provider for Music Assistant (Forward Auth)
@@ -314,7 +314,7 @@ data:
           skip_path_regex: ""
           basic_auth_enabled: false
           intercept_header_auth: true
-          access_token_validity: "minutes=5"
+          access_token_validity: "hours=24"
           refresh_token_validity: "days=30"
 
       # OAuth2 Provider for Tailscale
