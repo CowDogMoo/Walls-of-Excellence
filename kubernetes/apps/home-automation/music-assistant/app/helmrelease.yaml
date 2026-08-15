@@ -60,7 +60,7 @@ spec:
                 cpu: 100m
                 memory: 256Mi
               limits:
-                memory: 1Gi
+                memory: 4Gi # Smart Fades provider requires 4GB detected via cgroup limit
             securityContext:
               privileged: true # Required for network discovery
               capabilities:
@@ -70,6 +70,8 @@ spec:
         pod:
           hostNetwork: true # Required for Music Assistant to discover Sonos speakers
           dnsPolicy: ClusterFirstWithHostNet
+          nodeSelector:
+            kubernetes.io/arch: arm64 # k8s8's virtual CPU lacks x86-64-v2, which Music Assistant requires
           securityContext:
             fsGroup: 1000
             fsGroupChangePolicy: OnRootMismatch
