@@ -32,7 +32,7 @@ spec:
           app:
             image:
               repository: ghcr.io/music-assistant/server
-              tag: latest
+              tag: 2.9.11
             env:
               TZ: "America/Denver"
               LOG_LEVEL: "info" # options: critical, error, warning, info, debug
@@ -87,6 +87,7 @@ spec:
         className: ingress-traefik
         annotations:
           external-dns.alpha.kubernetes.io/hostname: music.techvomit.xyz
+          traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - host: &host music.techvomit.xyz
             paths:
