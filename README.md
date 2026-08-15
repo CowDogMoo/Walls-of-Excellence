@@ -219,12 +219,11 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **48 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **45 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
 | `actions-runner-system` | [actions-runner-controller](kubernetes/apps/actions-runner-system/actions-runner-controller) |
-| `attack-simulation` | [ares](kubernetes/apps/attack-simulation/ares), [atomic-red-team](kubernetes/apps/attack-simulation/atomic-red-team), [ttpforge](kubernetes/apps/attack-simulation/ttpforge) |
 | `c2` | [sliver](kubernetes/apps/c2/sliver) |
 | `cert-manager` | [cert-manager](kubernetes/apps/cert-manager/cert-manager), [synology-cert-sync](kubernetes/apps/cert-manager/synology-cert-sync) |
 | `cracking` | [hashcat](kubernetes/apps/cracking/hashcat) |
