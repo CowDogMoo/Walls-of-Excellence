@@ -189,8 +189,6 @@ tasks:
           "kube-system/reloader/app"
           "flux-system/flux-operator/app"
           "flux-system/flux-instance/app"
-          "attack-simulation/atomic-red-team/app"
-          "attack-simulation/ttpforge/app"
           "system-upgrade/system-upgrade-controller/app"
         )
 
@@ -394,8 +392,6 @@ tasks:
           "kube-system/reloader/app"
           "flux-system/flux-operator/app"
           "flux-system/flux-instance/app"
-          "attack-simulation/atomic-red-team/app"
-          "attack-simulation/ttpforge/app"
           "system-upgrade/system-upgrade-controller/app"
         )
 

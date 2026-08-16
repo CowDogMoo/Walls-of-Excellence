@@ -135,14 +135,14 @@ jobs:
 
           echo ""
           echo "🚀 Checking testable pods..."
-          kubectl get pods -A | grep -E "external-secrets|nfs-subdir|reflector|atomic|ttpforge|system-upgrade" || true
+          kubectl get pods -A | grep -E "external-secrets|nfs-subdir|reflector|system-upgrade" || true
 
           echo ""
           echo "✅ Verifying critical deployments..."
           FAILED=0
 
           # Check that core apps deployed successfully (excluding nfs-subdir which requires external NFS server)
-          for app in "external-secrets:external-secrets" "kube-system:reflector" "attack-simulation:atomic-red-team" "attack-simulation:ttpforge" "system-upgrade:system-upgrade-controller"; do
+          for app in "external-secrets:external-secrets" "kube-system:reflector" "system-upgrade:system-upgrade-controller"; do
             namespace=$(echo $app | cut -d: -f1)
             name=$(echo $app | cut -d: -f2)
 
