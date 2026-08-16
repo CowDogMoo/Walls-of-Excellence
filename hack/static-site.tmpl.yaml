@@ -1,0 +1,87 @@
+# Generic ephemeral static-page host.
+# Nothing app-specific lives here — content is injected at apply time
+# from a local file via `serve-static.sh`.
+#
+# Substituted: ${NAME} ${HOST} ${TLS_SECRET} ${CONTENT_HASH}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAME}
+  labels:
+    app.kubernetes.io/managed-by: serve-static
+    serve-static/ephemeral: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${NAME}
+  namespace: ${NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: "${NAME}" }
+  template:
+    metadata:
+      labels: { app: "${NAME}" }
+      annotations:
+        # rolls the pod whenever the content hash changes
+        serve-static/content-hash: "${CONTENT_HASH}"
+    spec:
+      containers:
+        - name: nginx
+          # unprivileged variant: runs non-root on 8080, works with all caps dropped
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          ports: [{ containerPort: 8080 }]
+          volumeMounts:
+            - {
+                name: content,
+                mountPath: /usr/share/nginx/html,
+                readOnly: true,
+              }
+            - { name: tmp, mountPath: /tmp }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities: { drop: ["ALL"] }
+      volumes:
+        - name: content
+          configMap:
+            name: ${NAME}-content
+        - { name: tmp, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${NAME}
+  namespace: ${NAME}
+spec:
+  selector: { app: "${NAME}" }
+  ports: [{ port: 80, targetPort: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${NAME}
+  namespace: ${NAME}
+spec:
+  ingressClassName: ingress-traefik
+  rules:
+    - host: ${HOST}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ${NAME}
+                port: { number: 80 }
+  tls:
+    - hosts: ["${HOST}"]
+      secretName: ${TLS_SECRET}

@@ -15,6 +15,7 @@ includes:
   test: ./.taskfiles/test/Taskfile.yaml
   guacamole: ./.taskfiles/guacamole/Taskfile.yaml
   proxmox: ./.taskfiles/proxmox/Taskfile.yaml
+  serve-static: ./.taskfiles/serve-static/Taskfile.yaml
 
 vars:
   INVENTORY: "k3s-ansible/inventory/cowdogmoo/hosts.ini"

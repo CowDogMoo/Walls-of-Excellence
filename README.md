@@ -280,6 +280,7 @@ Root tasks (run as `task <name>`): `default`, `check-inventory`,
 | `pre-commit:*` | [CowDogMoo/taskfile-templates/pre-commit](https://github.com/CowDogMoo/taskfile-templates/blob/main/pre-commit/Taskfile.yaml) |
 | `proxmox:*` | [.taskfiles/proxmox](.taskfiles/proxmox/Taskfile.yaml) |
 | `renovate:*` | [CowDogMoo/taskfile-templates/renovate](https://github.com/CowDogMoo/taskfile-templates/blob/main/renovate/Taskfile.yaml) |
+| `serve-static:*` | [.taskfiles/serve-static](.taskfiles/serve-static/Taskfile.yaml) |
 | `terraform:*` | [CowDogMoo/taskfile-templates/terraform](https://github.com/CowDogMoo/taskfile-templates/blob/main/terraform/Taskfile.yaml) |
 | `test:*` | [.taskfiles/test](.taskfiles/test/Taskfile.yaml) |
 
