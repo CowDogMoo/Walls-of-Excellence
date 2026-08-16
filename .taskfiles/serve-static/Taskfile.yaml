@@ -1,0 +1,79 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+set: [pipefail]
+
+vars:
+  SERVE_STATIC_SCRIPT: "{{.ROOT_DIR}}/hack/serve-static.sh"
+
+tasks:
+  up:
+    desc: Serve a local HTML file on the cluster as an ephemeral site
+    summary: |
+      Publishes a local HTML file at https://<HOST> using the serve-static
+      template. The content never enters git — it lives in a ConfigMap inside
+      a throwaway namespace labeled serve-static/ephemeral=true.
+
+      Required Parameters:
+        NAME - Namespace/deployment name (e.g., "gift-board")
+        FILE - Path to the local HTML file to serve
+
+      Optional Parameters:
+        HOST - Hostname to serve on (defaults to <NAME>.techvomit.xyz,
+               which is covered by the wildcard cert)
+
+      Usage:
+        task serve-static:up NAME=gift-board FILE=~/Downloads/gift-board.html
+        task serve-static:up NAME=demo FILE=./demo.html HOST=demo.techvomit.xyz
+    vars:
+      NAME: '{{.NAME | default ""}}'
+      FILE: '{{.FILE | default ""}}'
+      HOST: '{{.HOST | default (printf "%s.techvomit.xyz" .NAME)}}'
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ] || [ -z "{{.FILE}}" ]; then
+          echo "Error: NAME and FILE are required"
+          echo ""
+          echo "Usage: task serve-static:up NAME=gift-board FILE=~/Downloads/gift-board.html"
+          echo "       task serve-static:up NAME=demo FILE=./demo.html HOST=demo.techvomit.xyz"
+          exit 1
+        fi
+
+        # expand a leading ~ that the invoking shell may have left literal
+        file="{{.FILE}}"
+        file="${file/#\~/$HOME}"
+
+        "{{.SERVE_STATIC_SCRIPT}}" up "{{.NAME}}" "$file" "{{.HOST}}"
+    silent: true
+
+  down:
+    desc: Tear down an ephemeral serve-static site
+    summary: |
+      Deletes the namespace created by serve-static:up. Refuses to delete
+      namespaces that were not created by serve-static.
+
+      Required Parameters:
+        NAME - Namespace name used at creation time
+
+      Usage:
+        task serve-static:down NAME=gift-board
+    vars:
+      NAME: '{{.NAME | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ]; then
+          echo "Error: NAME is required"
+          echo ""
+          echo "Usage: task serve-static:down NAME=gift-board"
+          exit 1
+        fi
+
+        "{{.SERVE_STATIC_SCRIPT}}" down "{{.NAME}}"
+    silent: true
+
+  list:
+    desc: List all ephemeral serve-static sites
+    cmds:
+      - '"{{.SERVE_STATIC_SCRIPT}}" list'
+    silent: true
