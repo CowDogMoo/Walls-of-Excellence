@@ -383,7 +383,9 @@ data:
           client_id: home-assistant
           client_secret: !Context homeassistant_client_secret
           client_type: confidential
-          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          # Shared with password-only users (amanda) — the passwordless flow has no
+          # password fallback and dead-ends anyone without a passkey.
+          authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
           signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
@@ -438,7 +440,9 @@ data:
           client_id: immich
           client_secret: !Context immich_client_secret
           client_type: confidential
-          authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
+          # Shared with password-only users (amanda) — the passwordless flow has no
+          # password fallback and dead-ends anyone without a passkey.
+          authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
           signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
