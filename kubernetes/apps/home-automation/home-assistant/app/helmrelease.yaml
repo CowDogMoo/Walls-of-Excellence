@@ -54,21 +54,26 @@ spec:
             image:
               repository: alpine/git
               tag: latest
+            env:
+              # renovate: datasource=github-releases depName=christiaangoossens/hass-oidc-auth
+              OIDC_VERSION: "v1.1.1"
             command:
               - sh
               - -c
               - |
-                echo "$(date): Installing hass-oidc-auth custom component"
+                echo "$(date): Installing hass-oidc-auth ${OIDC_VERSION}"
 
-                # Clone the repository
+                # The release zip ships the built static assets (style.css); the git
+                # tree does not, so install from the release artifact, never a clone.
                 cd /tmp
-                git clone --depth 1 https://github.com/christiaangoossens/hass-oidc-auth.git
+                wget -q "https://github.com/christiaangoossens/hass-oidc-auth/releases/download/${OIDC_VERSION}/hass-oidc-auth.zip"
 
-                # Create custom_components directory and copy files
                 mkdir -p /config/custom_components
-                cp -r /tmp/hass-oidc-auth/custom_components/auth_oidc /config/custom_components/
+                rm -rf /config/custom_components/auth_oidc
+                mkdir -p /config/custom_components/auth_oidc
+                unzip -q hass-oidc-auth.zip -d /config/custom_components/auth_oidc
 
-                echo "$(date): OIDC component installed successfully"
+                echo "$(date): OIDC component ${OIDC_VERSION} installed successfully"
                 ls -la /config/custom_components/auth_oidc/
           setup-ts:
             image:
