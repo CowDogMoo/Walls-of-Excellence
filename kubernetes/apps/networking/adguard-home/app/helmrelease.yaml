@@ -34,7 +34,7 @@ spec:
           app:
             image:
               repository: adguard/adguardhome
-              tag: v0.107.78
+              tag: v0.107.79
             env:
               TZ: America/Denver
             probes:
