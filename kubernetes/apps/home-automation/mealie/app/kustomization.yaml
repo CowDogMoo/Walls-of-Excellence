@@ -1,0 +1,14 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: mealie
+      app.kubernetes.io/instance: mealie
+namespace: home-automation
+resources:
+  - ./helmrelease.yaml
+  - ./ocirepository.yaml
+  - ./externalsecret.yaml
+  - ./backup-cronjob.yaml

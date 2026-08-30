@@ -190,6 +190,7 @@ tasks:
           "flux-system/flux-operator/app"
           "flux-system/flux-instance/app"
           "system-upgrade/system-upgrade-controller/app"
+          "home-automation/mealie/app"
         )
 
         for app_path in "${TESTABLE_APPS[@]}"; do
@@ -393,6 +394,7 @@ tasks:
           "flux-system/flux-operator/app"
           "flux-system/flux-instance/app"
           "system-upgrade/system-upgrade-controller/app"
+          "home-automation/mealie/app"
         )
 
         for app_path in "${TESTABLE_APPS[@]}"; do

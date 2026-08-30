@@ -219,7 +219,7 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **45 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **46 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
@@ -231,7 +231,7 @@ Flux reconciles **45 applications** across **17 namespaces** from [`kubernetes/a
 | `external-secrets` | [external-secrets](kubernetes/apps/external-secrets/external-secrets), [onepassword](kubernetes/apps/external-secrets/onepassword) |
 | `flux-system` | [addons](kubernetes/apps/flux-system/addons), [flux-instance](kubernetes/apps/flux-system/flux-instance), [flux-operator](kubernetes/apps/flux-system/flux-operator), [weave-gitops](kubernetes/apps/flux-system/weave-gitops) |
 | `guacamole` | [guacamole](kubernetes/apps/guacamole/guacamole) |
-| `home-automation` | [frigate](kubernetes/apps/home-automation/frigate), [grocy](kubernetes/apps/home-automation/grocy), [home-assistant](kubernetes/apps/home-automation/home-assistant), [mosquitto](kubernetes/apps/home-automation/mosquitto), [music-assistant](kubernetes/apps/home-automation/music-assistant), [printer-monitor](kubernetes/apps/home-automation/printer-monitor), [troy-backup](kubernetes/apps/home-automation/troy-backup), [zigbee2mqtt](kubernetes/apps/home-automation/zigbee2mqtt) |
+| `home-automation` | [frigate](kubernetes/apps/home-automation/frigate), [grocy](kubernetes/apps/home-automation/grocy), [home-assistant](kubernetes/apps/home-automation/home-assistant), [mealie](kubernetes/apps/home-automation/mealie), [mosquitto](kubernetes/apps/home-automation/mosquitto), [music-assistant](kubernetes/apps/home-automation/music-assistant), [printer-monitor](kubernetes/apps/home-automation/printer-monitor), [troy-backup](kubernetes/apps/home-automation/troy-backup), [zigbee2mqtt](kubernetes/apps/home-automation/zigbee2mqtt) |
 | `identity` | [authentik](kubernetes/apps/identity/authentik) |
 | `inference` | [ollama](kubernetes/apps/inference/ollama) |
 | `kube-system` | [descheduler](kubernetes/apps/kube-system/descheduler), [nfs-subdir-external-provisioner](kubernetes/apps/kube-system/nfs-subdir-external-provisioner), [reflector](kubernetes/apps/kube-system/reflector), [reloader](kubernetes/apps/kube-system/reloader) |
