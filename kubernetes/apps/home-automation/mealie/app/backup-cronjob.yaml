@@ -32,7 +32,7 @@ spec:
                 - -c
                 - |
                   set -eu
-                  BACKUP_DIR=/nfs/mealie/backups
+                  BACKUP_DIR=/nfs/mealie
                   mkdir -p "$BACKUP_DIR"
                   STAMP=$(date +%Y%m%d_%H%M%S)
                   FOUND=0
@@ -80,5 +80,8 @@ spec:
                 claimName: mealie
             - name: nfs-backups
               nfs:
+                # The photo share's backups dir is the one path the existing
+                # HyperBackup "Photos to B2" task actually replicates offsite;
+                # immich's database dumps land in the same tree.
                 server: 192.168.20.210
-                path: /volume1/k8s
+                path: /volume1/photo/backups
