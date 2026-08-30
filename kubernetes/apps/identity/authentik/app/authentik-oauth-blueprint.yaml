@@ -197,6 +197,9 @@ data:
           client_id: grafana
           client_secret: !Context grafana_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
@@ -242,6 +245,9 @@ data:
           client_id: weave-gitops
           client_secret: !Context weave_gitops_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
@@ -345,6 +351,9 @@ data:
           client_id: tailscale
           client_secret: !Context tailscale_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
@@ -372,6 +381,9 @@ data:
           client_id: home-assistant-test
           client_secret: !Context homeassistant_test_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
@@ -400,6 +412,9 @@ data:
           client_id: home-assistant
           client_secret: !Context homeassistant_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           # Shared with password-only users (amanda) — the passwordless flow has no
           # password fallback and dead-ends anyone without a passkey.
           authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
@@ -430,6 +445,9 @@ data:
           client_id: synology-nas
           client_secret: !Context synology_nas_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           authentication_flow: !Find [authentik_flows.flow, [slug, passwordless-webauthn]]
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-explicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
@@ -457,6 +475,9 @@ data:
           client_id: immich
           client_secret: !Context immich_client_secret
           client_type: confidential
+          grant_types:
+            - authorization_code
+            - refresh_token
           # Shared with password-only users (amanda) — the passwordless flow has no
           # password fallback and dead-ends anyone without a passkey.
           authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
@@ -492,6 +513,12 @@ data:
           client_id: mealie
           client_secret: !Context mealie_client_secret
           client_type: confidential
+          # Providers created fresh via blueprint get an EMPTY grant_types list
+          # (unlike UI-created or migration-backfilled ones), which rejects every
+          # authorization request with "Invalid grant_type for provider".
+          grant_types:
+            - authorization_code
+            - refresh_token
           # Shared with password-only users (amanda) — the passwordless flow has no
           # password fallback and dead-ends anyone without a passkey.
           authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
