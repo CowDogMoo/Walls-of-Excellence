@@ -8,6 +8,7 @@ resources:
   # Flux-Kustomizations
   - ./frigate/ks.yaml
   - ./home-assistant/ks.yaml
+  - ./mealie/ks.yaml
   - ./mosquitto/ks.yaml
   - ./music-assistant/ks.yaml
   - ./printer-monitor/ks.yaml

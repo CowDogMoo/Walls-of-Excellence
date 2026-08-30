@@ -1,0 +1,84 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mealie-backup
+  namespace: home-automation
+spec:
+  schedule: "15 3 * * *"
+  timeZone: America/Denver
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: mealie-backup
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: k8s8
+          containers:
+            - name: backup
+              # Reuse the mealie image: it is already pulled on the node and
+              # ships the python sqlite3 module the online backup needs.
+              image: ghcr.io/mealie-recipes/mealie:v3.24.0
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  BACKUP_DIR=/nfs/mealie/backups
+                  mkdir -p "$BACKUP_DIR"
+                  STAMP=$(date +%Y%m%d_%H%M%S)
+                  FOUND=0
+                  for db in /app/data/*.db; do
+                    [ -e "$db" ] || continue
+                    FOUND=1
+                    dest="$BACKUP_DIR/$(basename "$db" .db)_${STAMP}.db"
+                    python3 - "$db" "$dest" <<'PY'
+                  import sqlite3
+                  import sys
+
+                  src = sqlite3.connect(sys.argv[1])
+                  dst = sqlite3.connect(sys.argv[2])
+                  with dst:
+                      src.backup(dst)
+                  result = dst.execute("PRAGMA integrity_check").fetchone()[0]
+                  dst.close()
+                  src.close()
+                  if result != "ok":
+                      raise SystemExit(f"integrity_check failed: {result}")
+                  print(f"backup verified: {sys.argv[2]}")
+                  PY
+                  done
+                  if [ "$FOUND" -eq 0 ]; then
+                    echo "ERROR: no sqlite database found under /app/data"
+                    exit 1
+                  fi
+                  find "$BACKUP_DIR" -name '*.db' -type f -mtime +14 -delete
+                  echo "backup complete"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              volumeMounts:
+                - name: data
+                  mountPath: /app/data
+                - name: nfs-backups
+                  mountPath: /nfs
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: mealie
+            - name: nfs-backups
+              nfs:
+                server: 192.168.20.210
+                path: /volume1/k8s

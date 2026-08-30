@@ -1,0 +1,105 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mealie
+  namespace: home-automation
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: mealie
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    defaultPodOptions:
+      # SQLite lives on a local-path PVC, so the pod is pinned deliberately
+      # instead of letting the first schedule choose the node — and kept off
+      # the node that already hosts the cluster's other local-path volumes.
+      nodeSelector:
+        kubernetes.io/hostname: k8s8
+    controllers:
+      mealie:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/mealie-recipes/mealie
+              tag: v3.24.0
+              pullPolicy: IfNotPresent
+            env:
+              TZ: "America/Denver"
+              BASE_URL: "https://mealie.techvomit.xyz"
+              PUID: "1000"
+              PGID: "1000"
+              DB_ENGINE: sqlite
+              ALLOW_SIGNUP: "false"
+              # Traefik terminates TLS in-cluster; trust its forwarded
+              # headers so the OIDC redirect keeps the https scheme.
+              FORWARDED_ALLOW_IPS: "*"
+              OIDC_AUTH_ENABLED: "true"
+              OIDC_PROVIDER_NAME: "authentik"
+              OIDC_CONFIGURATION_URL: "https://auth.techvomit.xyz/application/o/mealie/.well-known/openid-configuration"
+              OIDC_CLIENT_ID: mealie
+              OIDC_SIGNUP_ENABLED: "true"
+              OIDC_USER_GROUP: "Mealie Users"
+              OIDC_ADMIN_GROUP: "Mealie Admins"
+              OIDC_AUTO_REDIRECT: "false"
+              OIDC_REMEMBER_ME: "true"
+            envFrom:
+              - secretRef:
+                  name: mealie-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                cpu: 1000m
+                memory: 1Gi
+    service:
+      app:
+        controller: mealie
+        ports:
+          http:
+            port: 9000
+    ingress:
+      app:
+        className: ingress-traefik
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: mealie.techvomit.xyz
+        hosts:
+          - host: &host mealie.techvomit.xyz
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts:
+              - *host
+            secretName: techvomit-xyz-production-tls
+    persistence:
+      data:
+        enabled: true
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        storageClass: local-path
+        globalMounts:
+          - path: /app/data

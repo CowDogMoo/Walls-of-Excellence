@@ -23,6 +23,7 @@ data:
       homeassistant_client_secret: !Env HOMEASSISTANT_CLIENT_SECRET
       synology_nas_client_secret: !Env SYNOLOGY_NAS_CLIENT_SECRET
       immich_client_secret: !Env IMMICH_CLIENT_SECRET
+      mealie_client_secret: !Env MEALIE_CLIENT_SECRET
     entries:
       # Groups for role mapping
       - model: authentik_core.group
@@ -152,6 +153,22 @@ data:
         state: present
         attrs:
           name: Music Assistant Users
+
+      - model: authentik_core.group
+        id: mealie-users
+        identifiers:
+          name: Mealie Users
+        state: present
+        attrs:
+          name: Mealie Users
+
+      - model: authentik_core.group
+        id: mealie-admins
+        identifiers:
+          name: Mealie Admins
+        state: present
+        attrs:
+          name: Mealie Admins
 
       # Custom Scope Mapping for Home Assistant groups and admin status
       - model: authentik_providers_oauth2.scopemapping
@@ -464,6 +481,37 @@ data:
           access_token_validity: "hours=1"
           refresh_token_validity: "days=30"
 
+      # OAuth2 Provider for Mealie
+      - model: authentik_providers_oauth2.oauth2provider
+        id: mealie-provider
+        identifiers:
+          name: Mealie
+        state: present
+        attrs:
+          name: Mealie
+          client_id: mealie
+          client_secret: !Context mealie_client_secret
+          client_type: confidential
+          # Shared with password-only users (amanda) — the passwordless flow has no
+          # password fallback and dead-ends anyone without a passkey.
+          authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
+          redirect_uris:
+            - matching_mode: strict
+              url: "https://mealie.techvomit.xyz/login"
+            - matching_mode: strict
+              url: "https://mealie.techvomit.xyz/login?direct=1"
+          property_mappings:
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+          sub_mode: hashed_user_id
+          access_code_validity: "minutes=1"
+          access_token_validity: "hours=1"
+          refresh_token_validity: "days=30"
+
       # Application for Grafana
       - model: authentik_core.application
         id: grafana-app
@@ -632,6 +680,20 @@ data:
           meta_description: "Music Assistant - Whole Home Audio"
           policy_engine_mode: any
 
+      # Application for Mealie
+      - model: authentik_core.application
+        id: mealie-app
+        identifiers:
+          slug: mealie
+        state: present
+        attrs:
+          name: Mealie
+          slug: mealie
+          provider: !KeyOf mealie-provider
+          meta_launch_url: "https://mealie.techvomit.xyz"
+          meta_description: "Mealie - Recipe Manager and Meal Planner"
+          policy_engine_mode: any
+
       # Expression policy for group checking
       - model: authentik_policies_expression.expressionpolicy
         id: traefik-admin-policy
@@ -742,6 +804,16 @@ data:
           name: music-assistant-user-policy
           expression: |
             return ak_is_group_member(request.user, name="Music Assistant Users")
+
+      - model: authentik_policies_expression.expressionpolicy
+        id: mealie-user-policy
+        identifiers:
+          name: mealie-user-policy
+        state: present
+        attrs:
+          name: mealie-user-policy
+          expression: |
+            return ak_is_group_member(request.user, name="Mealie Users") or ak_is_group_member(request.user, name="Mealie Admins")
 
       # Policy binding for Traefik application
       - model: authentik_policies.policybinding
@@ -858,6 +930,17 @@ data:
         identifiers:
           target: !KeyOf music-assistant-app
           policy: !KeyOf music-assistant-user-policy
+          order: 0
+        state: present
+        attrs:
+          enabled: true
+          order: 0
+
+      # Policy binding for Mealie application
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf mealie-app
+          policy: !KeyOf mealie-user-policy
           order: 0
         state: present
         attrs:
