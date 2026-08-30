@@ -492,6 +492,12 @@ data:
           client_id: mealie
           client_secret: !Context mealie_client_secret
           client_type: confidential
+          # Providers created fresh via blueprint get an EMPTY grant_types list
+          # (unlike UI-created or migration-backfilled ones), which rejects every
+          # authorization request with "Invalid grant_type for provider".
+          grant_types:
+            - authorization_code
+            - refresh_token
           # Shared with password-only users (amanda) — the passwordless flow has no
           # password fallback and dead-ends anyone without a passkey.
           authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
