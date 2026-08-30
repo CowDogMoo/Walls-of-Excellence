@@ -47,6 +47,10 @@ spec:
               # headers so the OIDC redirect keeps the https scheme.
               FORWARDED_ALLOW_IPS: "*"
               OIDC_AUTH_ENABLED: "true"
+              # This authentik's email scope does not emit the email_verified
+              # claim, which Mealie v3.21+ requires by default; account access
+              # is already gated by the Mealie Users group in authentik.
+              OIDC_REQUIRES_EMAIL_VERIFICATION: "false"
               OIDC_PROVIDER_NAME: "authentik"
               OIDC_CONFIGURATION_URL: "https://auth.techvomit.xyz/application/o/mealie/.well-known/openid-configuration"
               OIDC_CLIENT_ID: mealie
