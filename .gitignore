@@ -22,3 +22,7 @@ node_modules
 
 # Local Claude Code config
 .claude/
+
+# unlazy pipeline state (local only)
+.unlazy/
+GATES.md
