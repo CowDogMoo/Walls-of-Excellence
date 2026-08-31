@@ -32,7 +32,6 @@ spec:
               pullPolicy: IfNotPresent
             env:
               TZ: "America/Denver"
-              GROCY_CULTURE: "en"
               GROCY_CURRENCY: "USD"
               GROCY_MODE: production
               PUID: "1000"
@@ -44,15 +43,26 @@ spec:
               PHP_OPCACHE_MEMORY_CONSUMPTION: "128"
               PHP_OPCACHE_MAX_ACCELERATED_FILES: "10000"
               PHP_OPCACHE_VALIDATE_TIMESTAMPS: "0"
-              # SQLite optimizations
-              GROCY_DATABASE_PRAGMA_JOURNAL_MODE: "WAL"
-              GROCY_DATABASE_PRAGMA_SYNCHRONOUS: "NORMAL"
-              GROCY_DATABASE_PRAGMA_CACHE_SIZE: "-64000"
             probes:
               liveness:
                 enabled: true
               readiness:
                 enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - /bin/sh
+                      - -c
+                      - >-
+                        b=$(curl -fsS -L --max-time 4 http://localhost/login) &&
+                        printf '%s' "$b" | grep -qF 'grocy.css' &&
+                        printf '%s' "$b" | grep -qF '</html>'
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+                  successThreshold: 1
               startup:
                 enabled: true
             resources:
