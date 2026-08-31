@@ -5,7 +5,10 @@ metadata:
   name: mealie-backup
   namespace: home-automation
 spec:
-  schedule: "15 3 * * *"
+  # HyperBackup snapshots /volume1/photo at ~03:00, so a 03:15 dump only
+  # ever replicated the following night. 02:30 puts each dump in that same
+  # morning's upload.
+  schedule: "30 2 * * *"
   timeZone: America/Denver
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
@@ -60,7 +63,20 @@ spec:
                     echo "ERROR: no sqlite database found under /app/data"
                     exit 1
                   fi
-                  find "$BACKUP_DIR" -name '*.db' -type f -mtime +14 -delete
+                  # The database alone cannot rebuild a working instance: recipe
+                  # images live on disk, and .secret / .session_secret sign the
+                  # issued API tokens, including the per-account planner tokens.
+                  assets="$BACKUP_DIR/assets_${STAMP}.tar.gz"
+                  tar -czf "$assets" -C /app/data \
+                    --exclude='./backups' \
+                    --exclude='*.db' \
+                    --exclude='*.log' \
+                    .
+                  tar -tzf "$assets" >/dev/null
+                  echo "assets verified: $assets"
+                  find "$BACKUP_DIR" \
+                    \( -name '*.db' -o -name 'assets_*.tar.gz' \) \
+                    -type f -mtime +14 -delete
                   echo "backup complete"
               resources:
                 requests:
