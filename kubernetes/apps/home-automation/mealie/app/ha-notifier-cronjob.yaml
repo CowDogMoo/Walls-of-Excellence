@@ -75,6 +75,13 @@ spec:
                   )
                   PATH = "/api/households/events/notifications"
 
+                  # An empty id still assembles into a syntactically valid apprise
+                  # target that silently notifies nothing, and the checks below would
+                  # call that a success. Refuse the run instead: a stale read of the
+                  # secret should look like a failed job, not a working push.
+                  if not os.environ.get("WEBHOOK_ID", "").strip():
+                      sys.exit("WEBHOOK_ID is empty; refusing to write a dead callback URL")
+
 
                   def call(method, path, body=None):
                       request = urllib.request.Request(
