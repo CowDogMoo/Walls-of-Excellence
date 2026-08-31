@@ -12,3 +12,4 @@ resources:
   - ./ocirepository.yaml
   - ./externalsecret.yaml
   - ./backup-cronjob.yaml
+  - ./ha-notifier-cronjob.yaml

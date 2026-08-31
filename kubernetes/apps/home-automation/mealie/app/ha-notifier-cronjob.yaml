@@ -1,0 +1,148 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mealie-ha-notifier
+  namespace: home-automation
+spec:
+  # Home Assistant's Mealie integration re-reads the shopping list every five
+  # minutes, so a box ticked in Mealie can sit unreflected for most of a trip
+  # to the store. A Mealie notifier subscribed to the shopping list events
+  # turns that poll into a push. The notifier is a row in Mealie's database
+  # rather than a manifest, so nothing recreates it after the volume is
+  # rebuilt - the push would simply stop and the only symptom would be the
+  # list feeling slow again. Reconciling it on a schedule is what makes it
+  # declared state, and six hours bounds how long a silent loss can last.
+  schedule: "15 */6 * * *"
+  timeZone: America/Denver
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: mealie-ha-notifier
+        spec:
+          restartPolicy: OnFailure
+          # Pinned where mealie itself runs, so the image is already local.
+          nodeSelector:
+            kubernetes.io/hostname: k8s8
+          containers:
+            - name: reconcile
+              # Reuse the mealie image rather than pull a second one for a
+              # script that needs nothing beyond the python standard library.
+              image: ghcr.io/mealie-recipes/mealie:v3.24.0
+              env:
+                - name: MEALIE_URL
+                  value: http://mealie.home-automation.svc.cluster.local:9000
+                - name: NOTIFIER_NAME
+                  value: Home Assistant grocery list refresh
+                - name: MEALIE_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: mealie-ha-notifier
+                      key: MEALIE_TOKEN
+                - name: WEBHOOK_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: mealie-ha-notifier
+                      key: WEBHOOK_ID
+                # Assembled here so the repository carries the shape of the
+                # callback without the one part of it that is a secret.
+                - name: APPRISE_URL
+                  value: json://home-assistant.home-automation.svc.cluster.local:8123/api/webhook/$(WEBHOOK_ID)
+              command:
+                - python3
+                - -c
+                - |
+                  import json
+                  import os
+                  import sys
+                  import urllib.request
+
+                  BASE = os.environ["MEALIE_URL"].rstrip("/")
+                  TOKEN = os.environ["MEALIE_TOKEN"]
+                  NAME = os.environ["NOTIFIER_NAME"]
+                  APPRISE_URL = os.environ["APPRISE_URL"]
+                  SUBSCRIBE = (
+                      "shoppingListCreated",
+                      "shoppingListUpdated",
+                      "shoppingListDeleted",
+                  )
+                  PATH = "/api/households/events/notifications"
+
+                  # An empty id still assembles into a syntactically valid apprise
+                  # target that silently notifies nothing, and the checks below would
+                  # call that a success. Refuse the run instead: a stale read of the
+                  # secret should look like a failed job, not a working push.
+                  if not os.environ.get("WEBHOOK_ID", "").strip():
+                      sys.exit("WEBHOOK_ID is empty; refusing to write a dead callback URL")
+
+
+                  def call(method, path, body=None):
+                      request = urllib.request.Request(
+                          BASE + path,
+                          method=method,
+                          data=json.dumps(body).encode() if body is not None else None,
+                          headers={
+                              "Authorization": f"Bearer {TOKEN}",
+                              "Content-Type": "application/json",
+                          },
+                      )
+                      with urllib.request.urlopen(request, timeout=30) as response:
+                          raw = response.read()
+                      return json.loads(raw) if raw else {}
+
+
+                  def find():
+                      return [n for n in call("GET", PATH)["items"] if n["name"] == NAME]
+
+
+                  existing = find()
+                  if existing:
+                      notifier = existing[0]
+                      print(f"found notifier {notifier['id']}")
+                  else:
+                      notifier = call("POST", PATH, {"name": NAME, "appriseUrl": APPRISE_URL})
+                      print(f"created notifier {notifier['id']}")
+
+                  options = dict(notifier["options"])
+                  for event in SUBSCRIBE:
+                      options[event] = True
+
+                  # Mealie redacts appriseUrl from every read, so there is nothing to
+                  # compare against and the URL is rewritten on each run. That is also
+                  # what repairs the notifier after the webhook id is rotated.
+                  call(
+                      "PUT",
+                      f"{PATH}/{notifier['id']}",
+                      {
+                          "id": notifier["id"],
+                          "name": NAME,
+                          "enabled": True,
+                          "appriseUrl": APPRISE_URL,
+                          "groupId": notifier["groupId"],
+                          "householdId": notifier["householdId"],
+                          "options": options,
+                      },
+                  )
+
+                  settled = find()[0]
+                  subscribed = sorted(k for k, v in settled["options"].items() if v is True)
+                  if not settled["enabled"] or subscribed != sorted(SUBSCRIBE):
+                      sys.exit(
+                          f"notifier did not settle: enabled={settled['enabled']} "
+                          f"subscribed={subscribed}"
+                      )
+                  print(f"notifier enabled and subscribed to {', '.join(subscribed)}")
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
