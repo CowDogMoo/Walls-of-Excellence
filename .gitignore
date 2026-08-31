@@ -26,3 +26,7 @@ node_modules
 # unlazy pipeline state (local only)
 .unlazy/
 GATES.md
+
+# Household meal specs stay local: they carry personal household detail
+# and this repository is public. Deliberate - do not un-ignore.
+spec/
