@@ -34,7 +34,7 @@ spec:
           app:
             image:
               repository: ghcr.io/cowdogmoo/mealie
-              tag: v3.24.0-woe.1
+              tag: v3.24.0-woe.2
               pullPolicy: IfNotPresent
             env:
               TZ: "America/Denver"
@@ -43,6 +43,9 @@ spec:
               PGID: "1000"
               DB_ENGINE: sqlite
               ALLOW_SIGNUP: "false"
+              # Session length, in hours. The cookie is persisted for as long as
+              # the token is valid, so this is how long OIDC_REMEMBER_ME remembers.
+              TOKEN_TIME: "336"
               # Traefik terminates TLS in-cluster; trust its forwarded
               # headers so the OIDC redirect keeps the https scheme.
               FORWARDED_ALLOW_IPS: "*"
