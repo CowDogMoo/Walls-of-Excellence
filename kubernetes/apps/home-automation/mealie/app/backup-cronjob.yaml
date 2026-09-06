@@ -29,7 +29,7 @@ spec:
             - name: backup
               # Reuse the mealie image: it is already pulled on the node and
               # ships the python sqlite3 module the online backup needs.
-              image: ghcr.io/mealie-recipes/mealie:v3.24.0
+              image: ghcr.io/mealie-recipes/mealie:v3.25.1
               command:
                 - sh
                 - -c
