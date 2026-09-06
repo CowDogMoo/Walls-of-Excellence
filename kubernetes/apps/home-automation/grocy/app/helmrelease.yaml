@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: linuxserver/grocy
-              tag: 4.7.0
+              tag: 4.7.1
               pullPolicy: IfNotPresent
             env:
               TZ: "America/Denver"
