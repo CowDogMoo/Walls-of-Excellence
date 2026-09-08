@@ -1,0 +1,89 @@
+---
+# The dinner-refill runner: the loop that used to be a launchd agent on a
+# laptop. Every five minutes it folds the household's Mealie feedback into the
+# planner's history, drains the Home Assistant swap queue, and refills the
+# recipe box for every thumbs-down that condemned no night - handing the one
+# judgement call (which recipe) to the dinner-refill squad agent on squad's
+# claude-code provider.
+#
+# A Deployment with one replica and a sleep loop, not a CronJob: the planner
+# state on the volume is read and written through `kubectl exec` when a week is
+# planned from the laptop, and a tick that is still filling a night must never
+# be overlapped by the next.
+#
+# The image tag is a commit of l50/personal-skills, never a floating name.
+# Bumping it is a reviewed commit here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dinner-planner-runner
+  namespace: home-automation
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dinner-planner-runner
+  template:
+    metadata:
+      labels:
+        app: dinner-planner-runner
+    spec:
+      # Pinned with mealie: the state volume is local-path on this node.
+      nodeSelector:
+        kubernetes.io/hostname: k8s8
+      imagePullSecrets:
+        - name: dinner-planner-ghcr
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+      containers:
+        - name: runner
+          image: ghcr.io/l50/dinner-runner:e2eeeb083a50d109a1e98f26bb3272004c1b5ea7
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: dinner-planner
+          env:
+            # API calls stay inside the cluster; links in pushes use the public
+            # host, which is what MEALIE_URL is for.
+            - name: MEALIE_URL
+              value: https://mealie.techvomit.xyz
+            - name: MEALIE_API_URL
+              value: http://mealie.home-automation.svc.cluster.local:9000
+            - name: HA_URL
+              value: http://home-assistant.home-automation.svc.cluster.local:8123
+            - name: SWAP_RUNNER_INTERVAL
+              value: "300"
+            - name: SWAP_RUNNER_SEARCH
+              value: squad
+            - name: SWAP_RUNNER_MAX_COST
+              value: "5"
+          volumeMounts:
+            - name: state
+              mountPath: /home/node/.local/state
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          livenessProbe:
+            # The runner writes a heartbeat only when a tick really reached
+            # Home Assistant. Two missed ticks and the pod is restarted.
+            exec:
+              command:
+                - sh
+                - -c
+                - test "$(find /home/node/.local/state/meal-planner -maxdepth 1 -name swap-runner.heartbeat -mmin -12 | wc -l)" -ge 1
+            initialDelaySeconds: 120
+            periodSeconds: 120
+            failureThreshold: 3
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: dinner-planner-state

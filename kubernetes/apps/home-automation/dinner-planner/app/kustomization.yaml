@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: dinner-planner
+      app.kubernetes.io/instance: dinner-planner
+namespace: home-automation
+resources:
+  - ./externalsecret.yaml
+  - ./pvc.yaml
+  - ./deployment.yaml
