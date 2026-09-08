@@ -6,6 +6,7 @@ resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
   # Flux-Kustomizations
+  - ./dinner-planner/ks.yaml
   - ./frigate/ks.yaml
   - ./home-assistant/ks.yaml
   - ./mealie/ks.yaml

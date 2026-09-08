@@ -1,0 +1,18 @@
+---
+# The planner's memory: history.json (every recipe proposed, every vote,
+# every block, the refill and swap queues) and the recipe-finding skill's own
+# history of what it has already returned. Small, but it is the only copy the
+# household has of what it said about dinner, so it is a volume and not an
+# emptyDir. local-path on k8s8, the node the runner is pinned to.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dinner-planner-state
+  namespace: home-automation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
