@@ -34,7 +34,7 @@ spec:
           app:
             image:
               repository: ghcr.io/cowdogmoo/mealie
-              tag: v3.24.0-woe.7
+              tag: v3.24.0-woe.8
               pullPolicy: IfNotPresent
             env:
               TZ: "America/Denver"
