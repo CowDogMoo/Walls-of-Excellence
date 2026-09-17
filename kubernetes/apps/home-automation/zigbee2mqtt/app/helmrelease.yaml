@@ -104,7 +104,7 @@ spec:
       app:
         className: ingress-traefik
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: zigbee2mqtt.techvomit.xyz
+          external-dns.kubernetes.io/hostname: zigbee2mqtt.techvomit.xyz
         hosts:
           - host: &host zigbee2mqtt.techvomit.xyz
             paths:

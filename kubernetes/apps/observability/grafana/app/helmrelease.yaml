@@ -348,7 +348,7 @@ spec:
         - hosts:
             - *host
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: *host
+        external-dns.kubernetes.io/hostname: *host
 
     persistence:
       enabled: true

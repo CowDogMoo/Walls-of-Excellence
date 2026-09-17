@@ -80,7 +80,7 @@ spec:
         controller: music-assistant
         type: LoadBalancer
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: music.techvomit.xyz
+          external-dns.kubernetes.io/hostname: music.techvomit.xyz
         ports:
           http:
             port: 8095
@@ -88,7 +88,7 @@ spec:
       app:
         className: ingress-traefik
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: music.techvomit.xyz
+          external-dns.kubernetes.io/hostname: music.techvomit.xyz
           traefik.ingress.kubernetes.io/router.middlewares: networking-authentik@kubernetescrd
         hosts:
           - host: &host music.techvomit.xyz

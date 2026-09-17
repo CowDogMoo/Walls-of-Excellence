@@ -517,7 +517,7 @@ spec:
       app:
         className: ingress-traefik
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: ha.techvomit.xyz
+          external-dns.kubernetes.io/hostname: ha.techvomit.xyz
         hosts:
           - host: &host ha.techvomit.xyz
             paths:
