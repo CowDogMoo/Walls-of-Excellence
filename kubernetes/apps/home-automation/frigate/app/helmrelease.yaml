@@ -111,7 +111,7 @@ spec:
         type: LoadBalancer
         loadBalancerIP: 192.168.20.18
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: frigate-stream.techvomit.xyz
+          external-dns.kubernetes.io/hostname: frigate-stream.techvomit.xyz
         ports:
           rtsp:
             port: 8554

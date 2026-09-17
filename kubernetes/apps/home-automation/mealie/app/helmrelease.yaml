@@ -89,7 +89,7 @@ spec:
       app:
         className: ingress-traefik
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: mealie.techvomit.xyz
+          external-dns.kubernetes.io/hostname: mealie.techvomit.xyz
         hosts:
           - host: &host mealie.techvomit.xyz
             paths:
