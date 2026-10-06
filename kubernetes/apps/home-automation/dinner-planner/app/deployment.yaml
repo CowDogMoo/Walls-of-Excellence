@@ -42,7 +42,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: runner
-          image: ghcr.io/l50/dinner-runner:285d6ac443fbef83f98558101d94c0eaa3c33360
+          image: ghcr.io/l50/dinner-runner:9edbea4ccfc7ed09115d0b9724c32db2ad2dcbb6
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
