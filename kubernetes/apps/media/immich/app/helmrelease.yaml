@@ -3,6 +3,8 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: immich
+  labels:
+    helm.woe.techvomit.xyz/upgrade-strategy: retry
   namespace: media
 spec:
   interval: 30m
@@ -21,9 +23,6 @@ spec:
   upgrade:
     cleanupOnFail: true
     timeout: 15m
-    remediation:
-      strategy: rollback
-      retries: 3
   uninstall:
     keepHistory: false
 
