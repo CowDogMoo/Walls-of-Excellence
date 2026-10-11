@@ -28,6 +28,11 @@ spec:
           - name: alertname
             value: Watchdog
             matchType: =
+      - receiver: "null"
+        matchers:
+          - name: severity
+            value: info
+            matchType: =
       - receiver: pushover
         groupWait: 0s
         repeatInterval: 1h
@@ -69,6 +74,17 @@ spec:
       targetMatch:
         - name: severity
           value: warning
+          matchType: =
+    - equal:
+        - namespace
+        - pod
+      sourceMatch:
+        - name: alertname
+          value: KubePodCrashLooping
+          matchType: =
+      targetMatch:
+        - name: alertname
+          value: KubePodNotReady
           matchType: =
   receivers:
     - name: "null"
