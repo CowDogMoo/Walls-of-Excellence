@@ -215,6 +215,10 @@ spec:
         main:
           containers:
             main:
+              image:
+                repository: docker.io/valkey/valkey
+                # renovate: datasource=docker depName=docker.io/valkey/valkey
+                tag: 9.2-alpine@sha256:cdcb7b1c7b6f1c9cb9442c71ac6275e78184657448407b2c1fdde7ee8024f4fb
               resources:
                 requests:
                   cpu: 20m
