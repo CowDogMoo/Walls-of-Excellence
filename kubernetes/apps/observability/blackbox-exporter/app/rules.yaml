@@ -26,10 +26,10 @@ spec:
             summary: Kubernetes API VIP not reachable
             description: |
               TCP probe to {{ $labels.instance }} (kube-apiserver VIP) has
-              been failing for 1m. Either kube-vip failed to fail over or
+              been failing for 3m. Either kube-vip failed to fail over or
               all masters are down.
           expr: probe_success{target="kube-api-vip"} == 0
-          for: 1m
+          for: 3m
           labels:
             severity: critical
 
