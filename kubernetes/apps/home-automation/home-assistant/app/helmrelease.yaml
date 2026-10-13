@@ -77,7 +77,73 @@ spec:
 
                 echo "$(date): OIDC component ${OIDC_VERSION} installed successfully"
                 ls -la /config/custom_components/auth_oidc/
+          # Installs the pinned throwingshade build into /config/ts, which the
+          # ts sidecars and HA shell_commands run. Any failure inside the copy
+          # script keeps the existing /config/ts and exits 0 so HA still starts.
+          # A failed image pull (registry outage on a new tag, expired or
+          # revoked ghcr-pull token, home-assistant-ghcr ExternalSecret not
+          # synced, tag missing for arm64) holds the pod in Init until the pull
+          # succeeds. The pod is pinned to one node and the tag never moves, so
+          # the registry is only contacted the first time a new tag lands on
+          # that node.
+          install-ts:
+            image:
+              repository: ghcr.io/cowdogmoo/throwingshade
+              # Full throwingshade commit SHA (v2.1.1-14-g36f3914)
+              tag: 36f3914aeb592f38a9a466c9e23a13ac8bb9c1ab
+              pullPolicy: IfNotPresent
+            env:
+              HOME: /tmp
+            # /config is owned by 65534:65534 on the NFS share
+            securityContext:
+              runAsUser: 65534
+              runAsGroup: 65534
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            command:
+              - sh
+              - -c
+              - |
+                DEST=/config/ts
+                BACKUP=/config/ts.bak
+                log() { echo "$(date): install-ts: $*"; }
+                keep() { log "WARNING: $*; keeping the existing ${DEST}"; exit 0; }
+
+                log "image ships $(/ts --version 2>&1 | head -n 1)"
+                if [ -x "$DEST" ] && cmp -s /ts "$DEST"; then
+                  log "${DEST} already matches the image"
+                  exit 0
+                fi
+
+                # Stage next to the target so the final mv is an atomic rename.
+                TMP=$(mktemp /config/.ts.new.XXXXXX) || keep "cannot create a temp file in /config"
+                if ! cp /ts "$TMP" || ! chmod 0755 "$TMP"; then
+                  rm -f "$TMP"
+                  keep "copy to ${TMP} failed"
+                fi
+                if ! VERSION=$("$TMP" --version 2>&1); then
+                  rm -f "$TMP"
+                  keep "staged binary failed --version: ${VERSION}"
+                fi
+
+                if [ -e "$DEST" ]; then
+                  if ! cp "$DEST" "$BACKUP" || ! chmod 0755 "$BACKUP"; then
+                    rm -f "$TMP"
+                    keep "could not back up ${DEST} to ${BACKUP}"
+                  fi
+                  log "backed up previous ${DEST} to ${BACKUP}"
+                fi
+                if ! mv -f "$TMP" "$DEST"; then
+                  rm -f "$TMP"
+                  keep "rename into ${DEST} failed"
+                fi
+                log "installed ${DEST}: $(echo "$VERSION" | head -n 1)"
           setup-ts:
+            dependsOn: install-ts
             image:
               repository: busybox
               tag: latest
@@ -485,6 +551,9 @@ spec:
               limits:
                 memory: 128Mi
         pod:
+          # ghcr.io/cowdogmoo/throwingshade is a private package
+          imagePullSecrets:
+            - name: home-assistant-ghcr
           # Enable devices to be discoverable
           hostNetwork: true
           # When hostNetwork is true, set dnsPolicy to ClusterFirstWithHostNet

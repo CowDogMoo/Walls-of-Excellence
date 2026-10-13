@@ -67,6 +67,12 @@ The deployment expects these 1Password items:
 
 - **private_key**: GitHub App private key (PEM format)
 
+#### `ghcr-pull`
+
+- **username**: GitHub user that owns the token
+- **token**: GitHub token with only the `read:packages` scope, used to pull the
+  private `ghcr.io/cowdogmoo/throwingshade` image (shared with dinner-planner)
+
 ### Git Sync Configuration
 
 Configured in `helmrelease.yaml`:
@@ -74,6 +80,29 @@ Configured in `helmrelease.yaml`:
 - `GIT_SYNC_BRANCH`: Branch to sync (default: `main`)
 - Repository: `https://github.com/CowDogMoo/homeassistant`
 - Sync interval: 60 seconds
+
+### throwingshade (`ts`)
+
+The `install-ts` init container copies `ts` from the private
+`ghcr.io/cowdogmoo/throwingshade` image into `/config/ts`, which the
+`ts-config-monitor` and `ts-monitor` sidecars and the Home Assistant
+shell_commands run. The image tag is the full throwingshade commit SHA; to
+update `ts`, build and push a new commit's image (see the throwingshade
+template in warpgate-templates) and change the `install-ts` tag.
+
+At pod start the init container does nothing when `/config/ts` already matches
+the image. Otherwise it stages the binary in `/config`, checks that it runs
+`--version`, copies the previous binary to `/config/ts.bak`, and renames the
+new one into place. Any failure inside that copy script logs a warning, keeps
+the existing `/config/ts`, and lets Home Assistant start. It runs as
+`65534:65534`, the owner of `/config`.
+
+A failed image pull is different: the pod stays in Init until the pull
+succeeds. That happens on a registry outage when a new tag is first pulled,
+when the `ghcr-pull` token has expired or been revoked, when the
+`home-assistant-ghcr` ExternalSecret has not synced, or when the tag has no
+arm64 image. Before bumping the tag, make sure the token is valid and the
+image is pushed for arm64.
 
 ### NFS Storage
 
@@ -211,6 +240,7 @@ kubectl logs -n home-automation -l app.kubernetes.io/name=home-assistant -c git-
 
    ```bash
    kubectl logs -n home-automation <pod-name> -c install-oidc-component
+   kubectl logs -n home-automation <pod-name> -c install-ts
    kubectl logs -n home-automation <pod-name> -c setup-ts
    kubectl logs -n home-automation <pod-name> -c setup-oidc
    ```
