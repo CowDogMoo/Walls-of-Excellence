@@ -46,15 +46,12 @@ spec:
       grafana_url: ""
 
     # ---------------------------------------------------------------------------
-    # Sinks: a single webhook that POSTs alert events to the Signal adapter LXC,
-    # the same target Alertmanager already uses for its `signal` receiver.
+    # Sinks: the chart refuses to render without at least one sink, so findings
+    # go to the runner's stdout only. Alert delivery is Alertmanager's job.
     # ---------------------------------------------------------------------------
     sinksConfig:
-      - webhook_sink:
-          name: signal_adapter
-          url: http://192.168.20.45:8081/
-          # Forward all severities; the adapter does any final filtering.
-          stop: false
+      - file_sink:
+          name: runner_log
 
     # ---------------------------------------------------------------------------
     # Custom playbooks (action triggers) layered on top of the chart defaults.
@@ -68,8 +65,6 @@ spec:
         actions:
           - delete_pod:
               grace_period_seconds: 0
-        sinks:
-          - signal_adapter
 
       - triggers:
           - on_prometheus_alert:
@@ -77,8 +72,6 @@ spec:
         actions:
           - logs_enricher: {}
           - resource_events_enricher: {}
-        sinks:
-          - signal_adapter
 
     runner:
       sendAdditionalTelemetry: false
