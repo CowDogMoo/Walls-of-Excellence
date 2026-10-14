@@ -1,40 +1,15 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  gitAuthor: 'cowdogmoo-renovate-bot <157187596+cowdogmoo-renovate-bot[bot]@users.noreply.github.com>',
   extends: [
-    'config:recommended',
-    'docker:enableMajor',
-    ':disableRateLimiting',
-    ':dependencyDashboard',
-    ':semanticCommits',
-    ':enablePreCommit',
-    ':automergeDigest',
-    ':automergeBranch',
+    'github>CowDogMoo/renovate-config',
     'github>CowDogMoo/Walls-of-Excellence//.github/renovate/autoMerge.json5',
     'github>CowDogMoo/Walls-of-Excellence//.github/renovate/commitMessage.json5',
     'github>CowDogMoo/Walls-of-Excellence//.github/renovate/labels.json5',
     'github>CowDogMoo/Walls-of-Excellence//.github/renovate/semanticCommits.json5',
-    'helpers:pinGitHubActionDigests',
-  ],
-  dependencyDashboardLabels: [
-    'renovate-dashboard',
-  ],
-  dependencyDashboardTitle: 'Renovate Dashboard 🤖',
-  suppressNotifications: [
-    'prIgnoreNotification',
   ],
   ignorePaths: [
     'kubernetes/deprecated/**',
   ],
-  rebaseWhen: 'conflicted',
-  commitBodyTable: true,
-  labels: [
-    'renovate',
-  ],
-  platformAutomerge: true,
-  'pre-commit': {
-    enabled: true,
-  },
   flux: {
     managerFilePatterns: [
       '/kubernetes/.+\\.ya?ml$/',

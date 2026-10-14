@@ -1,79 +1,38 @@
 ---
 name: 🤖 Renovate
+
 on:
+  schedule:
+    - cron: "0 */6 * * *"
   push:
     branches: ["main"]
     paths:
       - .github/renovate.json5
       - .github/renovate/**.json5
-  schedule:
-    # Run every week on sunday and wednesday at 00:00 UTC
-    - cron: "0 0 * * 0,3"
   workflow_dispatch:
     inputs:
-      dryRun:
-        description: Dry Run
+      dry-run:
+        description: Dry run
         type: boolean
         default: false
-        required: true
-      logLevel:
-        description: Log Level
+      log-level:
+        description: Log level
         type: choice
         default: info
-        options:
-          - debug
-          - info
-        required: true
-      version:
-        description: Renovate Version
-        default: latest
-        required: true
+        options: [debug, info]
 
 concurrency:
-  cancel-in-progress: true
-  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
-# Retrieve BOT_USER_ID via `curl -s "https://api.github.com/users/${BOT_USERNAME}%5Bbot%5D" | jq .id`
-env:
-  RENOVATE_ONBOARDING_CONFIG_FILE_NAME: .github/renovate.json5
-  RENOVATE_GIT_AUTHOR: "${{ secrets.BOT_USERNAME }} <${{ secrets.BOT_USER_ID }}+${{ secrets.BOT_USERNAME }}[bot]@users.noreply.github.com>"
-
-# Permissions block for GitHub App
-permissions:
-  actions: write
-  contents: write
-  issues: write
-  pull-requests: write
-  statuses: read
+permissions: {}
 
 jobs:
   renovate:
-    name: Renovate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate Token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        id: app-token
-        with:
-          app-id: "${{ secrets.BOT_APP_ID }}"
-          private-key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
-
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: "${{ steps.app-token.outputs.token }}"
-
-      - name: Renovate
-        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
-        env:
-          LOG_LEVEL: "${{ inputs.logLevel || 'debug' }}"
-          RENOVATE_AUTODISCOVER: true
-          RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
-          RENOVATE_DRY_RUN: "${{ inputs.dryRun }}"
-          RENOVATE_INTERNAL_CHECKS_FILTER: strict
-          RENOVATE_PLATFORM: github
-          RENOVATE_PLATFORM_COMMIT: true
-        with:
-          configurationFile: "${{ env.RENOVATE_ONBOARDING_CONFIG_FILE_NAME }}"
-          token: "${{ steps.app-token.outputs.token }}"
-          renovate-version: "${{ inputs.version || 'latest' }}"
+    uses: CowDogMoo/renovate-config/.github/workflows/renovate.yaml@main
+    with:
+      dry-run: ${{ inputs.dry-run || false }}
+      log-level: ${{ inputs.log-level || 'info' }}
+    secrets:
+      BOT_APP_ID: ${{ secrets.BOT_APP_ID }}
+      BOT_APP_PRIVATE_KEY: ${{ secrets.BOT_APP_PRIVATE_KEY }}
