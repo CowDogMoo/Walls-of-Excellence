@@ -219,7 +219,7 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **47 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **46 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
