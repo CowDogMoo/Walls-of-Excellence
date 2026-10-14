@@ -89,8 +89,8 @@ spec:
           install-ts:
             image:
               repository: ghcr.io/cowdogmoo/throwingshade
-              # Full throwingshade commit SHA (v2.1.1-14-g36f3914)
-              tag: 36f3914aeb592f38a9a466c9e23a13ac8bb9c1ab
+              # Full throwingshade commit SHA (v2.1.1-17-ge9224c7)
+              tag: e9224c79fd15c81c00fdfcb74e13085287bdfa59
               pullPolicy: IfNotPresent
             env:
               HOME: /tmp
