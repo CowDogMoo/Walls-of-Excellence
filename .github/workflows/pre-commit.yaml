@@ -23,7 +23,7 @@ concurrency:
   group: pre-commit-${{ github.workflow }}-${{ github.ref }}
 
 env:
-  PYTHON_VERSION: 3.13.7
+  PYTHON_VERSION: 3.14.8
   TASK_VERSION: 3.43.3
   TASK_X_REMOTE_TASKFILES: 1
 
