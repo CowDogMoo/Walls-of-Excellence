@@ -33,7 +33,7 @@ spec:
           app:
             image:
               repository: ghcr.io/blakeblackshear/frigate
-              tag: 0.18.1-rk
+              tag: 0.18.2-rk
             env:
               TZ: "America/Denver"
               LIBVA_DRIVER_NAME: rockchip
