@@ -13,3 +13,4 @@ resources:
   - ./externalsecret.yaml
   - ./backup-cronjob.yaml
   - ./ha-notifier-cronjob.yaml
+  - ./mealplan-rules-cronjob.yaml

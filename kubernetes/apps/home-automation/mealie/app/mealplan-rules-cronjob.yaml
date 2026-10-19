@@ -1,0 +1,150 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mealie-mealplan-rules
+  namespace: home-automation
+spec:
+  # Mealie's random meal picker ignores when a recipe was last made, so with no
+  # meal-plan rules it will roll a dinner the household cooked a few days ago.
+  # One rule fixes that: only draw from recipes not made in the last 14 days.
+  # Mealie treats a never-made recipe as last made in 1900, so new recipes stay
+  # in the pool without a second clause. Like the Home Assistant notifier, the
+  # rule is a row in Mealie's database rather than a manifest, so a rebuilt
+  # volume would drop it silently and the repeats would come back. Reconciling
+  # it on a schedule is what makes it declared state. Change the window here,
+  # not in Mealie's UI: the next run puts the declared rule back.
+  schedule: "45 */6 * * *"
+  timeZone: America/Denver
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: mealie-mealplan-rules
+        spec:
+          restartPolicy: OnFailure
+          # Pinned where mealie itself runs, so the image is already local.
+          nodeSelector:
+            kubernetes.io/hostname: k8s8
+          containers:
+            - name: reconcile
+              # Same image as the other mealie jobs: the script needs only the
+              # python standard library, and the image is already on the node.
+              image: ghcr.io/mealie-recipes/mealie:v3.29.0
+              env:
+                - name: MEALIE_URL
+                  value: http://mealie.home-automation.svc.cluster.local:9000
+                - name: MEALIE_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: mealie-mealplan-rules
+                      key: MEALIE_TOKEN
+              command:
+                - python3
+                - -c
+                - |
+                  import json
+                  import os
+                  import sys
+                  import urllib.request
+
+                  BASE = os.environ["MEALIE_URL"].rstrip("/")
+                  TOKEN = os.environ["MEALIE_TOKEN"]
+                  PATH = "/api/households/mealplans/rules"
+                  # The one rule this job owns. "unset" is how Mealie spells
+                  # "any day" and "any meal type".
+                  DESIRED = {
+                      "day": "unset",
+                      "entryType": "unset",
+                      "queryFilterString": "last_made <= $NOW-14d",
+                  }
+
+                  # An empty token would only surface as a 401 deep in a
+                  # traceback. Refuse the run up front so a stale read of the
+                  # secret reads as what it is.
+                  if not TOKEN.strip():
+                      sys.exit("MEALIE_TOKEN is empty; refusing to run")
+
+
+                  def call(method, path, body=None):
+                      request = urllib.request.Request(
+                          BASE + path,
+                          method=method,
+                          data=json.dumps(body).encode() if body is not None else None,
+                          headers={
+                              "Authorization": f"Bearer {TOKEN}",
+                              "Content-Type": "application/json",
+                          },
+                      )
+                      with urllib.request.urlopen(request, timeout=30) as response:
+                          raw = response.read()
+                      return json.loads(raw) if raw else {}
+
+
+                  def owned():
+                      # Rules have no name, so ownership is by shape: an
+                      # any-day, any-meal rule that filters on last made.
+                      # Rules for one day or meal type, or on anything else,
+                      # are left alone.
+                      rules = call("GET", PATH + "?perPage=-1")["items"]
+                      return [
+                          r
+                          for r in rules
+                          if r["day"] == "unset"
+                          and r["entryType"] == "unset"
+                          and any(
+                              key in r["queryFilterString"]
+                              for key in ("last_made", "lastMade")
+                          )
+                      ]
+
+
+                  def state(rule):
+                      return {key: rule[key] for key in DESIRED}
+
+
+                  rules = owned()
+                  if len(rules) > 1:
+                      # Mealie ANDs rules that share a day and meal type, so
+                      # duplicates still filter, but which one is ours is a
+                      # guess. Fail loudly rather than rewrite someone's rule.
+                      ids = ", ".join(r["id"] for r in rules)
+                      sys.exit(
+                          f"found {len(rules)} any-day last-made rules ({ids}); "
+                          "delete the extras in Mealie"
+                      )
+
+                  if not rules:
+                      created = call("POST", PATH, DESIRED)
+                      print(f"created rule {created['id']}")
+                  elif state(rules[0]) != DESIRED:
+                      rule = rules[0]
+                      call("PUT", f"{PATH}/{rule['id']}", DESIRED)
+                      print(
+                          f"updated rule {rule['id']}: "
+                          f"{rule['queryFilterString']!r} -> "
+                          f"{DESIRED['queryFilterString']!r}"
+                      )
+                  else:
+                      print(f"rule {rules[0]['id']} already matches")
+
+                  settled = owned()
+                  if len(settled) != 1 or state(settled[0]) != DESIRED:
+                      sys.exit(f"rule did not settle: {[state(r) for r in settled]}")
+                  print(
+                      f"rule in place: {DESIRED['queryFilterString']} "
+                      "(any day, any meal type)"
+                  )
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
