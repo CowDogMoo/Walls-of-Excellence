@@ -36,7 +36,7 @@ spec:
           main:
             image:
               # renovate: datasource=docker depName=ghcr.io/immich-app/immich-server
-              tag: "v3.3.4"
+              tag: "v3.3.5"
             env:
               - name: REDIS_HOSTNAME
                 value: immich-valkey
