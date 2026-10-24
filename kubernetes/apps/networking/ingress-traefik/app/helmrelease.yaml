@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: 42.1.1
+      version: 42.1.2
       reconcileStrategy: ChartVersion
       interval: 15m
       sourceRef:
