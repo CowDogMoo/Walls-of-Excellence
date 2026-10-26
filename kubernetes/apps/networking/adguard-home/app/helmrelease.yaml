@@ -26,6 +26,16 @@ spec:
     keepHistory: false
 
   values:
+    defaultPodOptions:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: role
+                    operator: NotIn
+                    values: [macworker]
+
     controllers:
       adguard-home:
         annotations:
