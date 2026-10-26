@@ -73,6 +73,7 @@ k3s cluster.
 <!-- BEGIN GENERATED: docs -->
 
 - [Developer Environment Setup](docs/dev.md)
+- [Home Network (UniFi)](docs/home-network.md)
 - [Rock5B NVMe Boot Setup](docs/rock5b-nvme-boot.md)
 - [Test Environment](docs/test-environment.md)
 
