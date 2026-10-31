@@ -229,7 +229,7 @@ Flux reconciles **46 applications** across **17 namespaces** from [`kubernetes/a
 | `cracking` | [hashcat](kubernetes/apps/cracking/hashcat) |
 | `database` | [cloudnative-pg](kubernetes/apps/database/cloudnative-pg), [mysql](kubernetes/apps/database/mysql) |
 | `external-secrets` | [external-secrets](kubernetes/apps/external-secrets/external-secrets), [onepassword](kubernetes/apps/external-secrets/onepassword) |
-| `flux-system` | [addons](kubernetes/apps/flux-system/addons), [flux-instance](kubernetes/apps/flux-system/flux-instance), [flux-operator](kubernetes/apps/flux-system/flux-operator), [weave-gitops](kubernetes/apps/flux-system/weave-gitops) |
+| `flux-system` | [addons](kubernetes/apps/flux-system/addons), [flux-instance](kubernetes/apps/flux-system/flux-instance), [flux-operator](kubernetes/apps/flux-system/flux-operator), [flux-web](kubernetes/apps/flux-system/flux-web) |
 | `guacamole` | [guacamole](kubernetes/apps/guacamole/guacamole) |
 | `home-automation` | [dinner-planner](kubernetes/apps/home-automation/dinner-planner), [frigate](kubernetes/apps/home-automation/frigate), [grocy](kubernetes/apps/home-automation/grocy), [home-assistant](kubernetes/apps/home-automation/home-assistant), [mealie](kubernetes/apps/home-automation/mealie), [mosquitto](kubernetes/apps/home-automation/mosquitto), [music-assistant](kubernetes/apps/home-automation/music-assistant), [troy-backup](kubernetes/apps/home-automation/troy-backup), [zigbee2mqtt](kubernetes/apps/home-automation/zigbee2mqtt) |
 | `identity` | [authentik](kubernetes/apps/identity/authentik) |

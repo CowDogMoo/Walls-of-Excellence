@@ -16,7 +16,7 @@ data:
     context:
       grafana_client_secret: !Env GRAFANA_CLIENT_SECRET
       traefik_client_secret: !Env TRAEFIK_CLIENT_SECRET
-      weave_gitops_client_secret: !Env WEAVE_GITOPS_CLIENT_SECRET
+      flux_web_client_secret: !Env FLUX_WEB_CLIENT_SECRET
       guacamole_client_secret: !Env GUACAMOLE_CLIENT_SECRET
       tailscale_client_secret: !Env TAILSCALE_CLIENT_SECRET
       homeassistant_test_client_secret: !Env HOMEASSISTANT_TEST_CLIENT_SECRET
@@ -51,12 +51,17 @@ data:
           name: Traefik Admins
 
       - model: authentik_core.group
-        id: weave-gitops-admins
+        id: flux-admins
         identifiers:
-          name: Weave GitOps Admins
+          name: Flux Admins
         state: present
         attrs:
+          name: Flux Admins
+
+      - model: authentik_core.group
+        identifiers:
           name: Weave GitOps Admins
+        state: absent
 
       - model: authentik_core.group
         id: guacamole-users
@@ -234,16 +239,16 @@ data:
           access_token_validity: "hours=24"
           refresh_token_validity: "days=30"
 
-      # OAuth2 Provider for Weave GitOps
+      # OAuth2 Provider for the Flux Operator Web UI
       - model: authentik_providers_oauth2.oauth2provider
-        id: weave-gitops-provider
+        id: flux-web-provider
         identifiers:
-          name: Weave GitOps
+          name: Flux Web
         state: present
         attrs:
-          name: Weave GitOps
-          client_id: weave-gitops
-          client_secret: !Context weave_gitops_client_secret
+          name: Flux Web
+          client_id: flux-web
+          client_secret: !Context flux_web_client_secret
           client_type: confidential
           grant_types:
             - authorization_code
@@ -254,15 +259,21 @@ data:
           signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Internal JWT Certificate]]
           redirect_uris:
             - matching_mode: strict
-              url: "https://weave.techvomit.xyz/oauth2/callback"
+              url: "https://flux.techvomit.xyz/oauth2/callback"
           property_mappings:
             - !Find [authentik_providers_oauth2.scopemapping, [scope_name, openid]]
             - !Find [authentik_providers_oauth2.scopemapping, [scope_name, email]]
             - !Find [authentik_providers_oauth2.scopemapping, [scope_name, profile]]
+            - !Find [authentik_providers_oauth2.scopemapping, [scope_name, offline_access]]
           sub_mode: hashed_user_id
           access_code_validity: "minutes=1"
-          access_token_validity: "minutes=5"
+          access_token_validity: "hours=1"
           refresh_token_validity: "days=30"
+
+      - model: authentik_providers_oauth2.oauth2provider
+        identifiers:
+          name: Weave GitOps
+        state: absent
 
       # Proxy Provider for Guacamole (Forward Auth)
       - model: authentik_providers_proxy.proxyprovider
@@ -567,19 +578,25 @@ data:
           meta_description: "Traefik Ingress Controller Dashboard"
           policy_engine_mode: any
 
-      # Application for Weave GitOps
+      # Application for the Flux Operator Web UI
       - model: authentik_core.application
-        id: weave-gitops-app
+        id: flux-web-app
         identifiers:
-          slug: weave-gitops
+          slug: flux-web
         state: present
         attrs:
-          name: Weave GitOps
-          slug: weave-gitops
-          provider: !KeyOf weave-gitops-provider
-          meta_launch_url: "https://weave.techvomit.xyz"
-          meta_description: "Weave GitOps Dashboard - GitOps Management"
+          name: Flux
+          slug: flux-web
+          provider: !KeyOf flux-web-provider
+          meta_launch_url: "https://flux.techvomit.xyz"
+          meta_description: "Flux Operator Web UI - GitOps status and actions"
           policy_engine_mode: any
+
+      # Deleting the application also deletes its policy bindings.
+      - model: authentik_core.application
+        identifiers:
+          slug: weave-gitops
+        state: absent
 
       # Application for Guacamole
       - model: authentik_core.application
@@ -733,14 +750,19 @@ data:
             return ak_is_group_member(request.user, name="Traefik Admins")
 
       - model: authentik_policies_expression.expressionpolicy
-        id: weave-gitops-admin-policy
+        id: flux-admin-policy
         identifiers:
-          name: weave-gitops-admin-policy
+          name: flux-admin-policy
         state: present
         attrs:
-          name: weave-gitops-admin-policy
+          name: flux-admin-policy
           expression: |
-            return ak_is_group_member(request.user, name="Weave GitOps Admins")
+            return ak_is_group_member(request.user, name="Flux Admins")
+
+      - model: authentik_policies_expression.expressionpolicy
+        identifiers:
+          name: weave-gitops-admin-policy
+        state: absent
 
       - model: authentik_policies_expression.expressionpolicy
         id: guacamole-user-policy
@@ -853,11 +875,11 @@ data:
           enabled: true
           order: 0
 
-      # Policy binding for Weave GitOps application
+      # Policy binding for the Flux Operator Web UI application
       - model: authentik_policies.policybinding
         identifiers:
-          target: !KeyOf weave-gitops-app
-          policy: !KeyOf weave-gitops-admin-policy
+          target: !KeyOf flux-web-app
+          policy: !KeyOf flux-admin-policy
           order: 0
         state: present
         attrs:

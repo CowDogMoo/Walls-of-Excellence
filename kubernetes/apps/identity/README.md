@@ -42,8 +42,8 @@ sign-on experience.
     ┌────┴─────┬─────────────┬──────────────┬──────────────┬─────────┐
     ▼          ▼             ▼              ▼              ▼         ▼
 ┌─────────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────┐ ┌────────┐
-│ Grafana │ │ Traefik  │ │ Guacamole  │ │  Weave   │ │Synology │ │ Immich │
-│ (OAuth) │ │ (Forward)│ │  (Forward) │ │  GitOps  │ │   NAS   │ │ (OIDC) │
+│ Grafana │ │ Traefik  │ │ Guacamole  │ │   Flux   │ │Synology │ │ Immich │
+│ (OAuth) │ │ (Forward)│ │  (Forward) │ │  Web UI  │ │   NAS   │ │ (OIDC) │
 │         │ │          │ │            │ │  (OIDC)  │ │ (OIDC)  │ │        │
 └─────────┘ └──────────┘ └────────────┘ └──────────┘ └─────────┘ └────────┘
 ```
@@ -56,7 +56,7 @@ The deployment expects these secrets in the `authentik` 1Password item:
 
 - **GRAFANA_CLIENT_SECRET** — OAuth2 client secret for Grafana
 - **TRAEFIK_CLIENT_SECRET** — Forward auth secret for Traefik
-- **WEAVE_GITOPS_CLIENT_SECRET** — OAuth2 client secret for Weave GitOps
+- **FLUX_WEB_CLIENT_SECRET** — OAuth2 client secret for the Flux Operator Web UI
 - **GUACAMOLE_CLIENT_SECRET** — Forward auth secret for Guacamole
 - **TAILSCALE_CLIENT_SECRET** — OAuth2 client secret for Tailscale
 - **HOMEASSISTANT_CLIENT_SECRET** / **HOMEASSISTANT_TEST_CLIENT_SECRET**
@@ -92,7 +92,7 @@ Groups are defined declaratively in `authentik-oauth-blueprint.yaml`:
 
 - **Grafana Admins** / **Grafana Editors**
 - **Traefik Admins**
-- **Weave GitOps Admins**
+- **Flux Admins**
 - **Guacamole Users**
 - **Tailscale Users**
 - **Home Assistant Admins** / **Home Assistant Users** (and Test variants)
@@ -136,23 +136,18 @@ kubectl logs -n identity deploy/authentik-worker --tail=50 | grep blueprint
 
 ## Service Integration
 
-### Weave GitOps (OIDC)
+### Flux Operator Web UI (OIDC)
 
-- **Issuer URL**: `https://auth.techvomit.xyz/application/o/weave-gitops/`
+- **Issuer URL**: `https://auth.techvomit.xyz/application/o/flux-web/`
   (trailing slash required)
-- **Client ID**: `weave-gitops`
-- **Redirect URL**: `https://weave.techvomit.xyz/oauth2/callback`
+- **Client ID**: `flux-web`
+- **Redirect URL**: `https://flux.techvomit.xyz/oauth2/callback`
 - **Signing Algorithm**: RS256 with "authentik Internal JWT Certificate"
 
-**Additional RBAC Required**: Edit
-`kubernetes/apps/flux-system/weave-gitops/app/oidc-user-clusterrolebinding.yaml`
-and add your email:
-
-```yaml
-subjects:
-  - kind: User
-    name: your-email@example.com
-```
+Kubernetes RBAC follows the **Flux Admins** group: the UI impersonates the
+`groups` claim, and
+`kubernetes/apps/flux-system/flux-web/app/clusterrolebinding.yaml` binds that
+group to `flux-web-admin`. Adding someone to the group is all it takes.
 
 ### Guacamole (Forward Auth + Header Auth)
 
@@ -323,9 +318,10 @@ kubectl exec -n identity deploy/authentik-worker -- \
   ak apply_blueprint /blueprints/mounted/cm-authentik-oauth-blueprint/oauth-providers.yaml
 ```
 
-### Weave GitOps: "No Data" After Login
+### Flux Web UI: "Limited Access" After Login
 
-User lacks Kubernetes RBAC permissions. Add user email to `oidc-user-clusterrolebinding.yaml`.
+The session carries no group bound in Kubernetes. Check the user is in
+**Flux Admins**, then sign out and back in so the new ID token has the group.
 
 ### Guacamole: Still Shows Login Form
 
@@ -388,7 +384,7 @@ All applications use group-based policies:
 
 - [Authentik Documentation](https://docs.goauthentik.io/)
 - [Authentik Blueprints](https://docs.goauthentik.io/docs/terminology/blueprints)
-- [Weave GitOps OIDC Auth](https://docs.gitops.weave.works/docs/configuration/oidc-access/)
+- [Flux Operator Web UI user management](https://fluxoperator.dev/docs/web-ui/user-management/)
 - [Apache Guacamole Header Auth](https://guacamole.apache.org/doc/gug/header-auth.html)
 - [Traefik ForwardAuth](https://doc.traefik.io/traefik/middlewares/http/forwardauth/)
 - [Synology OIDC Configuration](https://kb.synology.com/en-br/DSM/tutorial/How_to_configure_SSO_Client)

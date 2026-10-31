@@ -2,13 +2,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: weave-gitops-oidc-users
-  namespace: flux-system
+  name: flux-web-admins
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: wego-admin-cluster-role
+  name: flux-web-admin
 subjects:
   - apiGroup: rbac.authorization.k8s.io
-    kind: User
-    name: jayson.e.grace@gmail.com
+    kind: Group
+    name: Flux Admins
