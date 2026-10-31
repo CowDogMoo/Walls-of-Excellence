@@ -8,5 +8,5 @@ resources:
   # Flux-Kustomizations
   - ./flux-operator/ks.yaml
   - ./flux-instance/ks.yaml
-  - ./weave-gitops/ks.yaml
+  - ./flux-web/ks.yaml
   - ./addons/ks.yaml
