@@ -59,11 +59,6 @@ data:
           name: Flux Admins
 
       - model: authentik_core.group
-        identifiers:
-          name: Weave GitOps Admins
-        state: absent
-
-      - model: authentik_core.group
         id: guacamole-users
         identifiers:
           name: Guacamole Users
@@ -269,11 +264,6 @@ data:
           access_code_validity: "minutes=1"
           access_token_validity: "hours=1"
           refresh_token_validity: "days=30"
-
-      - model: authentik_providers_oauth2.oauth2provider
-        identifiers:
-          name: Weave GitOps
-        state: absent
 
       # Proxy Provider for Guacamole (Forward Auth)
       - model: authentik_providers_proxy.proxyprovider
@@ -592,12 +582,6 @@ data:
           meta_description: "Flux Operator Web UI - GitOps status and actions"
           policy_engine_mode: any
 
-      # Deleting the application also deletes its policy bindings.
-      - model: authentik_core.application
-        identifiers:
-          slug: weave-gitops
-        state: absent
-
       # Application for Guacamole
       - model: authentik_core.application
         id: guacamole-app
@@ -758,11 +742,6 @@ data:
           name: flux-admin-policy
           expression: |
             return ak_is_group_member(request.user, name="Flux Admins")
-
-      - model: authentik_policies_expression.expressionpolicy
-        identifiers:
-          name: weave-gitops-admin-policy
-        state: absent
 
       - model: authentik_policies_expression.expressionpolicy
         id: guacamole-user-policy
