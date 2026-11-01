@@ -55,8 +55,9 @@ if ! grep -q "^        - name: connection-$CONNECTION_NAME" "$DEPLOYMENT_FILE"; 
     LAST_VOL=$(grep -n "^        - name: connection-" "$DEPLOYMENT_FILE" | tail -1 | cut -d: -f1)
 
     if [ -n "$LAST_VOL" ]; then
-        # Find the secretName line (2 lines after the volume name)
-        SECRET_LINE=$((LAST_VOL + 2))
+        # Find the optional line (3 lines after the volume name), the last
+        # line of that volume
+        SECRET_LINE=$((LAST_VOL + 3))
 
         # Create temp file with the new lines inserted
         awk -v line="$SECRET_LINE" -v conn="$CONNECTION_NAME" -v secret="$SECRET_NAME" '
@@ -65,6 +66,7 @@ if ! grep -q "^        - name: connection-$CONNECTION_NAME" "$DEPLOYMENT_FILE"; 
         print "        - name: connection-" conn
         print "          secret:"
         print "            secretName: " secret
+        print "            optional: true"
         next
       }
       { print }
