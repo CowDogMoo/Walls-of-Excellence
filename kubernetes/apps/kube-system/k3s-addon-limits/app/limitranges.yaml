@@ -1,0 +1,29 @@
+---
+# k3s re-applies its addon manifests (kube-vip, local-path-provisioner,
+# metrics-server, metallb) from /var/lib/rancher/k3s/server/manifests, so
+# their pod specs can't be edited durably; these defaults bound them instead.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-memory-defaults
+  namespace: kube-system
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        memory: 64Mi
+      default:
+        memory: 256Mi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-memory-defaults
+  namespace: metallb-system
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        memory: 96Mi
+      default:
+        memory: 256Mi

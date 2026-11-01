@@ -30,6 +30,12 @@ spec:
     podAnnotations:
       reloader.stakater.com/auto: "true"
     revisionHistoryLimit: 3
+    resources:
+      requests:
+        cpu: 10m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
     configuration:
       logging:
         minimumLevel: Information

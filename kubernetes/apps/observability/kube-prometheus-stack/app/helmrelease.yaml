@@ -23,6 +23,19 @@ spec:
       kubeletEndpointsEnabled: true
       kubeletEndpointSliceEnabled: true
       revisionHistoryLimit: 3
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 128Mi
+      prometheusConfigReloader:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
     defaultRules:
       rules:
         kubeApiserverAvailability: false
@@ -139,6 +152,12 @@ spec:
                   storage: 50Gi
     prometheus-node-exporter:
       fullnameOverride: node-exporter
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
       prometheus:
         monitor:
           enabled: true
@@ -151,6 +170,12 @@ spec:
               targetLabel: kubernetes_node
     kube-state-metrics:
       fullnameOverride: kube-state-metrics
+      resources:
+        requests:
+          cpu: 10m
+          memory: 96Mi
+        limits:
+          memory: 256Mi
       metricLabelsAllowlist:
         - pods=[*]
         - deployments=[*]

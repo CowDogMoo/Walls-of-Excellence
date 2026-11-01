@@ -7,6 +7,7 @@ metadata:
 spec:
   # Hostname that will appear in Tailscale admin console
   hostname: woe-k8s-subnet-router
+  proxyClass: subnet-router
 
   # Configure as a subnet router
   subnetRouter:
