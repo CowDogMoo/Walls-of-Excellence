@@ -36,7 +36,7 @@ spec:
             - name: reconcile
               # Same image as the other mealie jobs: the script needs only the
               # python standard library, and the image is already on the node.
-              image: ghcr.io/mealie-recipes/mealie:v3.29.0
+              image: ghcr.io/mealie-recipes/mealie:v3.30.0
               env:
                 - name: MEALIE_URL
                   value: http://mealie.home-automation.svc.cluster.local:9000
