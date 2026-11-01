@@ -15,6 +15,7 @@ resources:
   - ./externalsecret-jayson-pc.yaml
   - ./externalsecret-k8s3.yaml
   - ./externalsecret-k8s4.yaml
+  - ./externalsecret-bringer-of-despair.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: guacamole

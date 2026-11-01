@@ -10,6 +10,7 @@ vars:
   TEMPLATE_DIR: "{{.ROOT_DIR}}/.taskfiles/guacamole/templates"
   RDP_TEMPLATE: "{{.TEMPLATE_DIR}}/connection-rdp.yaml.tmpl"
   SSH_TEMPLATE: "{{.TEMPLATE_DIR}}/connection-ssh.yaml.tmpl"
+  VNC_TEMPLATE: "{{.TEMPLATE_DIR}}/connection-vnc.yaml.tmpl"
 
 tasks:
   add-connection:
@@ -20,7 +21,7 @@ tasks:
 
       Required Parameters:
         NAME            - Connection identifier (e.g., "myserver", "workstation")
-        PROTOCOL        - Connection protocol ("rdp" or "ssh")
+        PROTOCOL        - Connection protocol ("rdp", "ssh" or "vnc")
         ONEPASSWORD_KEY - The 1Password item key (e.g., "guacamole-myserver")
         VAULT           - 1Password vault name
         HOSTNAME        - Target hostname or IP
@@ -40,9 +41,13 @@ tasks:
       SSH-specific Parameters:
         PRIVATE_KEY - SSH private key content
 
+      VNC-specific Parameters (e.g. macOS Screen Sharing on port 5900):
+        PASSWORD - VNC password (or macOS account password)
+
       Usage:
         task guacamole:add-connection NAME=myserver PROTOCOL=ssh VAULT=homelab HOSTNAME=192.168.1.10 PORT=22 USERNAME=admin
         task guacamole:add-connection NAME=win11 PROTOCOL=rdp VAULT=homelab HOSTNAME=192.168.1.20 PORT=3389 USERNAME=admin PASSWORD=secret
+        task guacamole:add-connection NAME=mac PROTOCOL=vnc VAULT=homelab HOSTNAME=192.168.1.30 PORT=5900 USERNAME=admin PASSWORD=secret
     vars:
       NAME: "{{.NAME}}"
       PROTOCOL: "{{.PROTOCOL}}"
@@ -74,12 +79,12 @@ tasks:
         fi
 
         if [ -z "{{.PROTOCOL}}" ]; then
-          echo "❌ Error: PROTOCOL parameter is required (rdp or ssh)"
+          echo "❌ Error: PROTOCOL parameter is required (rdp, ssh or vnc)"
           exit 1
         fi
 
-        if [ "{{.PROTOCOL}}" != "rdp" ] && [ "{{.PROTOCOL}}" != "ssh" ]; then
-          echo "❌ Error: PROTOCOL must be either 'rdp' or 'ssh'"
+        if [ "{{.PROTOCOL}}" != "rdp" ] && [ "{{.PROTOCOL}}" != "ssh" ] && [ "{{.PROTOCOL}}" != "vnc" ]; then
+          echo "❌ Error: PROTOCOL must be 'rdp', 'ssh' or 'vnc'"
           exit 1
         fi
 
@@ -125,6 +130,8 @@ tasks:
         # Select template based on protocol
         if [ "{{.PROTOCOL}}" = "rdp" ]; then
           TEMPLATE_FILE="{{.RDP_TEMPLATE}}"
+        elif [ "{{.PROTOCOL}}" = "vnc" ]; then
+          TEMPLATE_FILE="{{.VNC_TEMPLATE}}"
         else
           TEMPLATE_FILE="{{.SSH_TEMPLATE}}"
         fi
@@ -212,6 +219,10 @@ tasks:
           # Always add RDP optional fields
           FIELDS="$FIELDS||enable_clipboard=true"
           FIELDS="$FIELDS||enable_audio=true"
+        elif [ "{{.PROTOCOL}}" = "vnc" ]; then
+          if [ -n "{{.PASSWORD}}" ]; then
+            FIELDS="$FIELDS||password={{.PASSWORD}}:password"
+          fi
         else
           if [ -n "{{.PRIVATE_KEY}}" ]; then
             FIELDS="$FIELDS||private_key={{.PRIVATE_KEY}}:password"
@@ -258,7 +269,7 @@ tasks:
 
       Required Parameters:
         NAME     - Connection name (must match the connection created with add-connection)
-        PROTOCOL - Connection protocol (rdp or ssh)
+        PROTOCOL - Connection protocol (rdp, ssh or vnc)
         VAULT    - 1Password vault name
 
       Common Parameters:
@@ -273,6 +284,9 @@ tasks:
 
       SSH-specific Parameters:
         PRIVATE_KEY - SSH private key content
+
+      VNC-specific Parameters (e.g. macOS Screen Sharing on port 5900):
+        PASSWORD - VNC password (or macOS account password)
 
       Usage:
         task guacamole:create-1password-item NAME=myserver PROTOCOL=ssh VAULT=homelab HOSTNAME=192.168.1.10 PORT=22 USERNAME=admin
@@ -311,8 +325,8 @@ tasks:
           exit 1
         fi
 
-        if [ "{{.PROTOCOL}}" != "rdp" ] && [ "{{.PROTOCOL}}" != "ssh" ]; then
-          echo "❌ Error: PROTOCOL must be either 'rdp' or 'ssh'"
+        if [ "{{.PROTOCOL}}" != "rdp" ] && [ "{{.PROTOCOL}}" != "ssh" ] && [ "{{.PROTOCOL}}" != "vnc" ]; then
+          echo "❌ Error: PROTOCOL must be 'rdp', 'ssh' or 'vnc'"
           exit 1
         fi
 
@@ -359,6 +373,10 @@ tasks:
           # Always add RDP optional fields
           FIELDS="$FIELDS||enable_clipboard=true"
           FIELDS="$FIELDS||enable_audio=true"
+        elif [ "{{.PROTOCOL}}" = "vnc" ]; then
+          if [ -n "{{.PASSWORD}}" ]; then
+            FIELDS="$FIELDS||password={{.PASSWORD}}:password"
+          fi
         else
           if [ -n "{{.PRIVATE_KEY}}" ]; then
             FIELDS="$FIELDS||private_key={{.PRIVATE_KEY}}:password"

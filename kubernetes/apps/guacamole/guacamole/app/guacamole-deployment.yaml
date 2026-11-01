@@ -137,6 +137,9 @@ spec:
             - mountPath: /connections/k8s4
               name: connection-k8s4
               readOnly: true
+            - mountPath: /connections/bringer-of-despair
+              name: connection-bringer-of-despair
+              readOnly: true
             - mountPath: /config
               name: guacamole-pvc
               readOnly: true
@@ -170,3 +173,6 @@ spec:
         - name: connection-k8s4
           secret:
             secretName: guacamole-connection-k8s4
+        - name: connection-bringer-of-despair
+          secret:
+            secretName: guacamole-connection-bringer-of-despair
