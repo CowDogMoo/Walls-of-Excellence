@@ -1,0 +1,57 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy-events
+  namespace: observability
+spec:
+  interval: 5m
+  timeout: 10m
+  chart:
+    spec:
+      chart: alloy
+      version: 1.14.4
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: observability
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # A separate name keeps these pods out of the alloy syslog Service.
+    nameOverride: alloy-events
+    fullnameOverride: alloy-events
+    alloy:
+      configMap:
+        create: true
+        content: |
+          // Cluster-wide, so this runs as a single replica: the alloy
+          // DaemonSet would ship every event once per node.
+          loki.source.kubernetes_events "events" {
+            job_name   = "kubernetes-events"
+            log_format = "json"
+            forward_to = [loki.write.loki.receiver]
+          }
+
+          loki.write "loki" {
+            endpoint {
+              url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+            }
+          }
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+    controller:
+      type: deployment
+      replicas: 1
+    serviceMonitor:
+      enabled: true

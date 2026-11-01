@@ -86,6 +86,47 @@ spec:
             forward_to = [loki.process.home_automation.receiver]
           }
 
+          // kube-apiserver audit log; only control-plane nodes have the file
+          local.file_match "k3s_audit" {
+            path_targets = [{
+              "__path__" = "/var/log/kubernetes/audit/audit.log",
+              "job"      = "k3s-audit",
+              "node"     = coalesce(sys.env("HOSTNAME"), constants.hostname),
+            }]
+          }
+
+          loki.source.file "k3s_audit" {
+            targets    = local.file_match.k3s_audit.targets
+            forward_to = [loki.process.k3s_audit.receiver]
+          }
+
+          loki.process "k3s_audit" {
+            forward_to = [loki.write.loki.receiver]
+
+            stage.json {
+              expressions = {
+                verb = "verb",
+                ts   = "stageTimestamp",
+                uri  = "requestURI",
+              }
+            }
+            // Flux server-side-apply dry runs change nothing; the policy
+            // cannot filter on query parameters, so drop them here.
+            stage.drop {
+              source     = "uri"
+              expression = "[?&]dryRun="
+            }
+            stage.timestamp {
+              source = "ts"
+              format = "RFC3339Nano"
+            }
+            stage.labels {
+              values = {
+                verb = "",
+              }
+            }
+          }
+
           // Syslog receiver for external devices (SLZB-06, etc)
           loki.source.syslog "syslog" {
             listener {
