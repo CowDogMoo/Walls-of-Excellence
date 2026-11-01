@@ -1,0 +1,282 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k3s-api-audit-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Kubernetes"
+data:
+  k3s-api-audit.json: |
+    {
+      "uid": "k3s-api-audit",
+      "title": "Kubernetes API Audit",
+      "description": "Who created, changed or deleted what through the kube-apiserver (k3s audit log), plus Kubernetes events",
+      "tags": [
+        "kubernetes",
+        "audit",
+        "k3s",
+        "events",
+        "security"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "type": "custom",
+            "name": "verb",
+            "label": "Verb",
+            "multi": true,
+            "includeAll": true,
+            "allValue": ".+",
+            "query": "create,update,patch,delete,deletecollection",
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "options": []
+          },
+          {
+            "type": "textbox",
+            "name": "user",
+            "label": "User (regex)",
+            "query": ".*",
+            "current": {
+              "text": ".*",
+              "value": ".*"
+            },
+            "options": [
+              {
+                "selected": true,
+                "text": ".*",
+                "value": ".*"
+              }
+            ]
+          },
+          {
+            "type": "textbox",
+            "name": "resource",
+            "label": "Resource (regex)",
+            "query": ".*",
+            "current": {
+              "text": ".*",
+              "value": ".*"
+            },
+            "options": [
+              {
+                "selected": true,
+                "text": ".*",
+                "value": ".*"
+              }
+            ]
+          },
+          {
+            "type": "textbox",
+            "name": "namespace",
+            "label": "Namespace (regex)",
+            "query": ".*",
+            "current": {
+              "text": ".*",
+              "value": ".*"
+            },
+            "options": [
+              {
+                "selected": true,
+                "text": ".*",
+                "value": ".*"
+              }
+            ]
+          },
+          {
+            "type": "custom",
+            "name": "event_type",
+            "label": "Event type",
+            "multi": true,
+            "includeAll": true,
+            "allValue": ".+",
+            "query": "Normal,Warning",
+            "current": {
+              "text": [
+                "Warning"
+              ],
+              "value": [
+                "Warning"
+              ]
+            },
+            "options": []
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "API writes by verb",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 60,
+                "stacking": {
+                  "mode": "normal"
+                }
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "legendFormat": "{{verb}}",
+              "expr": "sum by (verb) (count_over_time({job=\"k3s-audit\", verb=~\"$verb\"} | json user=\"user.username\", ua=\"userAgent\", resource=\"objectRef.resource\", subresource=\"objectRef.subresource\", ns=\"objectRef.namespace\", name=\"objectRef.name\", code=\"responseStatus.code\" | user=~\"$user\" | resource=~\"$resource\" | ns=~\"$namespace\" [$__interval]))"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Top writers",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "legendFormat": "{{user}}",
+              "expr": "topk(10, sum by (user) (count_over_time({job=\"k3s-audit\", verb=~\"$verb\"} | json user=\"user.username\", ua=\"userAgent\", resource=\"objectRef.resource\", subresource=\"objectRef.subresource\", ns=\"objectRef.namespace\", name=\"objectRef.name\", code=\"responseStatus.code\" | user=~\"$user\" | resource=~\"$resource\" | ns=~\"$namespace\" [$__interval])))"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Audit trail",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "One line per write: verb, object, user, client and response code. Expand a line for the full audit event.",
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 8
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "enableLogDetails": true,
+            "dedupStrategy": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{job=\"k3s-audit\", verb=~\"$verb\"} | json user=\"user.username\", ua=\"userAgent\", resource=\"objectRef.resource\", subresource=\"objectRef.subresource\", ns=\"objectRef.namespace\", name=\"objectRef.name\", code=\"responseStatus.code\" | user=~\"$user\" | resource=~\"$resource\" | ns=~\"$namespace\" | line_format \"{{.verb}} {{.resource}}{{if .subresource}}/{{.subresource}}{{end}} {{if .ns}}{{.ns}}/{{end}}{{.name}}  by {{.user}}  ({{.ua}})  -> {{.code}}\""
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Kubernetes events",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 22
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "enableLogDetails": true,
+            "dedupStrategy": "none"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{job=\"kubernetes-events\", namespace=~\"$namespace\"} | json | type=~\"$event_type\" | line_format \"{{.type}} {{.reason}} {{.kind}}/{{.name}}: {{.msg}}\""
+            }
+          ]
+        }
+      ]
+    }

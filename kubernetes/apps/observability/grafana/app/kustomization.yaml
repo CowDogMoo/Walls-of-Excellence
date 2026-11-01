@@ -18,3 +18,4 @@ resources:
   - ./dashboards/troy-backup-dashboard.yaml
   - ./dashboards/adguard-iphone-dns-dashboard.yaml
   - ./dashboards/cluster-recovery-dashboard.yaml
+  - ./dashboards/k3s-api-audit-dashboard.yaml
