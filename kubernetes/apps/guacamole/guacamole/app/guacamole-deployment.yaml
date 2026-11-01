@@ -137,6 +137,12 @@ spec:
             - mountPath: /connections/k8s4
               name: connection-k8s4
               readOnly: true
+            - mountPath: /connections/jayson-laptop
+              name: connection-jayson-laptop
+              readOnly: true
+            - mountPath: /connections/proxmox
+              name: connection-proxmox
+              readOnly: true
             - mountPath: /config
               name: guacamole-pvc
               readOnly: true
@@ -155,18 +161,33 @@ spec:
         - name: guacamole-config
           configMap:
             name: guacamole-config
+        # Optional so a connection whose 1Password item is missing drops that
+        # connection instead of keeping the whole pod from starting.
         - name: connection-jayson-pc
           secret:
             secretName: guacamole-connection-jayson-pc
+            optional: true
         - name: connection-k8s1
           secret:
             secretName: guacamole-connection-k8s1
+            optional: true
         - name: connection-k8s2
           secret:
             secretName: guacamole-connection-k8s2
+            optional: true
         - name: connection-k8s3
           secret:
             secretName: guacamole-connection-k8s3
+            optional: true
         - name: connection-k8s4
           secret:
             secretName: guacamole-connection-k8s4
+            optional: true
+        - name: connection-jayson-laptop
+          secret:
+            secretName: guacamole-connection-jayson-laptop
+            optional: true
+        - name: connection-proxmox
+          secret:
+            secretName: guacamole-connection-proxmox
+            optional: true
