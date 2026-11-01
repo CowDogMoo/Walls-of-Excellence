@@ -15,6 +15,8 @@ resources:
   - ./externalsecret-jayson-pc.yaml
   - ./externalsecret-k8s3.yaml
   - ./externalsecret-k8s4.yaml
+  - ./externalsecret-jayson-laptop.yaml
+  - ./externalsecret-proxmox.yaml
 labels:
   - pairs:
       app.kubernetes.io/name: guacamole
