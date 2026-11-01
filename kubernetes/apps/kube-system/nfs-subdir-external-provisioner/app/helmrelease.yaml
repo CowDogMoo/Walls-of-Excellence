@@ -29,6 +29,12 @@ spec:
   values:
     replicaCount: 1
     strategyType: Recreate
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
 
     image:
       repository: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner

@@ -33,6 +33,12 @@ spec:
       leaderElection:
         namespace: cert-manager
     replicaCount: 3
+    resources:
+      requests:
+        cpu: 10m
+        memory: 96Mi
+      limits:
+        memory: 256Mi
     dns01RecursiveNameservers: "1.1.1.1:53,9.9.9.9:53"
     dns01RecursiveNameserversOnly: true
     prometheus:
@@ -42,5 +48,17 @@ spec:
         prometheusInstance: observability
     webhook:
       replicaCount: 2
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
     cainjector:
       replicaCount: 2
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          memory: 256Mi

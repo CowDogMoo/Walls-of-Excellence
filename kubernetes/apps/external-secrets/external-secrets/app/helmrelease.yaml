@@ -28,6 +28,12 @@ spec:
     installCRDs: true
     replicaCount: 1
     revisionHistoryLimit: 3
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
     grafana:
       enabled: true
     serviceMonitor:
@@ -35,11 +41,23 @@ spec:
       interval: 1m
     webhook:
       revisionHistoryLimit: 3
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 128Mi
       serviceMonitor:
         enabled: true
         interval: 1m
     certController:
       revisionHistoryLimit: 3
+      resources:
+        requests:
+          cpu: 10m
+          memory: 96Mi
+        limits:
+          memory: 256Mi
       serviceMonitor:
         enabled: true
         interval: 1m

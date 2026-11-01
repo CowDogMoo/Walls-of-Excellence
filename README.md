@@ -219,7 +219,7 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **46 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **47 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
@@ -234,7 +234,7 @@ Flux reconciles **46 applications** across **17 namespaces** from [`kubernetes/a
 | `home-automation` | [dinner-planner](kubernetes/apps/home-automation/dinner-planner), [frigate](kubernetes/apps/home-automation/frigate), [grocy](kubernetes/apps/home-automation/grocy), [home-assistant](kubernetes/apps/home-automation/home-assistant), [mealie](kubernetes/apps/home-automation/mealie), [mosquitto](kubernetes/apps/home-automation/mosquitto), [music-assistant](kubernetes/apps/home-automation/music-assistant), [troy-backup](kubernetes/apps/home-automation/troy-backup), [zigbee2mqtt](kubernetes/apps/home-automation/zigbee2mqtt) |
 | `identity` | [authentik](kubernetes/apps/identity/authentik) |
 | `inference` | [ollama](kubernetes/apps/inference/ollama) |
-| `kube-system` | [descheduler](kubernetes/apps/kube-system/descheduler), [nfs-subdir-external-provisioner](kubernetes/apps/kube-system/nfs-subdir-external-provisioner), [reflector](kubernetes/apps/kube-system/reflector), [reloader](kubernetes/apps/kube-system/reloader) |
+| `kube-system` | [descheduler](kubernetes/apps/kube-system/descheduler), [k3s-addon-limits](kubernetes/apps/kube-system/k3s-addon-limits), [nfs-subdir-external-provisioner](kubernetes/apps/kube-system/nfs-subdir-external-provisioner), [reflector](kubernetes/apps/kube-system/reflector), [reloader](kubernetes/apps/kube-system/reloader) |
 | `media` | [immich](kubernetes/apps/media/immich) |
 | `monitoring` | [runzero-explorer](kubernetes/apps/monitoring/runzero-explorer) |
 | `networking` | [adguard-home](kubernetes/apps/networking/adguard-home), [external-dns](kubernetes/apps/networking/external-dns), [ingress-traefik](kubernetes/apps/networking/ingress-traefik), [tailscale-operator](kubernetes/apps/networking/tailscale-operator) |

@@ -256,6 +256,14 @@ spec:
             mountPath: /var/log
             readOnly: true
 
+    configReloader:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 50Mi
+        limits:
+          memory: 128Mi
+
     controller:
       type: daemonset
       tolerations:

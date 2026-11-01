@@ -156,6 +156,12 @@ spec:
     gateway:
       enabled: true
       replicas: 1
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
       podAnnotations:
         reloader.stakater.com/auto: "true"
       verboseLogging: true
