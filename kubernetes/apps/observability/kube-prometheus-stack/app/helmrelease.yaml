@@ -58,6 +58,12 @@ spec:
           global:
             resolveTimeout: 5m
         externalUrl: https://alert-manager.techvomit.xyz
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
         storage:
           volumeClaimTemplate:
             spec:
