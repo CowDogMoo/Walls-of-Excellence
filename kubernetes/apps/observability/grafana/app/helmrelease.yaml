@@ -308,7 +308,7 @@ spec:
       image:
         registry: ghcr.io
         repository: home-operations/k8s-sidecar
-        tag: 2.14.1
+        tag: 2.14.3
       resources:
         requests:
           cpu: 50m
