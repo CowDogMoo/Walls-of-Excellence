@@ -29,7 +29,7 @@ permissions: {}
 
 jobs:
   renovate:
-    uses: CowDogMoo/renovate-config/.github/workflows/renovate.yaml@833f09892169458ef84329952e6634b1611de3e4 # main
+    uses: CowDogMoo/renovate-config/.github/workflows/renovate.yaml@67e843ed540fc5307da997f8b59ea5378bb68b12 # main
     with:
       dry-run: ${{ inputs.dry-run || false }}
       log-level: ${{ inputs.log-level || 'info' }}
