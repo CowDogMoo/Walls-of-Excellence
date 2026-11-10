@@ -219,7 +219,7 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **47 applications** across **17 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **48 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
@@ -239,6 +239,7 @@ Flux reconciles **47 applications** across **17 namespaces** from [`kubernetes/a
 | `monitoring` | [runzero-explorer](kubernetes/apps/monitoring/runzero-explorer) |
 | `networking` | [adguard-home](kubernetes/apps/networking/adguard-home), [external-dns](kubernetes/apps/networking/external-dns), [ingress-traefik](kubernetes/apps/networking/ingress-traefik), [tailscale-operator](kubernetes/apps/networking/tailscale-operator) |
 | `observability` | [alloy](kubernetes/apps/observability/alloy), [blackbox-exporter](kubernetes/apps/observability/blackbox-exporter), [goldilocks](kubernetes/apps/observability/goldilocks), [grafana](kubernetes/apps/observability/grafana), [kube-prometheus-stack](kubernetes/apps/observability/kube-prometheus-stack), [loki](kubernetes/apps/observability/loki), [robusta](kubernetes/apps/observability/robusta), [tempo](kubernetes/apps/observability/tempo), [unpoller](kubernetes/apps/observability/unpoller), [vector](kubernetes/apps/observability/vector) |
+| `punch` | [punch](kubernetes/apps/punch/punch) |
 | `system-upgrade` | [system-upgrade-controller](kubernetes/apps/system-upgrade/system-upgrade-controller) |
 
 <!-- END GENERATED: apps -->

@@ -1,0 +1,28 @@
+---
+# Service + manually-managed Endpoints pointing at the Punch web UI running
+# on a macOS host outside the cluster. Punch only listens on the LAN when its
+# opt-in network setting is on, and always on fixed port 7624.
+apiVersion: v1
+kind: Service
+metadata:
+  name: punch
+  namespace: punch
+spec:
+  ports:
+    - name: http
+      port: 7624
+      protocol: TCP
+      targetPort: 7624
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: punch # name MUST match the Service
+  namespace: punch
+subsets:
+  - addresses:
+      - ip: 192.168.20.35 # bringer-of-despair (macOS host), Wi-Fi DHCP reservation
+    ports:
+      - name: http
+        port: 7624
+        protocol: TCP
