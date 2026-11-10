@@ -8,5 +8,7 @@ labels:
       app.kubernetes.io/instance: punch
 namespace: punch
 resources:
+  - ./externalsecret.yaml
+  - ./serverstransport.yaml
   - ./service.yaml
   - ./ingress.yaml

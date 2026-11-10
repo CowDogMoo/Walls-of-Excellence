@@ -19,7 +19,7 @@ spec:
               service:
                 name: punch
                 port:
-                  number: 7624
+                  number: 7625
   tls:
     - hosts:
         - *host

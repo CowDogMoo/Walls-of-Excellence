@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/traefik.io/serverstransport_v1alpha1.json
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: punch-transport
+  namespace: punch
+spec:
+  # Punch's server certificate is issued to bringer-of-despair by the private
+  # CA in punch-homelab-mtls, so verify against that name and CA.
+  serverName: bringer-of-despair
+  rootCAs:
+    - secret: punch-homelab-mtls
+  certificatesSecrets:
+    - punch-homelab-mtls
