@@ -67,9 +67,52 @@ class RackError(Exception):
 
 _MAC_RE = re.compile(r"^[0-9a-f]{2}(:[0-9a-f]{2}){5}$")
 
+_TOP_KEYS = {"rack", "discrepancies", "networks", "devices", "cables"}
+_RACK_KEYS = {"name", "model", "height_u", "notes"}
+_NETWORK_KEYS = {"name", "vlan", "cidr", "gateway"}
+_DEVICE_KEYS = {
+    "name", "kind", "model", "role", "mac", "ip", "ports", "in_rack", "order", "u", "height_u",
+    "shelf", "mount", "quantity", "watts", "power", "always_on", "notes",
+}
+_POWER_KEYS = {"source", "outlet"}
+_CABLE_KEYS = {"a", "b", "through", "unifi_label", "type", "patch_panel", "label", "color", "notes"}
+_END_KEYS = {"device", "port"}
 
-def _text(value):
-    return "" if value is None else str(value)
+
+def _text(value, what):
+    """A free-text fact, which YAML must have read as text.
+
+    Unquoted, YAML turns 1:12, 012, 4, on and yes into numbers and booleans,
+    and the dashboard would show the converted value.
+    """
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise RackError(
+            f"{what} was read by YAML as {value!r}, not as text. "
+            'Put it in double quotes, for example patch_panel: "1:12"'
+        )
+    return value
+
+
+def _known_keys(raw, keys, what):
+    unknown = sorted(str(key) for key in raw if key not in keys)
+    if unknown:
+        raise RackError(f"{what}: unknown key {', '.join(unknown)}; the keys are {', '.join(sorted(keys))}")
+
+
+def _list(value, what):
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise RackError(f"{what} must be a list of '- ' items, got {value!r}")
+    return value
+
+
+def _flag(value, what):
+    if value is not None and not isinstance(value, bool):
+        raise RackError(f"{what} must be true, false or blank, got {value!r}")
+    return value
 
 
 def _positive_int(value, what):
@@ -88,53 +131,77 @@ def load_model(text):
         raise RackError(f"not valid YAML: {exc}") from exc
     if not isinstance(data, dict):
         raise RackError("rack.yaml must be a map with rack, devices and cables")
+    _known_keys(data, _TOP_KEYS, "rack.yaml")
     rack = data.get("rack") or {}
-    if not isinstance(rack, dict) or not rack.get("name"):
+    if not isinstance(rack, dict) or not _text(rack.get("name"), "rack.name"):
         raise RackError("rack.name is required")
+    _known_keys(rack, _RACK_KEYS, "rack")
     rack_h = _positive_int(rack.get("height_u"), "rack.height_u")
 
+    networks = []
+    for raw in _list(data.get("networks"), "networks"):
+        if not isinstance(raw, dict):
+            raise RackError(f"bad network entry: {raw!r}")
+        _known_keys(raw, _NETWORK_KEYS, "network")
+        name = _text(raw.get("name"), "a network's name")
+        vlan = raw.get("vlan")
+        if not isinstance(vlan, str):
+            vlan = _positive_int(vlan, f"network {name!r}: vlan")
+        networks.append({
+            "name": name,
+            "vlan": vlan,
+            "cidr": _text(raw.get("cidr"), f"network {name!r}: cidr"),
+            "gateway": _text(raw.get("gateway"), f"network {name!r}: gateway"),
+        })
+
     devices = {}
-    for raw in data.get("devices") or []:
-        if not isinstance(raw, dict) or not raw.get("name"):
+    for raw in _list(data.get("devices"), "devices"):
+        name = _text(raw.get("name"), "a device's name") if isinstance(raw, dict) else ""
+        if not name:
             raise RackError(f"every device needs a name: {raw!r}")
-        name = str(raw["name"])
         if name in devices:
             raise RackError(f"device {name!r} is listed twice")
+        what = f"device {name!r}"
+        _known_keys(raw, _DEVICE_KEYS, what)
         kind = raw.get("kind")
-        if kind not in KINDS:
-            raise RackError(f"device {name!r}: kind must be one of {sorted(KINDS)}, got {kind!r}")
+        if not isinstance(kind, str) or kind not in KINDS:
+            raise RackError(f"{what}: kind must be one of {sorted(KINDS)}, got {kind!r}")
         mac = raw.get("mac")
         if mac is not None:
             mac = str(mac).lower()
             if not _MAC_RE.match(mac):
-                raise RackError(f"device {name!r}: mac {raw['mac']!r} is not aa:bb:cc:dd:ee:ff")
-        in_rack = raw.get("in_rack")
-        if in_rack not in (True, False, None):
-            raise RackError(f"device {name!r}: in_rack must be true, false or blank")
+                raise RackError(f"{what}: mac {raw['mac']!r} is not aa:bb:cc:dd:ee:ff")
+        mount = raw.get("mount")
+        if mount not in (None, "rear"):
+            raise RackError(f"{what}: mount must be rear or blank, got {mount!r}")
+        watts = raw.get("watts")
+        if watts is not None and (isinstance(watts, bool) or not isinstance(watts, (int, float))):
+            raise RackError(f"{what}: watts must be a number, got {watts!r}")
         power = raw.get("power") or {}
         if not isinstance(power, dict):
-            raise RackError(f"device {name!r}: power must have source and outlet")
+            raise RackError(f"{what}: power must have source and outlet")
+        _known_keys(power, _POWER_KEYS, f"{what}: power")
         devices[name] = {
             "name": name,
             "kind": kind,
-            "model": _text(raw.get("model")),
-            "role": _text(raw.get("role")),
+            "model": _text(raw.get("model"), f"{what}: model"),
+            "role": _text(raw.get("role"), f"{what}: role"),
             "mac": mac,
-            "ip": _text(raw.get("ip")),
+            "ip": _text(raw.get("ip"), f"{what}: ip"),
             "ports": _switch_ports(name, raw.get("ports")),
-            "in_rack": in_rack,
-            "order": _positive_int(raw.get("order"), f"device {name!r}: order"),
-            "u": _positive_int(raw.get("u"), f"device {name!r}: u"),
-            "height_u": _positive_int(raw.get("height_u"), f"device {name!r}: height_u"),
-            "shelf": raw.get("shelf"),
-            "mount": _text(raw.get("mount")),
-            "quantity": _positive_int(raw.get("quantity"), f"device {name!r}: quantity"),
-            "watts": raw.get("watts"),
-            "power_source": _text(power.get("source")),
-            "power_outlet": _text(power.get("outlet")),
+            "in_rack": _flag(raw.get("in_rack"), f"{what}: in_rack"),
+            "order": _positive_int(raw.get("order"), f"{what}: order"),
+            "u": _positive_int(raw.get("u"), f"{what}: u"),
+            "height_u": _positive_int(raw.get("height_u"), f"{what}: height_u"),
+            "shelf": _text(raw.get("shelf"), f"{what}: shelf") or None,
+            "mount": mount,
+            "quantity": _positive_int(raw.get("quantity"), f"{what}: quantity"),
+            "watts": watts,
+            "power_source": _text(power.get("source"), f"{what}: power.source"),
+            "power_outlet": _text(power.get("outlet"), f"{what}: power.outlet"),
             "has_power": "power" in raw,
-            "always_on": raw.get("always_on") is not False,
-            "notes": _text(raw.get("notes")),
+            "always_on": _flag(raw.get("always_on"), f"{what}: always_on") is not False,
+            "notes": _text(raw.get("notes"), f"{what}: notes"),
         }
 
     macs = {}
@@ -166,30 +233,33 @@ def load_model(text):
 
     cables = []
     direct = {}
-    for raw in data.get("cables") or []:
+    for raw in _list(data.get("cables"), "cables"):
         if not isinstance(raw, dict):
             raise RackError(f"bad cable entry: {raw!r}")
         a, b = raw.get("a"), raw.get("b")
         if not isinstance(a, dict) or not isinstance(b, dict):
             raise RackError(f"cable needs a: {{device, port}} and b: {{device}}: {raw!r}")
         for end in (a, b):
-            if end.get("device") not in devices:
+            _known_keys(end, _END_KEYS, "cable end")
+            if _text(end.get("device"), "a cable end's device") not in devices:
                 raise RackError(f"cable end {end.get('device')!r} is not a listed device")
         _check_port(devices, a, required=True)
         _check_port(devices, b, required=False)
-        through = raw.get("through")
+        what = f"cable from {a['device']} port {a['port']} to {b['device']}"
+        _known_keys(raw, _CABLE_KEYS, what)
+        through = _text(raw.get("through"), f"{what}: through") or None
         if through is not None and through not in devices:
             raise RackError(f"cable through {through!r} is not a listed device")
         cable = {
             "a": (a["device"], a["port"]),
             "b": (b["device"], b.get("port")),
             "through": through,
-            "unifi_label": _text(raw.get("unifi_label")),
-            "type": _text(raw.get("type")),
-            "patch_panel": _text(raw.get("patch_panel")),
-            "label": _text(raw.get("label")),
-            "color": _text(raw.get("color")),
-            "notes": _text(raw.get("notes")),
+            "unifi_label": _text(raw.get("unifi_label"), f"{what}: unifi_label"),
+            "type": _text(raw.get("type"), f"{what}: type"),
+            "patch_panel": _text(raw.get("patch_panel"), f"{what}: patch_panel"),
+            "label": _text(raw.get("label"), f"{what}: label"),
+            "color": _text(raw.get("color"), f"{what}: color"),
+            "notes": _text(raw.get("notes"), f"{what}: notes"),
         }
         if through is None:
             for end in (cable["a"], cable["b"]):
@@ -210,13 +280,15 @@ def load_model(text):
 
     return {
         "rack": {
-            "name": str(rack["name"]),
-            "model": _text(rack.get("model")),
+            "name": rack["name"],
+            "model": _text(rack.get("model"), "rack.model"),
             "height_u": rack_h,
-            "notes": [str(n) for n in rack.get("notes") or []],
+            "notes": [_text(n, "a rack.notes entry") for n in _list(rack.get("notes"), "rack.notes")],
         },
-        "discrepancies": [str(n) for n in data.get("discrepancies") or []],
-        "networks": [n for n in data.get("networks") or [] if isinstance(n, dict)],
+        "discrepancies": [
+            _text(n, "a discrepancies entry") for n in _list(data.get("discrepancies"), "discrepancies")
+        ],
+        "networks": networks,
         "devices": devices,
         "cables": cables,
     }
@@ -259,14 +331,13 @@ def port_expectations(model):
             ends.append((cable["b"], cable["a"]))
         for (switch, port), (far, far_port) in ends:
             dev = devices[far]
-            if dev["kind"] in UNIFI_KINDS or not dev["mac"]:
-                check = "link"
+            by_mac = bool(dev["mac"]) and dev["kind"] not in UNIFI_KINDS
+            if not by_mac:
+                check = "link" if cable["through"] is None else "none"
             elif dev["always_on"]:
                 check = "mac"
             else:
                 check = "mac-when-on"
-            if cable["through"] is not None and check == "link":
-                continue
             # A device reached through another shares that device's cable.
             shared = "shared" if cable["through"] is not None else ""
             rows.append({
@@ -274,10 +345,10 @@ def port_expectations(model):
                 "switch": switch,
                 "port": str(port),
                 "device": far if far_port is None else f"{far} port {far_port}",
-                "mac": dev["mac"] if check != "link" else "",
+                "mac": dev["mac"] if by_mac else "",
                 "kind": dev["kind"],
                 "check": check,
-                "through": _text(cable["through"]),
+                "through": cable["through"] or "",
                 "unifi_label": cable["unifi_label"],
                 "cable_type": cable["type"],
                 "cable_label": cable["label"] or shared,
@@ -455,22 +526,25 @@ def elevation_layout(model):
     Returns (mode, slots, rear, unplaced, children). mode is "scale" when
     every positioned item has a u and a height_u, otherwise "order".
     Anything not known to be outside the rack and without a position lands
-    in unplaced, so a blank never fails the build.
+    in unplaced, so a blank never fails the build. An ISP hand-off is only
+    drawn once in_rack is true.
     """
-    devices = model["devices"]
-    children = {}
-    for dev in devices.values():
+    devices = [d for d in model["devices"].values() if d["in_rack"] is not False]
+    slots, rear, unplaced, children = [], [], [], {}
+    for dev in devices:
         if dev["shelf"] is not None:
-            children.setdefault(dev["shelf"], []).append(dev)
-    slots, rear, unplaced = [], [], []
-    for dev in devices.values():
-        if dev["shelf"] is not None or dev["in_rack"] is False:
             continue
         if dev["mount"] == "rear":
             rear.append(dev)
         elif dev["u"] is not None or dev["order"] is not None:
             slots.append(dev)
-        elif dev["kind"] != "isp":
+        elif dev["kind"] != "isp" or dev["in_rack"] is True:
+            unplaced.append(dev)
+    drawn_shelves = {d["name"] for d in slots}
+    for dev in devices:
+        if dev["shelf"] in drawn_shelves:
+            children.setdefault(dev["shelf"], []).append(dev)
+        elif dev["shelf"] is not None:
             unplaced.append(dev)
     to_scale = (
         bool(slots)
@@ -954,7 +1028,7 @@ def build_poe_ports(panel_id, grid):
 
 
 def _cell(value):
-    text = _text(value).replace("|", "\\|").replace("\n", " ")
+    text = ("" if value is None else str(value)).replace("|", "\\|").replace("\n", " ")
     return text if text else " "
 
 
@@ -969,8 +1043,6 @@ def _position(dev):
         return f"on {dev['shelf']}"
     if dev["mount"] == "rear":
         return "back of rack"
-    if dev["u"] is not None:
-        return f"U{dev['u']}"
     if dev["order"] is not None:
         return f"#{dev['order']}"
     return ""
@@ -1007,7 +1079,7 @@ def inventory_markdown(model):
     ]
     return (
         f"**{model['rack']['name']}**: {model['rack']['model'] or 'model not recorded'}. "
-"Position counts from the top of the rack. "
+        "Position counts from the top of the rack; U counts from the bottom. "
         "**?** marks a fact still to be recorded in `rack.yaml`.\n\n" + _md_table(headers, rows)
     )
 
@@ -1084,7 +1156,8 @@ def build_dashboard(model):
         "Every cable on the rack's switches: what rack.yaml expects on each port next to what UniFi sees "
         "there now. 'Check' is how a cable is verified: mac (the device must be seen on the port), "
         "mac-when-on (same, but the device may sleep), link (UniFi gear or a device with no MAC, so only "
-        "link state is checked). Orange 'not set' cells are facts to record in rack.yaml. VLAN is the "
+        "link state is checked), none (such a device reached through another one, so nothing is checked). "
+        "Orange 'not set' cells are facts to record in rack.yaml. VLAN is the "
         "VLAN of the device seen on the port.",
         {"h": 16, "w": 24, "x": 0, "y": y}, rack_names,
     ))

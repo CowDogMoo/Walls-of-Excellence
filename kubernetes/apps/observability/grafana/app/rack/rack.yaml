@@ -7,8 +7,11 @@
 # Blank values are facts nobody has recorded yet. Fill them in at the rack.
 # Do not put passwords, keys or other secrets in this file: the repository is public.
 #
-# This is ordinary YAML. Double-quote anything containing "#" or ": ", and every
-# MAC address: an all-digit one would otherwise be read as a number.
+# This is ordinary YAML, and YAML reads some unquoted values as numbers or
+# true/false. Put a free-text value that looks like one in double quotes, for
+# example patch_panel: "1:12", label: "012", outlet: "4", color: "on" or
+# notes: "yes". Quote every MAC address too, and anything containing "#" or ": ".
+# The generator stops with an error on an unquoted one and on a misspelt key.
 
 rack:
   name: main-rack

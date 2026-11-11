@@ -24,7 +24,14 @@ A pre-commit hook (`rack-gen`) fails the commit if the generated files are
 stale. It installs its own PyYAML, so it does not depend on yours. The
 generator also rejects mistakes it can see: a cable to a device that is not
 listed, a port number the switch does not have, two devices in the same rack
-unit, a MAC address on two devices.
+unit, a MAC address on two devices, a misspelt key, a value of the wrong
+kind.
+
+Put free-text values in double quotes when they could be read as something
+else. YAML turns an unquoted `1:12`, `012`, `4`, `on` or `yes` into a number
+or true/false, so write `patch_panel: "1:12"`, `label: "012"` and
+`outlet: "4"`. The generator stops with an error naming the field when one is
+left unquoted.
 
 The generator has its own tests: `python3 -I hack/rack_gen_test.py`.
 
