@@ -10,7 +10,7 @@ two YAML files in this directory are generated from it and must not be edited:
 - `rack.yaml`: the facts (rack, devices, cables). Edit this.
 - `rack-dashboard.yaml`: generated. The dashboard ConfigMap Grafana loads.
 - `rack-prometheusrule.yaml`: generated. The expected cables as Prometheus
-  series, plus one alert.
+  series.
 
 ## Changing something
 
@@ -18,10 +18,13 @@ two YAML files in this directory are generated from it and must not be edited:
 2. Regenerate: `python3 -I hack/rack-gen.py`
 3. Commit all three files. Flux deploys them with the `grafana` app.
 
+The generator needs PyYAML (`python3 -m pip install pyyaml`).
+
 A pre-commit hook (`rack-gen`) fails the commit if the generated files are
-stale. The generator also rejects mistakes it can see: a cable to a device
-that is not listed, a port number the switch does not have, two devices in the
-same rack unit, a MAC address on two devices.
+stale. It installs its own PyYAML, so it does not depend on yours. The
+generator also rejects mistakes it can see: a cable to a device that is not
+listed, a port number the switch does not have, two devices in the same rack
+unit, a MAC address on two devices.
 
 The generator has its own tests: `python3 -I hack/rack_gen_test.py`.
 
@@ -83,10 +86,6 @@ Cables (`cables:`):
 Link state, speed, PoE draw and the device on each port refresh from unpoller.
 Positions, power, patch panel and cable details change only when `rack.yaml`
 does.
-
-The **RackCableMoved** alert (warning) fires when a device `rack.yaml` expects
-on one port has been seen on a different port for an hour. A device that is
-off or asleep does not fire it.
 
 ## Known mismatches left as they are
 

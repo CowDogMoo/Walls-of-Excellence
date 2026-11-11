@@ -6,6 +6,8 @@ import sys
 import unittest
 from pathlib import Path
 
+import yaml
+
 HERE = Path(__file__).resolve().parent
 sys.dont_write_bytecode = True  # rack-gen.py is a script; leave no __pycache__
 _spec = importlib.util.spec_from_file_location("rack_gen", HERE / "rack-gen.py")
@@ -72,33 +74,19 @@ def model(text=SAMPLE):
     return rack_gen.load_model(text)
 
 
-class ParserTest(unittest.TestCase):
-    def test_scalars_comments_and_flow_maps(self):
-        data = rack_gen.parse_yaml(SAMPLE)
-        self.assertEqual(data["rack"], {"name": "test-rack", "height_u": 10})
-        self.assertEqual(data["devices"][2]["name"], "Bridge #1")
-        self.assertIs(data["devices"][4]["in_rack"], False)
-        self.assertEqual(data["cables"][0]["a"], {"device": "Core Switch", "port": 1})
-        self.assertIsNone(data["cables"][0]["color"])
-
-    def test_strings_that_look_like_other_things(self):
-        data = rack_gen.parse_yaml("a: 192.168.10.1\nb: it's fine\nc: \"x: y # z\"\nd: 1.5\ne:\n")
-        self.assertEqual(data, {"a": "192.168.10.1", "b": "it's fine", "c": "x: y # z", "d": 1.5, "e": None})
-
-    def test_nested_lists_and_maps(self):
-        data = rack_gen.parse_yaml("top:\n  notes:\n    - one\n    - \"two: 2\"\n  power:\n    source:\n    outlet: 4\n")
-        self.assertEqual(data, {"top": {"notes": ["one", "two: 2"], "power": {"source": None, "outlet": 4}}})
-
-    def test_unsupported_yaml_is_rejected_with_a_line_number(self):
-        with self.assertRaisesRegex(rack_gen.RackError, "line 2"):
-            rack_gen.parse_yaml("a: 1\nb: |\n  text\n")
-        with self.assertRaisesRegex(rack_gen.RackError, "line 1"):
-            rack_gen.parse_yaml("a: { b: 1\n")
-
-
 class ModelTest(unittest.TestCase):
     def test_mac_is_lowercased(self):
         self.assertEqual(model()["devices"]["Core Switch"]["mac"], "aa:bb:cc:00:00:01")
+
+    def test_every_yaml_spelling_of_false_is_read_as_false(self):
+        for word in ("False", "no", "off"):
+            text = SAMPLE.replace("always_on: false", f"always_on: {word}")
+            rows = {r["cable"]: r for r in rack_gen.port_expectations(model(text))}
+            self.assertEqual(rows["Core Switch 3 > Laptop"]["check"], "mac-when-on", word)
+
+    def test_broken_yaml_is_reported_with_a_line_number(self):
+        with self.assertRaisesRegex(rack_gen.RackError, "line 1"):
+            model("rack: { name: test-rack\n")
 
     def test_expectations_cover_both_ends_and_pick_the_check(self):
         rows = {r["cable"]: r for r in rack_gen.port_expectations(model())}
@@ -171,7 +159,8 @@ class OutputTest(unittest.TestCase):
         self.assertIn('grafana_folder: "Network"', configmap)
         rule = first[rack_gen.RULE_OUT]
         self.assertEqual(rule.count("- record: rack_port_info"), 6)
-        self.assertIn("- alert: RackCableMoved", rule)
+        groups = yaml.safe_load(rule)["spec"]["groups"]
+        self.assertEqual([r for g in groups for r in g["rules"] if "alert" in r], [])
 
     def test_committed_files_match_rack_yaml(self):
         outputs = rack_gen.generate(rack_gen.FACTS.read_text(encoding="utf-8"))

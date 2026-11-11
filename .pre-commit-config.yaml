@@ -64,7 +64,8 @@ repos:
 
       - id: rack-gen
         name: Check the rack dashboard is regenerated from rack.yaml
-        language: system
+        language: python
+        additional_dependencies: ["pyyaml==6.0.3"]
         entry: python3 -I hack/rack-gen.py --check
         files: >-
           ^(hack/rack-gen\.py|kubernetes/apps/observability/grafana/app/rack/.*)$

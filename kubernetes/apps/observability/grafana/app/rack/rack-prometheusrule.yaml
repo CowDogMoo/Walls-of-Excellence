@@ -830,23 +830,3 @@ spec:
           expr: >-
             label_replace(label_replace(max by (name, port_num) (unpoller_device_port_poe_watts),
             "switch", "$1", "name", "(.+)"), "port", "$1", "port_num", "(.+)")
-    - name: rack.alerts
-      rules:
-        # Fires only when an expected device is seen on a different switch port.
-        # A device that is simply off or asleep does not fire it, and UniFi's
-        # brief misattributions after a controller restart clear well inside 1h.
-        - alert: RackCableMoved
-          annotations:
-            summary: >-
-              {{ $labels.device }} is on {{ $labels.seen_switch }} port {{ $labels.seen_port }},
-              not {{ $labels.switch }} port {{ $labels.port }}
-            description: >-
-              rack.yaml expects {{ $labels.device }} ({{ $labels.mac }}) on {{ $labels.switch }}
-              port {{ $labels.port }}, but UniFi has seen it on {{ $labels.seen_switch }} port
-              {{ $labels.seen_port }} for an hour. Move the cable back, or update
-              kubernetes/apps/observability/grafana/app/rack/rack.yaml and regenerate.
-          expr: >-
-            (rack_port_info{check=~"mac|mac-when-on"} unless on (switch, port, mac) rack:port_client:info) * on (mac) group_left (seen_switch, seen_port) label_replace(label_replace(topk by (mac) (1, max by (mac, switch, port) (rack:port_client:info)), "seen_switch", "$1", "switch", "(.+)"), "seen_port", "$1", "port", "(.+)")
-          for: 1h
-          labels:
-            severity: warning

@@ -6905,7 +6905,7 @@ data:
           "id": 7,
           "type": "table",
           "title": "Moved or missing",
-          "description": "Cables where rack.yaml and the network disagree: the expected device is on another port, an always-on device is not seen at all, or a switch-to-switch or uplink port has no link. Devices marked always_on: false are only listed when seen on the wrong port. Empty means everything matches. The RackCableMoved alert covers the first case only.",
+          "description": "Cables where rack.yaml and the network disagree: the expected device is on another port, an always-on device is not seen at all, or a switch-to-switch or uplink port has no link. Devices marked always_on: false are only listed when seen on the wrong port. Empty means everything matches.",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"

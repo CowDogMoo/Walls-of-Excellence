@@ -1,15 +1,14 @@
 """Generate the server rack dashboard and its expected-cable rules.
 
 Reads   kubernetes/apps/observability/grafana/app/rack/rack.yaml
-Writes  .../rack/rack-prometheusrule.yaml  (static "expected" series + alert)
+Writes  .../rack/rack-prometheusrule.yaml  (static "expected" series)
         .../rack/rack-dashboard.yaml       (Grafana dashboard ConfigMap)
 
 Usage:
     python3 -I hack/rack-gen.py           regenerate both files
     python3 -I hack/rack-gen.py --check   fail if the committed files are stale
 
-Standard library only. rack.yaml is read by the small YAML-subset parser
-below, so the script needs nothing installed.
+Needs PyYAML. The rack-gen pre-commit hook installs its own copy.
 """
 
 import json
@@ -17,6 +16,8 @@ import math
 import re
 import sys
 from pathlib import Path
+
+import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 RACK_DIR = REPO / "kubernetes/apps/observability/grafana/app/rack"
@@ -61,186 +62,6 @@ class RackError(Exception):
 
 
 # --------------------------------------------------------------------------
-# YAML subset parser
-# --------------------------------------------------------------------------
-
-_KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_ .-]*?):(?:\s+(.*))?$")
-_INT_RE = re.compile(r"^-?\d+$")
-_FLOAT_RE = re.compile(r"^-?\d+\.\d+$")
-
-
-def _strip_comment(line):
-    quote, escaped = None, False
-    for i, ch in enumerate(line):
-        if quote:
-            if escaped:
-                escaped = False
-            elif ch == "\\" and quote == '"':
-                escaped = True
-            elif ch == quote:
-                quote = None
-        elif ch in "\"'" and (i == 0 or line[i - 1] in " {[,"):
-            quote = ch
-        elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
-            return line[:i]
-    return line
-
-
-def _split_flow(body, lineno):
-    parts, depth, quote, escaped, cur = [], 0, None, False, ""
-    for i, ch in enumerate(body):
-        if quote:
-            cur += ch
-            if escaped:
-                escaped = False
-            elif ch == "\\" and quote == '"':
-                escaped = True
-            elif ch == quote:
-                quote = None
-        elif ch in "\"'" and (i == 0 or body[i - 1] in " {[,"):
-            quote = ch
-            cur += ch
-        elif ch in "{[":
-            depth += 1
-            cur += ch
-        elif ch in "}]":
-            depth -= 1
-            cur += ch
-        elif ch == "," and depth == 0:
-            parts.append(cur)
-            cur = ""
-        else:
-            cur += ch
-    if quote or depth:
-        raise RackError(f"line {lineno}: unbalanced quotes or brackets")
-    if cur.strip():
-        parts.append(cur)
-    return [p.strip() for p in parts]
-
-
-def _scalar(text, lineno):
-    text = text.strip()
-    if text in ("", "~", "null"):
-        return None
-    if text[0] == '"':
-        if len(text) < 2 or text[-1] != '"':
-            raise RackError(f"line {lineno}: unterminated double quote")
-        try:
-            return json.loads(text)
-        except ValueError as exc:
-            raise RackError(f"line {lineno}: bad quoted string: {exc}") from exc
-    if text[0] == "'":
-        if len(text) < 2 or text[-1] != "'":
-            raise RackError(f"line {lineno}: unterminated single quote")
-        return text[1:-1].replace("''", "'")
-    if text[0] == "{":
-        if text[-1] != "}":
-            raise RackError(f"line {lineno}: a {{ }} map must close on the same line")
-        out = {}
-        for part in _split_flow(text[1:-1], lineno):
-            m = _KEY_RE.match(part)
-            if not m:
-                raise RackError(f"line {lineno}: expected 'key: value' inside {{ }}, got {part!r}")
-            out[m.group(1)] = _scalar(m.group(2) or "", lineno)
-        return out
-    if text[0] == "[":
-        if text[-1] != "]":
-            raise RackError(f"line {lineno}: a [ ] list must close on the same line")
-        return [_scalar(p, lineno) for p in _split_flow(text[1:-1], lineno)]
-    if text[0] in "&*!|>%@`":
-        raise RackError(
-            f"line {lineno}: unsupported YAML ({text[0]!r}); quote the value or keep to plain 'key: value'"
-        )
-    if text in ("true", "false"):
-        return text == "true"
-    if _INT_RE.match(text):
-        return int(text)
-    if _FLOAT_RE.match(text):
-        return float(text)
-    return text
-
-
-def parse_yaml(text):
-    """Parse the YAML subset rack.yaml is written in."""
-    lines = []
-    for lineno, raw in enumerate(text.splitlines(), 1):
-        body = _strip_comment(raw).rstrip()
-        if not body.strip() or body.strip() == "---":
-            continue
-        indent = len(body) - len(body.lstrip(" "))
-        if body[indent:indent + 1] == "\t":
-            raise RackError(f"line {lineno}: indent with spaces, not tabs")
-        lines.append((lineno, indent, body.strip()))
-    if not lines:
-        return None
-    value, pos = _parse_block(lines, 0, lines[0][1])
-    if pos != len(lines):
-        raise RackError(f"line {lines[pos][0]}: unexpected indentation")
-    return value
-
-
-def _is_item(text):
-    return text == "-" or text.startswith("- ")
-
-
-def _parse_block(lines, pos, indent):
-    if _is_item(lines[pos][2]):
-        return _parse_seq(lines, pos, indent)
-    return _parse_map(lines, pos, indent)
-
-
-def _parse_seq(lines, pos, indent):
-    out = []
-    while pos < len(lines) and lines[pos][1] == indent and _is_item(lines[pos][2]):
-        lineno, _, text = lines[pos]
-        rest = text[1:].strip()
-        if not rest:
-            pos += 1
-            if pos >= len(lines) or lines[pos][1] <= indent:
-                out.append(None)
-                continue
-            value, pos = _parse_block(lines, pos, lines[pos][1])
-        elif _KEY_RE.match(rest) and rest[0] not in "\"'{[":
-            inner = indent + (len(text) - len(rest))
-            lines[pos] = (lineno, inner, rest)
-            value, pos = _parse_map(lines, pos, inner)
-        else:
-            value = _scalar(rest, lineno)
-            pos += 1
-        out.append(value)
-    if pos < len(lines) and lines[pos][1] > indent:
-        raise RackError(f"line {lines[pos][0]}: unexpected indentation")
-    return out, pos
-
-
-def _parse_map(lines, pos, indent):
-    out = {}
-    while pos < len(lines) and lines[pos][1] == indent and not _is_item(lines[pos][2]):
-        lineno, _, text = lines[pos]
-        m = _KEY_RE.match(text)
-        if not m:
-            raise RackError(f"line {lineno}: expected 'key: value', got {text!r}")
-        key, rest = m.group(1), m.group(2)
-        if key in out:
-            raise RackError(f"line {lineno}: duplicate key {key!r}")
-        pos += 1
-        if rest is None or not rest.strip():
-            if pos < len(lines) and (
-                lines[pos][1] > indent
-                or (lines[pos][1] == indent and _is_item(lines[pos][2]))
-            ):
-                value, pos = _parse_block(lines, pos, lines[pos][1])
-            else:
-                value = None
-        else:
-            value = _scalar(rest, lineno)
-        out[key] = value
-    if pos < len(lines) and lines[pos][1] > indent:
-        raise RackError(f"line {lines[pos][0]}: unexpected indentation")
-    return out, pos
-
-
-# --------------------------------------------------------------------------
 # Model
 # --------------------------------------------------------------------------
 
@@ -261,7 +82,10 @@ def _positive_int(value, what):
 
 def load_model(text):
     """Validate rack.yaml and return the model the generators work from."""
-    data = parse_yaml(text)
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise RackError(f"not valid YAML: {exc}") from exc
     if not isinstance(data, dict):
         raise RackError("rack.yaml must be a map with rack, devices and cables")
     rack = data.get("rack") or {}
@@ -535,37 +359,8 @@ def build_rule(model):
         "          expr: >-",
         '            label_replace(label_replace(max by (name, port_num) (unpoller_device_port_poe_watts),',
         '            "switch", "$1", "name", "(.+)"), "port", "$1", "port_num", "(.+)")',
-        "    - name: rack.alerts",
-        "      rules:",
-        "        # Fires only when an expected device is seen on a different switch port.",
-        "        # A device that is simply off or asleep does not fire it, and UniFi's",
-        "        # brief misattributions after a controller restart clear well inside 1h.",
-        "        - alert: RackCableMoved",
-        "          annotations:",
-        "            summary: >-",
-        "              {{ $labels.device }} is on {{ $labels.seen_switch }} port {{ $labels.seen_port }},",
-        "              not {{ $labels.switch }} port {{ $labels.port }}",
-        "            description: >-",
-        "              rack.yaml expects {{ $labels.device }} ({{ $labels.mac }}) on {{ $labels.switch }}",
-        "              port {{ $labels.port }}, but UniFi has seen it on {{ $labels.seen_switch }} port",
-        "              {{ $labels.seen_port }} for an hour. Move the cable back, or update",
-        "              kubernetes/apps/observability/grafana/app/rack/rack.yaml and regenerate.",
-        "          expr: >-",
-        f"            {MOVED_EXPR}",
-        "          for: 1h",
-        "          labels:",
-        "            severity: warning",
     ]
     return "\n".join(out) + "\n"
-
-
-# Expected MAC cables whose device is seen, but on another switch port.
-MOVED_EXPR = (
-    '(rack_port_info{check=~"mac|mac-when-on"} unless on (switch, port, mac) rack:port_client:info)'
-    ' * on (mac) group_left (seen_switch, seen_port)'
-    ' label_replace(label_replace(topk by (mac) (1, max by (mac, switch, port) (rack:port_client:info)),'
-    ' "seen_switch", "$1", "switch", "(.+)"), "seen_port", "$1", "port", "(.+)")'
-)
 
 
 # --------------------------------------------------------------------------
@@ -1005,6 +800,15 @@ def build_cable_table(panel_id, title, description, grid, switches):
     return _table(panel_id, title, description, grid, targets, transformations, overrides, ["Switch", "Port"])
 
 
+# Expected MAC cables whose device is seen, but on another switch port.
+MOVED_EXPR = (
+    '(rack_port_info{check=~"mac|mac-when-on"} unless on (switch, port, mac) rack:port_client:info)'
+    ' * on (mac) group_left (seen_switch, seen_port)'
+    ' label_replace(label_replace(topk by (mac) (1, max by (mac, switch, port) (rack:port_client:info)),'
+    ' "seen_switch", "$1", "switch", "(.+)"), "seen_port", "$1", "port", "(.+)")'
+)
+
+
 def build_moved_table(panel_id, grid):
     missing = (
         '(rack_port_info{check="mac"} unless on (switch, port, mac) rack:port_client:info)'
@@ -1036,7 +840,7 @@ def build_moved_table(panel_id, grid):
         "Cables where rack.yaml and the network disagree: the expected device is on another port, "
         "an always-on device is not seen at all, or a switch-to-switch or uplink port has no link. "
         "Devices marked always_on: false are only listed when seen on the wrong port. "
-        "Empty means everything matches. The RackCableMoved alert covers the first case only."
+        "Empty means everything matches."
     )
     return _table(panel_id, "Moved or missing", description, grid, targets, transformations, overrides,
                   ["Switch", "Port"], no_value="Nothing moved or missing")

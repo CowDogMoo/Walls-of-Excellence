@@ -7,10 +7,8 @@
 # Blank values are facts nobody has recorded yet. Fill them in at the rack.
 # Do not put passwords, keys or other secrets in this file: the repository is public.
 #
-# The file is read by a small parser, so keep to the shapes already used here:
-# "key: value" lines, "- " list items, one-line { key: value } maps, and
-# double-quoted strings for anything containing "#", ": " or a leading digit pair
-# such as a MAC address.
+# This is ordinary YAML. Double-quote anything containing "#" or ": ", and every
+# MAC address: an all-digit one would otherwise be read as a number.
 
 rack:
   name: main-rack
