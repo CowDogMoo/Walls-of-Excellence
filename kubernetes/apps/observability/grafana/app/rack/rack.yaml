@@ -1,0 +1,1166 @@
+---
+# Rack facts: the one hand-edited source for the "Server Rack" Grafana dashboard.
+#
+# After any edit run:  python3 -I hack/rack-gen.py
+# and commit the two regenerated files next to this one. See README.md here.
+#
+# Blank values are facts nobody has recorded yet. Fill them in at the rack.
+# Do not put passwords, keys or other secrets in this file: the repository is public.
+#
+# The file is read by a small parser, so keep to the shapes already used here:
+# "key: value" lines, "- " list items, one-line { key: value } maps, and
+# double-quoted strings for anything containing "#", ": " or a leading digit pair
+# such as a MAC address.
+
+rack:
+  name: main-rack
+  model: StarTech RK4236BKB 4-post open-frame cabinet, on casters
+  height_u: 42
+  notes:
+    - "Layout order is top to bottom, from the Equipment and Layout document. Exact U numbers were never written down, so the drawing is in order only until every positioned item has a u and a height_u."
+    - "Cable routing: power runs down the right side (facing the front), speaker wire down the left."
+    - "Power: a rack-mounted ADJ PC-100A strip at the front, a StarTech 24-outlet 120 V 15 A strip at the back of the rack, and an APC SMC1500-2UC UPS."
+    - "Recover from an outage: flip every red switch down so everything starts powered off, then flip every red switch back up."
+    - "The TRO.Y was installed in the rack backwards: take the rack door off and use a paperclip to reach its reset button. It is a TRO.Y v1; stay on firmware v2.17 unless there is a reason to update."
+    - "Sonos Amps are cabled with CAT6a from the back of each amp."
+    - "Hue bridges need their button pushed during setup, so stay near the rack. Their switch port profile is IoT."
+    - "WAN2 (CenturyLink) modem is in transparent bridged mode, untagged, and the UDM Pro tags VLAN 201 on that port."
+    - "Planned but not confirmed by discovery: 10 Gb network cards for the macOS clients and the NAS."
+
+# Where the two source documents disagree with what the network reports today.
+discrepancies:
+  - "Equipment list names a UniFi Switch 16 XG; discovery found a US XG 6 PoE (US6XG150) on a 1 m DAC to the 48-port switch."
+  - "Layout shelf 2 holds a 'UniFi device and white box'; the UniFi device is assumed to be the US XG 6 PoE and the white box is not identified."
+  - "Switch port labels 26 and 43 are swapped: port 26 is labelled k8s6 but carries k8s5, port 43 is labelled k8s5 but carries k8s6. This file records what is really connected."
+  - "Sonos zone names differ: the documents say Master Bed, Master Bath, Upstairs Office and Downstairs Guest; UniFi calls the same amps Our Bedroom, Our Bathroom, Nursery and Basement Office (matched by IP address)."
+  - "The network document lists nine Sonos Amp addresses; eleven amps are on the switch (Amanda's Office .111 and Garage .250 are not in that list)."
+  - "Hue: the documents mention Hub #1 and Hub #2 on the NAS shelf; discovery found Hue Bridge #2 and #3 on the rack switch and Hue Bridge #1 on the Our Bedroom room switch."
+  - "Cameras: the documents list four Annke NC800; the four outdoor cameras report a Hikvision network card (Annke rebrands Hikvision). The Amcrest AD110 doorbell is not on a wired port."
+  - "The six Janus shade hubs are not on the network under that name. The 'lutron shade buttons' client on port 24 may be related; unconfirmed."
+  - "UniFi's client records for k8s3 and k8s4 show 192.168.20.13 and .15; the nodes use 192.168.20.124 and .101."
+  - "The network document's Guest network (192.168.50.0/24) was not found in discovery; a Dyson network (VLAN 60) was."
+
+networks:
+  - name: Main
+    vlan: untagged
+    cidr: 192.168.10.0/24
+    gateway: 192.168.10.1
+  - name: Boss
+    vlan: 20
+    cidr: 192.168.20.0/24
+    gateway: 192.168.20.1
+  - name: IoT
+    vlan: 30
+    cidr: 192.168.30.0/24
+    gateway: 192.168.30.1
+  - name: Camera
+    vlan: 40
+    cidr: 192.168.40.0/24
+    gateway: 192.168.40.1
+  - name: Guest
+    vlan:
+    cidr: 192.168.50.0/24
+    gateway: 192.168.50.1
+  - name: Dyson
+    vlan: 60
+    cidr:
+    gateway:
+
+# Device fields
+#   name      unique; for UniFi gear and K3s nodes it must match the UniFi / node name
+#   kind      switch, gateway, access-point, node, nas, ups, amp, hub, bridge, pdu, fan,
+#             light, patch-panel, shelf, power-supply, space, isp, client, camera, other
+#   in_rack   true, false, or blank when nobody has confirmed it
+#   order     position from the top of the rack (1 = top), from the layout document
+#   u         lowest rack unit the item occupies (U1 is the bottom)   <- fill in
+#   height_u  how many rack units it occupies                         <- fill in if blank
+#   shelf     name of the shelf it sits on, instead of order / u
+#   mount     "rear" for items on the back of the rack
+#   power     which strip or UPS feeds it, and which outlet           <- fill in
+#   always_on false for things that sleep, so they are not reported missing
+devices:
+  # ---- In the rack, top to bottom -------------------------------------------------
+  - name: Exhaust fan
+    kind: fan
+    model: AC Infinity CLOUDPLATE T7
+    role: Exhaust at the top of the rack
+    in_rack: true
+    order: 1
+    u:
+    height_u: 2
+    watts: 10
+    power:
+      source:
+      outlet:
+
+  - name: Rack light panel
+    kind: light
+    model: StarTech 1U light panel
+    role: Rack lighting
+    in_rack: true
+    order: 2
+    u:
+    height_u: 1
+    watts: 6
+    power:
+      source:
+      outlet:
+
+  - name: Front power strip
+    kind: pdu
+    model: ADJ PC-100A
+    role: Rack-mounted switched power strip
+    in_rack: true
+    order: 3
+    u:
+    height_u:
+    power:
+      source:
+      outlet:
+
+  - name: UDMPRO
+    kind: gateway
+    model: UniFi Dream Machine Pro
+    role: Router and UniFi controller
+    mac: "78:45:58:d2:3c:91"
+    ip: 192.168.10.1
+    ports: 11
+    in_rack: true
+    order: 4
+    u:
+    height_u: 1
+    watts: 33
+    power:
+      source:
+      outlet:
+
+  - name: Patch panel 1
+    kind: patch-panel
+    model: Cable Matters 1U 24-port keystone
+    role: Patch panel above the 48-port switch
+    in_rack: true
+    order: 5
+    u:
+    height_u: 1
+
+  - name: Big POE Switch
+    kind: switch
+    model: UniFi USW Pro 48 PoE
+    role: Main switch; everything home-runs to it
+    mac: "24:5a:4c:7f:29:fb"
+    ip: 192.168.10.120
+    ports: 52
+    in_rack: true
+    order: 6
+    u:
+    height_u: 1
+    watts: 60
+    power:
+      source:
+      outlet:
+
+  - name: Patch panel 2
+    kind: patch-panel
+    model:
+    role: Patch panel below the 48-port switch
+    in_rack: true
+    order: 7
+    u:
+    height_u: 1
+    notes: Model assumed to match patch panel 1; confirm.
+
+  - name: Shelf 1
+    kind: shelf
+    role: NAS and Hue bridges
+    in_rack: true
+    order: 8
+    u:
+    height_u:
+
+  - name: Shelf 2
+    kind: shelf
+    role: UniFi device and white box
+    in_rack: true
+    order: 9
+    u:
+    height_u:
+
+  - name: Shelf 3
+    kind: shelf
+    role: Six Sonos Amps
+    in_rack: true
+    order: 10
+    u:
+    height_u:
+
+  - name: Shelf 4
+    kind: shelf
+    role: Five Sonos Amps
+    in_rack: true
+    order: 11
+    u:
+    height_u:
+
+  - name: Shelf 5
+    kind: shelf
+    role: K3s cluster
+    in_rack: true
+    order: 12
+    u:
+    height_u:
+
+  - name: Open space 1
+    kind: space
+    role: Open space, about 1U
+    in_rack: true
+    order: 13
+    u:
+    height_u: 1
+
+  - name: troy
+    kind: hub
+    model: Screen Innovations TRO.Y v1 IP control gateway
+    role: Shade control gateway, powered by PoE
+    mac: "70:b3:d5:cf:b2:02"
+    ip: 192.168.10.247
+    in_rack: true
+    order: 14
+    u:
+    height_u:
+    notes: Installed backwards; firmware held at v2.17.
+
+  - name: Janus shade hubs
+    kind: hub
+    model: Janus shade hub
+    quantity: 6
+    role: Shade hubs, two per U
+    in_rack: true
+    order: 15
+    u:
+    height_u: 3
+    notes: Not seen on the network.
+
+  - name: Shelf 6
+    kind: shelf
+    role: Janus power supplies
+    in_rack: true
+    order: 16
+    u:
+    height_u:
+
+  - name: Open space 2
+    kind: space
+    role: Open space, about 1U
+    in_rack: true
+    order: 17
+    u:
+    height_u: 1
+
+  - name: UPS
+    kind: ups
+    model: APC SmartConnect SMC1500-2UC
+    role: Battery backup; has a network card but no metrics are collected yet
+    mac: "28:29:86:58:8d:a8"
+    ip: 192.168.20.52
+    in_rack: true
+    order: 18
+    u:
+    height_u: 2
+    power:
+      source:
+      outlet:
+
+  - name: Intake fan
+    kind: fan
+    model: AC Infinity CLOUDPLATE T7
+    role: Intake at the bottom of the rack
+    in_rack: true
+    order: 19
+    u:
+    height_u: 2
+    watts: 10
+    power:
+      source:
+      outlet:
+
+  - name: Rear power strip
+    kind: pdu
+    model: StarTech 24-outlet 120 V 15 A rackmount power strip
+    role: Power strip on the back of the rack
+    in_rack: true
+    mount: rear
+    power:
+      source:
+      outlet:
+
+  # ---- Shelf 1: NAS and Hue bridges ----------------------------------------------
+  - name: grinnich_nas
+    kind: nas
+    model: Synology DS1621+
+    role: Data and camera footage; 6x WD Red Pro 10 TB in RAID 10
+    mac: "00:11:32:fa:0b:a7"
+    ip: 192.168.20.210
+    in_rack: true
+    shelf: Shelf 1
+    power:
+      source:
+      outlet:
+
+  - name: "Hue Bridge #2"
+    kind: bridge
+    model: Philips Hue Bridge
+    role: Lighting bridge
+    mac: "ec:b5:fa:88:f5:7e"
+    ip: 192.168.30.163
+    in_rack:
+    shelf: Shelf 1
+    notes: Shelf assumed from the layout document; confirm it is in the rack.
+    power:
+      source:
+      outlet:
+
+  - name: "Hue Bridge #3"
+    kind: bridge
+    model: Philips Hue Bridge
+    role: Lighting bridge
+    mac: "ec:b5:fa:a5:b3:15"
+    ip: 192.168.30.214
+    in_rack:
+    shelf: Shelf 1
+    notes: Shelf assumed from the layout document; confirm it is in the rack.
+    power:
+      source:
+      outlet:
+
+  # ---- Shelf 2: UniFi device and white box ----------------------------------------
+  - name: US XG 6 PoE
+    kind: switch
+    model: UniFi US XG 6 PoE
+    role: 10 GbE switch
+    mac: "24:5a:4c:14:3f:1b"
+    ip: 192.168.10.60
+    ports: 6
+    in_rack: true
+    shelf: Shelf 2
+    notes: Assumed to be the layout document's "UniFi device"; it is within 1 m of the 48-port switch (1 m DAC).
+    power:
+      source:
+      outlet:
+
+  - name: White box
+    kind: other
+    role: Unidentified box from the layout document
+    in_rack: true
+    shelf: Shelf 2
+
+  # ---- Shelf 3: six Sonos Amps ------------------------------------------------------
+  - name: Our Bedroom Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Master Bed"
+    mac: "f0:f6:c1:98:5c:44"
+    ip: 192.168.30.106
+    in_rack: true
+    shelf: Shelf 3
+    power:
+      source:
+      outlet:
+
+  - name: Our Bathroom Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Master Bath"
+    mac: "f0:f6:c1:91:f1:70"
+    ip: 192.168.30.108
+    in_rack: true
+    shelf: Shelf 3
+    power:
+      source:
+      outlet:
+
+  - name: Upstairs Guest Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Upstairs Guest"
+    mac: "38:42:0b:21:ff:5f"
+    ip: 192.168.30.107
+    in_rack: true
+    shelf: Shelf 3
+    power:
+      source:
+      outlet:
+
+  - name: Nursery Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Upstairs Office"
+    mac: "38:42:0b:21:ff:4a"
+    ip: 192.168.30.100
+    in_rack: true
+    shelf: Shelf 3
+    power:
+      source:
+      outlet:
+
+  - name: Dining Room Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Dining Room"
+    mac: "f0:f6:c1:98:5c:32"
+    ip: 192.168.30.102
+    in_rack: true
+    shelf: Shelf 3
+    power:
+      source:
+      outlet:
+
+  - name: Family Room Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Family Room"
+    mac: "38:42:0b:21:ff:bc"
+    ip: 192.168.30.104
+    in_rack: true
+    shelf: Shelf 3
+    power:
+      source:
+      outlet:
+
+  # ---- Shelf 4: five Sonos Amps -----------------------------------------------------
+  - name: Living Room and Kitchen Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Living Room and Kitchen"
+    mac: "f0:f6:c1:93:fc:09"
+    ip: 192.168.30.103
+    in_rack: true
+    shelf: Shelf 4
+    power:
+      source:
+      outlet:
+
+  - name: Amanda's Office Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Amanda Office"
+    mac: "38:42:0b:21:98:e7"
+    ip: 192.168.30.111
+    in_rack: true
+    shelf: Shelf 4
+    power:
+      source:
+      outlet:
+
+  - name: Theater Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Theatre Room"
+    mac: "38:42:0b:21:ff:aa"
+    ip: 192.168.30.101
+    in_rack: true
+    shelf: Shelf 4
+    power:
+      source:
+      outlet:
+
+  - name: Basement Office Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Downstairs Guest"
+    mac: "38:42:0b:21:ff:29"
+    ip: 192.168.30.105
+    in_rack: true
+    shelf: Shelf 4
+    power:
+      source:
+      outlet:
+
+  - name: Garage Amp
+    kind: amp
+    model: Sonos Amp
+    role: "Zone: Garage"
+    mac: "38:42:0b:21:99:95"
+    ip: 192.168.30.250
+    in_rack: true
+    shelf: Shelf 4
+    power:
+      source:
+      outlet:
+
+  # ---- Shelf 5: K3s cluster ---------------------------------------------------------
+  - name: k8s1
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 8 GB
+    role: K3s control plane and etcd
+    mac: "e4:5f:01:b9:bd:eb"
+    ip: 192.168.20.170
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 25
+
+  - name: k8s2
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 8 GB
+    role: K3s control plane and etcd
+    mac: "e4:5f:01:ac:a0:06"
+    ip: 192.168.20.239
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 27
+
+  - name: k8s3
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 8 GB
+    role: K3s worker
+    mac: "d8:3a:dd:e5:43:f0"
+    ip: 192.168.20.124
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 29
+
+  - name: k8s4
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 4 GB
+    role: K3s worker
+    mac: "e4:5f:01:c6:ed:b6"
+    ip: 192.168.20.101
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 41
+
+  - name: k8s5
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 4 GB
+    role: K3s control plane and etcd
+    mac: "e4:5f:01:c6:f7:4f"
+    ip: 192.168.20.122
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 26
+
+  - name: k8s6
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 8 GB
+    role: K3s worker
+    mac: "d8:3a:dd:45:99:60"
+    ip: 192.168.20.22
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 43
+
+  - name: k8s7
+    kind: node
+    model: Raspberry Pi, arm64, 4 cores, 8 GB
+    role: K3s worker
+    mac: "2c:cf:67:0a:a2:57"
+    ip: 192.168.20.23
+    in_rack: true
+    shelf: Shelf 5
+    notes: Draws no PoE, so it is powered some other way; record how.
+    power:
+      source:
+      outlet:
+
+  - name: k8s9
+    kind: node
+    model: Radxa ROCK 5B, arm64, 8 cores, 32 GB
+    role: K3s storage node (NVMe)
+    mac: "00:e0:4c:03:44:5a"
+    ip: 192.168.20.60
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source: PoE from Big POE Switch
+      outlet: port 42
+
+  - name: proxmox
+    kind: other
+    model: Intel mini PC
+    role: Proxmox host for the k8s8 virtual machine
+    mac: "1c:69:7a:9c:b1:bf"
+    ip: 192.168.20.80
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source:
+      outlet:
+
+  - name: USB-C dock
+    kind: other
+    role: USB-C dock on the cluster shelf
+    in_rack: true
+    shelf: Shelf 5
+    power:
+      source:
+      outlet:
+
+  # ---- Shelf 6: Janus power supplies ------------------------------------------------
+  - name: Janus power supplies
+    kind: power-supply
+    model: Janus power supply
+    quantity: 6
+    role: One supply per Janus shade hub
+    in_rack: true
+    shelf: Shelf 6
+    power:
+      source:
+      outlet:
+
+  # ---- Rack membership not confirmed ------------------------------------------------
+  - name: lutron shade buttons
+    kind: other
+    model: Texas Instruments network card
+    role: Shade button controller
+    mac: "18:93:d7:cb:59:e8"
+    ip: 192.168.10.190
+    in_rack:
+
+  # ---- Not in the rack, but a rack cable ends at them --------------------------------
+  - name: k8s8
+    kind: node
+    model: Virtual machine on proxmox, amd64, 2 vCPU, 8 GB
+    role: K3s worker
+    mac: "bc:24:11:d7:46:85"
+    ip: 192.168.20.200
+    in_rack: false
+
+  - name: Top Floor Wireless Access Point
+    kind: access-point
+    model: UniFi 6 Long-Range
+    mac: "78:45:58:cc:ae:08"
+    ip: 192.168.10.108
+    in_rack: false
+
+  - name: Main Floor Wireless Access Point
+    kind: access-point
+    model: UniFi 6 Long-Range
+    mac: "78:45:58:cc:b3:18"
+    ip: 192.168.10.129
+    in_rack: false
+
+  - name: Basement Wireless Access Point
+    kind: access-point
+    model: UniFi 6 Long-Range
+    mac: "78:45:58:cc:92:0c"
+    ip: 192.168.10.55
+    in_rack: false
+
+  - name: Theater Room Switch
+    kind: switch
+    model: UniFi USW Lite 8 PoE
+    mac: "f4:e2:c6:d1:69:e9"
+    ip: 192.168.10.62
+    ports: 8
+    in_rack: false
+
+  - name: Living Room Switch
+    kind: switch
+    model: UniFi USW Flex Mini
+    mac: "d0:21:f9:bd:87:24"
+    ip: 192.168.10.146
+    ports: 5
+    in_rack: false
+
+  - name: Our Bedroom Switch
+    kind: switch
+    model: UniFi USW Flex Mini
+    mac: "78:45:58:47:30:81"
+    ip: 192.168.10.26
+    ports: 5
+    in_rack: false
+
+  - name: Basement office switch
+    kind: other
+    model:
+    role: Unmanaged switch assumed behind US XG 6 PoE port 4 (six devices share that port)
+    in_rack: false
+    notes: Model and location not recorded.
+
+  - name: Google Fiber
+    kind: isp
+    role: WAN1
+    in_rack:
+    notes: What the port plugs into (fibre jack or modem) is not recorded.
+
+  - name: CenturyLink
+    kind: isp
+    role: WAN2, tagged VLAN 201, modem in transparent bridged mode
+    in_rack:
+    notes: What the port plugs into is not recorded.
+
+  - name: Front Left Camera
+    kind: camera
+    model: Annke NC800
+    mac: "d4:e8:53:94:64:37"
+    ip: 192.168.40.200
+    in_rack: false
+
+  - name: Front Right Camera
+    kind: camera
+    model: Annke NC800
+    mac: "d4:e8:53:94:64:1b"
+    ip: 192.168.40.201
+    in_rack: false
+
+  - name: Back Left Camera
+    kind: camera
+    model: Annke NC800
+    mac: "d4:e8:53:94:64:50"
+    ip: 192.168.40.202
+    in_rack: false
+
+  - name: Back Right Camera
+    kind: camera
+    model: Annke NC800
+    mac: "d4:e8:53:94:64:47"
+    ip: 192.168.40.203
+    in_rack: false
+
+  - name: Garage Camera
+    kind: camera
+    model: Amcrest
+    mac: "9c:8e:cd:31:fb:e3"
+    ip: 192.168.40.205
+    in_rack: false
+
+  - name: Living Room Camera
+    kind: camera
+    model: Amcrest
+    mac: "9c:8e:cd:39:2d:84"
+    ip: 192.168.40.204
+    in_rack: false
+
+  - name: SLZB-06 Zigbee Coordinator
+    kind: other
+    model: SLZB-06
+    role: Zigbee coordinator, powered by PoE
+    mac: "84:1f:e8:2a:89:0b"
+    ip: 192.168.20.31
+    in_rack: false
+    notes: Its switch port is labelled Amanda's Office.
+
+  - name: "Hue Bridge #1"
+    kind: bridge
+    model: Philips Hue Bridge
+    role: Lighting bridge; holds 75 lights and 19 accessories per the equipment document
+    mac: "ec:b5:fa:9b:f7:f4"
+    ip: 192.168.30.197
+    in_rack: false
+
+  - name: Guest Room Apple TV
+    kind: client
+    mac: "a8:51:ab:d3:23:be"
+    ip: 192.168.20.56
+    in_rack: false
+    always_on: false
+
+  - name: Basement Office Apple TV
+    kind: client
+    mac: "a8:51:ab:d2:bd:7f"
+    ip: 192.168.20.20
+    in_rack: false
+    always_on: false
+
+  - name: Jayson-PC
+    kind: client
+    mac: "2c:f0:5d:d9:b5:2e"
+    ip: 192.168.20.89
+    in_rack: false
+    always_on: false
+
+  - name: Jayson's Office TV
+    kind: client
+    mac: "08:97:98:23:ef:55"
+    ip: 192.168.20.26
+    in_rack: false
+    always_on: false
+
+  - name: ouroboros
+    kind: client
+    role: macOS host
+    mac: "8c:ae:4c:af:0b:86"
+    ip: 192.168.20.19
+    in_rack: false
+    always_on: false
+
+  - name: bringer-of-despair
+    kind: client
+    role: macOS host
+    mac: "00:e0:4c:4a:76:a8"
+    ip: 192.168.20.27
+    in_rack: false
+    always_on: false
+
+  - name: serpent
+    kind: node
+    model: Lima virtual machine on a Mac, arm64, 4 cores, 16 GB
+    role: K3s worker (macworker)
+    mac: "52:55:55:5d:cf:65"
+    ip: 192.168.20.90
+    in_rack: false
+    always_on: false
+    notes: Which Mac hosts it is not recorded.
+
+  - name: Theater Room Sony TV
+    kind: client
+    mac: "ac:80:0a:66:55:7d"
+    in_rack: false
+    always_on: false
+
+  - name: Theater Room Receiver
+    kind: client
+    mac: "a8:a2:37:ea:84:e2"
+    ip: 192.168.10.144
+    in_rack: false
+    always_on: false
+
+  - name: Theater Room Sonos
+    kind: client
+    model: Sonos
+    mac: "38:42:0b:8b:11:f0"
+    ip: 192.168.30.109
+    in_rack: false
+
+  - name: Theater Room Apple TV
+    kind: client
+    mac: "a8:51:ab:13:79:ce"
+    ip: 192.168.20.65
+    in_rack: false
+    always_on: false
+
+  - name: Living Room Apple TV
+    kind: client
+    mac: "a8:51:ab:98:c2:db"
+    ip: 192.168.20.46
+    in_rack: false
+    always_on: false
+
+  - name: Living Room Sonos
+    kind: client
+    model: Sonos
+    mac: "f0:f6:c1:7c:0f:03"
+    ip: 192.168.30.110
+    in_rack: false
+
+  - name: Our Bedroom Apple TV
+    kind: client
+    mac: "9c:3e:53:19:cd:de"
+    ip: 192.168.20.47
+    in_rack: false
+    always_on: false
+
+# Cable fields
+#   a             the switch end: { device, port }
+#   b             the far end: { device } or, for a switch-to-switch link, { device, port }
+#   through       set when b is not plugged into a directly: a virtual machine on a host,
+#                 or a device behind an unmanaged switch (name the thing it goes through)
+#   unifi_label   what UniFi calls the port today, only where that differs from b
+#   type          cable type, where known
+#   patch_panel   patch panel and port the run passes through        <- fill in
+#   label         the label on the cable                             <- fill in
+#   color         cable colour                                       <- fill in
+cables:
+  # ---- UDM Pro -------------------------------------------------------------------
+  - a: { device: UDMPRO, port: 1 }
+    b: { device: Big POE Switch, port: 1 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: UDMPRO, port: 8 }
+    b: { device: CenturyLink }
+    patch_panel:
+    label:
+    color:
+  - a: { device: UDMPRO, port: 9 }
+    b: { device: Google Fiber }
+    patch_panel:
+    label:
+    color:
+
+  # ---- Big POE Switch (USW Pro 48 PoE) -------------------------------------------
+  - a: { device: Big POE Switch, port: 2 }
+    b: { device: Our Bedroom Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 3 }
+    b: { device: grinnich_nas }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 4 }
+    b: { device: Upstairs Guest Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 5 }
+    b: { device: UPS }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 6 }
+    b: { device: Dining Room Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 7 }
+    b: { device: Top Floor Wireless Access Point }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 8 }
+    b: { device: Living Room and Kitchen Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 9 }
+    b: { device: Main Floor Wireless Access Point }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 10 }
+    b: { device: Theater Amp }
+    unifi_label: Theatre Amp
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 11 }
+    b: { device: Basement Wireless Access Point }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 13 }
+    b: { device: Front Left Camera }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 15 }
+    b: { device: Front Right Camera }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 17 }
+    b: { device: Back Left Camera }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 19 }
+    b: { device: Back Right Camera }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 20 }
+    b: { device: SLZB-06 Zigbee Coordinator }
+    unifi_label: Amanda's Office
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 22 }
+    b: { device: troy }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 23 }
+    b: { device: proxmox }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 23 }
+    b: { device: k8s8 }
+    through: proxmox
+  - a: { device: Big POE Switch, port: 24 }
+    b: { device: lutron shade buttons }
+    unifi_label: Lutron Shade Switches
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 25 }
+    b: { device: k8s1 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 26 }
+    b: { device: k8s5 }
+    unifi_label: k8s6
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 27 }
+    b: { device: k8s2 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 28 }
+    b: { device: Guest Room Apple TV }
+    unifi_label: Guest Room Port
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 29 }
+    b: { device: k8s3 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 30 }
+    b: { device: k8s7 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 32 }
+    b: { device: Basement Office Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 34 }
+    b: { device: Theater Room Switch, port: 2 }
+    unifi_label: Theater Room Port
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 35 }
+    b: { device: "Hue Bridge #3" }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 37 }
+    b: { device: Amanda's Office Amp }
+    unifi_label: Amanda Office Amp
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 38 }
+    b: { device: Our Bedroom Switch, port: 1 }
+    unifi_label: Our Bedroom Port
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 39 }
+    b: { device: Garage Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 40 }
+    b: { device: "Hue Bridge #2" }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 41 }
+    b: { device: k8s4 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 42 }
+    b: { device: k8s9 }
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 43 }
+    b: { device: k8s6 }
+    unifi_label: k8s5
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 44 }
+    b: { device: Living Room Switch, port: 1 }
+    unifi_label: Living Room TV Port
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 45 }
+    b: { device: Family Room Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 46 }
+    b: { device: Garage Camera }
+    unifi_label: Garage Port
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 47 }
+    b: { device: Our Bathroom Amp }
+    unifi_label: Master Bath Amp
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 48 }
+    b: { device: Nursery Amp }
+    type: CAT6a
+    patch_panel:
+    label:
+    color:
+  - a: { device: Big POE Switch, port: 49 }
+    b: { device: US XG 6 PoE, port: 6 }
+    unifi_label: 10GbE Switch
+    type: 10G SFP+ DAC, 1 m (SFP-H10GB-CU1M)
+    label:
+    color:
+
+  # ---- US XG 6 PoE (10 GbE switch) -----------------------------------------------
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: Basement office switch }
+    unifi_label: Basement Office Apple TV
+    patch_panel:
+    label:
+    color:
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: Basement Office Apple TV }
+    through: Basement office switch
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: Jayson-PC }
+    through: Basement office switch
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: Jayson's Office TV }
+    through: Basement office switch
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: ouroboros }
+    through: Basement office switch
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: bringer-of-despair }
+    through: Basement office switch
+  - a: { device: US XG 6 PoE, port: 4 }
+    b: { device: serpent }
+    through: Basement office switch
+
+  # ---- Room switches (not in the rack) -------------------------------------------
+  - a: { device: Theater Room Switch, port: 4 }
+    b: { device: Theater Room Sony TV }
+  - a: { device: Theater Room Switch, port: 6 }
+    b: { device: Theater Room Receiver }
+  - a: { device: Theater Room Switch, port: 7 }
+    b: { device: Theater Room Sonos }
+    unifi_label: Theater Room Sonos Port
+  - a: { device: Theater Room Switch, port: 8 }
+    b: { device: Theater Room Apple TV }
+  - a: { device: Living Room Switch, port: 2 }
+    b: { device: Living Room Apple TV }
+  - a: { device: Living Room Switch, port: 3 }
+    b: { device: Living Room Sonos }
+  - a: { device: Living Room Switch, port: 5 }
+    b: { device: Living Room Camera }
+  - a: { device: Our Bedroom Switch, port: 4 }
+    b: { device: Our Bedroom Apple TV }
+  - a: { device: Our Bedroom Switch, port: 5 }
+    b: { device: "Hue Bridge #1" }
