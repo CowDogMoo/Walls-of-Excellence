@@ -7070,7 +7070,8 @@ data:
                   "Time": true,
                   "__name__": true,
                   "Value #A": true,
-                  "cable": true
+                  "cable": true,
+                  "Value": true
                 },
                 "indexByName": {
                   "switch": 0,

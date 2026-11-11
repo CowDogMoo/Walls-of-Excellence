@@ -328,6 +328,18 @@ class OutputTest(unittest.TestCase):
         )
         self.assertEqual([r for rules in groups.values() for r in rules if "alert" in r], [])
 
+    def test_no_table_shows_a_bare_value_column(self):
+        """Grafana names a table query's value field Value, or Value #<refId> when the panel has several queries."""
+        configmap = yaml.safe_load(rack_gen.generate(SAMPLE)[rack_gen.DASH_OUT])
+        tables = [p for p in json.loads(configmap["data"]["server-rack.json"])["panels"] if p["type"] == "table"]
+        self.assertIn("Not in rack.yaml", [p["title"] for p in tables])
+        for panel in tables:
+            refs = [target["refId"] for target in panel["targets"]]
+            values = ["Value"] if len(refs) == 1 else [f"Value #{ref}" for ref in refs]
+            organize = next(t["options"] for t in panel["transformations"] if t["id"] == "organize")
+            named = {name for name, hide in organize["excludeByName"].items() if hide} | set(organize["renameByName"])
+            self.assertEqual([value for value in values if value not in named], [], panel["title"])
+
     def test_committed_files_match_rack_yaml(self):
         outputs = rack_gen.generate(rack_gen.FACTS.read_text(encoding="utf-8"))
         for path, body in outputs.items():

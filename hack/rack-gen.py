@@ -937,7 +937,7 @@ def build_unexpected_table(panel_id, grid, switches):
         "Add them to rack.yaml, or find out what was plugged in."
     )
     return _table(panel_id, "Not in rack.yaml", description, grid, [_target("A", expr, table=True)],
-                  [_organize(order, renames)], [], ["Switch", "Port"], no_value="Nothing unexpected")
+                  [_organize(order, renames, ["Value"])], [], ["Switch", "Port"], no_value="Nothing unexpected")
 
 
 # --------------------------------------------------------------------------
