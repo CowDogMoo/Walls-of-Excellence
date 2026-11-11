@@ -99,6 +99,7 @@ Groups are defined declaratively in `authentik-oauth-blueprint.yaml`:
 - **NAS Admins** / **NAS Users**
 - **AdGuard Admins**
 - **Immich Users**
+- **Punch Users**
 
 ## Deployment
 

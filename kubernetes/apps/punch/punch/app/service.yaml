@@ -1,0 +1,33 @@
+---
+# Service + manually-managed Endpoints pointing at the Punch web UI running
+# on a macOS host outside the cluster. Traefik reaches Punch's homelab TLS
+# listener on port 7625 (separate from its loopback-only port 7624), which
+# refuses any connection without the client certificate in the
+# punch-transport ServersTransport.
+apiVersion: v1
+kind: Service
+metadata:
+  name: punch
+  namespace: punch
+  annotations:
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serverstransport: punch-punch-transport@kubernetescrd
+spec:
+  ports:
+    - name: https
+      port: 7625
+      protocol: TCP
+      targetPort: 7625
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: punch # name MUST match the Service
+  namespace: punch
+subsets:
+  - addresses:
+      - ip: 192.168.20.27 # bringer-of-despair (macOS host), wired Ethernet DHCP reservation
+    ports:
+      - name: https
+        port: 7625
+        protocol: TCP
