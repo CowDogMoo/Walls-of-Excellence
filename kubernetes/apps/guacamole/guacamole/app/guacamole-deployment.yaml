@@ -42,13 +42,15 @@ spec:
           # 2560x1440 displays over VNC is a 5120x1440 desktop, and at a tenth
           # of a core the first frame took longer than anyone waits, so the
           # session looked blank (2026-11-10: two thirds of CPU periods
-          # throttled during the attempt, memory peak 758M of 781M).
+          # throttled during the attempt, memory peak 758M of 781M). Even at
+          # two cores guacd stayed pinned on that desktop, so the cap is three
+          # of the node's four: guacd encodes on four threads.
           resources:
             requests:
               cpu: 100m
               memory: 600Mi
             limits:
-              cpu: "2"
+              cpu: "3"
               memory: 1536Mi
           readinessProbe:
             tcpSocket:
