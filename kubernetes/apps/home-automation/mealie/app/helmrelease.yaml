@@ -40,7 +40,7 @@ spec:
               # Rolling back to woe.13 needs `alembic downgrade f6c1d8e3b597`
               # first; swapping the tag alone leaves the pod unable to start
               # (see "Rollback trap" in the fork's FORK.md).
-              tag: v3.24.0-woe.14
+              tag: v3.24.0-woe.15
               pullPolicy: IfNotPresent
             env:
               TZ: "America/Denver"
