@@ -26,7 +26,7 @@ metadata:
   namespace: punch
 subsets:
   - addresses:
-      - ip: 192.168.20.35 # bringer-of-despair (macOS host), Wi-Fi DHCP reservation
+      - ip: 192.168.20.27 # bringer-of-despair (macOS host), wired Ethernet DHCP reservation
     ports:
       - name: https
         port: 7625

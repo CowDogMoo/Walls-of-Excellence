@@ -10,10 +10,10 @@ bringer-of-despair, a Mac on the home network, and Traefik proxies to it.
    `techvomit-xyz-production-tls` wildcard certificate (`ingress.yaml`).
 2. The `networking-authentik` forward-auth middleware sends the visitor through
    Authentik. Only members of the **Punch Users** group get past it.
-3. Traefik connects to Punch's homelab listener at `192.168.20.35:7625` over
+3. Traefik connects to Punch's homelab listener at `192.168.20.27:7625` over
    HTTPS (`service.yaml`, manual Endpoints). It verifies Punch's server
-   certificate against a private CA, expects the name `bringer-of-despair`, and
-   presents a client certificate (`serverstransport.yaml`).
+   certificate against a private CA by the DNS name `bringer-of-despair`, not
+   by IP, and presents a client certificate (`serverstransport.yaml`).
 4. Punch's homelab listener refuses any connection without that client
    certificate, then trusts the `X-authentik-username` header Traefik forwards.
    Its loopback port 7624 is separate and isn't exposed.
@@ -25,9 +25,9 @@ cluster depends on them.
 
 - **Punch homelab listener**: Punch on bringer-of-despair must ship the homelab
   TLS listener on port 7625 and have it turned on, with a server certificate
-  for `bringer-of-despair` (SAN IP `192.168.20.35`) signed by the private CA.
-- **DHCP reservation**: bringer-of-despair must keep `192.168.20.35`. The
-  reservation lives in terraform-cowdogmoo.
+  whose DNS SAN is `bringer-of-despair`, signed by the private CA.
+- **DHCP reservation**: bringer-of-despair's wired Ethernet adapter must keep
+  `192.168.20.27`. The reservation lives in terraform-cowdogmoo.
 - **1Password item**: `punch-homelab-mtls` in the `automation` vault, with
   fields `PUNCH_MTLS_CA_CRT`, `PUNCH_MTLS_CLIENT_CRT`, and
   `PUNCH_MTLS_CLIENT_KEY`. `externalsecret.yaml` renders them into the
