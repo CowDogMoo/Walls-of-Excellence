@@ -31,7 +31,8 @@ UNSET = "not set"
 # Kinds UniFi manages itself. They never show up as a client on a switch
 # port, so their cables can only be checked by link state.
 UNIFI_KINDS = {"switch", "gateway", "access-point"}
-# Kinds with nothing to poll: drawn in a neutral colour.
+# Kinds that usually have nothing to poll. The set only feeds KINDS: the
+# drawing greys out a device by its missing MAC (_state_color), not its kind.
 PASSIVE_KINDS = {
     "pdu", "fan", "light", "patch-panel", "shelf", "power-supply", "space",
     "isp", "other",
@@ -530,8 +531,8 @@ def elevation_layout(model):
     Returns (mode, slots, rear, unplaced, children). mode is "scale" when
     every positioned item has a u and a height_u, otherwise "order".
     Anything not known to be outside the rack and without a position lands
-    in unplaced, so a blank never fails the build. An ISP hand-off is only
-    drawn once in_rack is true.
+    in unplaced, so a blank never fails the build. An ISP hand-off with no
+    position is only drawn once in_rack is true.
     """
     devices = [d for d in model["devices"].values() if d["in_rack"] is not False]
     slots, rear, unplaced, children = [], [], [], {}

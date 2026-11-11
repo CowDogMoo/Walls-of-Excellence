@@ -212,12 +212,12 @@ class ModelTest(unittest.TestCase):
     def test_misspelt_keys_are_rejected(self):
         for old, new in (
             ("    height_u: 2\n", "    heigth_u: 2\n"),
-            ("    label: B-1\n", "    lable: B-1\n"),
+            ("    label: B-1\n", "    lable: B-1\n"),  # codespell:ignore lable
             ("    label: B-1\n", "    notes: shown on no panel\n"),
             ("  height_u: 10\n", "  heigth_u: 10\n"),
             ("device: Core Switch, port: 1 }", "device: Core Switch, prot: 1 }"),
-            ("    kind: other\n", "    kind: other\n    power: { sorce: UPS }\n"),
-            ("devices:\n", "networks:\n  - nmae: Main\ndevices:\n"),
+            ("    kind: other\n", "    kind: other\n    power: { sorce: UPS }\n"),  # codespell:ignore sorce
+            ("devices:\n", "networks:\n  - nmae: Main\ndevices:\n"),  # codespell:ignore nmae
             ("cables:\n", "cabels:\n"),
         ):
             with self.subTest(new=new):
