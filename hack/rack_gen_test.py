@@ -39,6 +39,7 @@ devices:
   - name: Host
     kind: other
     mac: "aa:bb:cc:00:00:03"
+    ip: 10.0.0.3
     in_rack: true
   - name: VM
     kind: node
@@ -46,9 +47,15 @@ devices:
     in_rack: false
   - name: Laptop
     kind: client
+    model: Notebook
+    role: Desk machine
     mac: "aa:bb:cc:00:00:05"
+    ip: 10.0.0.5
     in_rack: false
     always_on: false
+    watts: 65
+    power: { source: Desk strip, outlet: "2" }
+    notes: Lives on the desk
   - name: Edge Switch
     kind: switch
     ports: 5
@@ -67,6 +74,7 @@ cables:
     b: { device: Laptop }
   - a: { device: Core Switch, port: 8 }
     b: { device: Edge Switch, port: 1 }
+    unifi_label: Edge uplink
 """
 
 
@@ -80,14 +88,25 @@ def drawn(text=SAMPLE):
     return [element["name"] for element in panel["options"]["root"]["elements"]]
 
 
-def inventory(text=SAMPLE):
-    """The Rack inventory table as {item: {column: cell}}."""
-    table = [
+def table(markdown):
+    """A generated markdown table as {item: {column: cell}}."""
+    lines = [
         [cell.strip() for cell in line.strip("|").split("|")]
-        for line in rack_gen.inventory_markdown(model(text)).splitlines()
+        for line in markdown.splitlines()
         if line.startswith("|")
     ]
-    return {row[1]: dict(zip(table[0], row)) for row in table[2:]}
+    rows = [dict(zip(lines[0], line)) for line in lines[2:]]
+    return {row["Item"]: row for row in rows}
+
+
+def inventory(text=SAMPLE):
+    """The Rack inventory table."""
+    return table(rack_gen.inventory_markdown(model(text)))
+
+
+def outside(text=SAMPLE):
+    """The Not in the rack table."""
+    return table(rack_gen.outside_markdown(model(text)))
 
 
 class ModelTest(unittest.TestCase):
@@ -114,6 +133,8 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(rows["Core Switch 8 > Edge Switch"]["check"], "link")
         self.assertEqual(rows["Edge Switch 1 > Core Switch"]["device"], "Core Switch port 8")
         self.assertEqual(rows["Edge Switch 1 > Core Switch"]["mac"], "")
+        self.assertEqual(rows["Core Switch 8 > Edge Switch"]["unifi_label"], "Edge uplink")
+        self.assertEqual(rows["Edge Switch 1 > Core Switch"]["unifi_label"], "")
 
     def test_through_cable_to_a_device_without_a_mac_is_still_listed(self):
         text = SAMPLE.replace('    mac: "aa:bb:cc:00:00:04"\n', "")
@@ -163,11 +184,24 @@ class ModelTest(unittest.TestCase):
         self.assert_rejected("  height_u: 10\n", "  height_u: 10\n  notes: one line\n", "rack.notes must be a list")
         self.assert_rejected("devices:\n", "discrepancies: one line\ndevices:\n", "discrepancies must be a list")
         self.assert_rejected("devices:\n", "networks:\n  - Main\ndevices:\n", "bad network entry")
+        self.assert_rejected(
+            "    kind: other\n", "    kind: other\n    mount: rear\n    order: 3\n    height_u: 1\n",
+            "mount already says where it is; remove order, height_u",
+        )
+        self.assert_rejected(
+            "    shelf: Shelf A\n", "    shelf: Shelf A\n    height_u: 1\n",
+            "shelf already says where it is; remove height_u",
+        )
+        self.assert_rejected(
+            "    shelf: Shelf A\n", "    shelf: Shelf A\n    mount: rear\n",
+            "shelf already says where it is; remove mount",
+        )
 
     def test_misspelt_keys_are_rejected(self):
         for old, new in (
             ("    height_u: 2\n", "    heigth_u: 2\n"),
             ("    label: B-1\n", "    lable: B-1\n"),
+            ("    label: B-1\n", "    notes: shown on no panel\n"),
             ("  height_u: 10\n", "  heigth_u: 10\n"),
             ("device: Core Switch, port: 1 }", "device: Core Switch, prot: 1 }"),
             ("    kind: other\n", "    kind: other\n    power: { sorce: UPS }\n"),
@@ -218,6 +252,22 @@ class LayoutTest(unittest.TestCase):
         self.assertEqual(drawn(text).count("device Bridge #1"), 1)
         self.assertEqual(inventory(text)["Bridge #1"]["Position"], "on Shelf A")
 
+    def test_every_listed_device_is_in_exactly_one_inventory_table(self):
+        text = SAMPLE.replace("cables:\n", "  - name: Fibre\n    kind: isp\n    in_rack:\n    notes: Fibre ONT\ncables:\n")
+        inside, others = inventory(text), outside(text)
+        self.assertEqual(sorted([*inside, *others]), sorted(model(text)["devices"]))
+        self.assertEqual(sorted(others), ["Edge Switch", "Fibre", "Laptop", "VM"])
+        self.assertEqual(inside["Host"]["IP"], "10.0.0.3")
+        self.assertEqual(
+            others["Laptop"],
+            {
+                "Item": "Laptop", "Model": "Notebook", "Role": "Desk machine", "IP": "10.0.0.5",
+                "Rated": "65 W", "Power source": "Desk strip", "Outlet": "2", "In rack": "no",
+                "Notes": "Lives on the desk",
+            },
+        )
+        self.assertEqual((others["Fibre"]["In rack"], others["Fibre"]["Notes"]), ("**?**", "Fibre ONT"))
+
     def test_inventory_position_never_holds_a_rack_unit(self):
         row = inventory()["Core Switch"]
         self.assertEqual((row["Position"], row["U"]), ("", "U9"))
@@ -246,6 +296,9 @@ class OutputTest(unittest.TestCase):
         self.assertEqual(dashboard["uid"], "server-rack")
         ids = [p["id"] for p in dashboard["panels"]]
         self.assertEqual(len(ids), len(set(ids)))
+        content = {p["title"]: p["options"]["content"] for p in dashboard["panels"] if p["type"] == "text"}
+        self.assertEqual(sorted(table(content["Rack inventory"])), sorted(inventory()))
+        self.assertEqual(sorted(table(content["Not in the rack"])), sorted(outside()))
         rule = yaml.safe_load(first[rack_gen.RULE_OUT])
         self.assertEqual(rule["kind"], "PrometheusRule")
         groups = {group["name"]: group["rules"] for group in rule["spec"]["groups"]}

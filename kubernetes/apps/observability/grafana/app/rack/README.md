@@ -85,8 +85,11 @@ Cables (`cables:`):
 - **Cables**: the expected device and cable facts per port, next to the device
   seen there now.
 - **Room switches**: the same, for the small switches fed from the rack.
-- **Rack inventory**: every rack item with model, role, size, rated watts and
-  power feed.
+- **Rack inventory**: every rack item with model, role, size, recorded IP,
+  rated watts, power feed and notes.
+- **Not in the rack**: every listed device outside the rack, and the ISP
+  hand-offs until one is confirmed in it, with model, role, recorded IP, rated
+  watts, power feed and notes.
 - **Notes**: rack notes, networks, and where the documents and the network
   disagree.
 

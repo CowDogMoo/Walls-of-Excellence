@@ -462,7 +462,6 @@ spec:
             device: "Big POE Switch port 44"
             kind: "switch"
             check: "link"
-            unifi_label: "Living Room TV Port"
         - record: rack_port_info
           expr: vector(1)
           labels:
@@ -502,7 +501,6 @@ spec:
             device: "Big POE Switch port 38"
             kind: "switch"
             check: "link"
-            unifi_label: "Our Bedroom Port"
         - record: rack_port_info
           expr: vector(1)
           labels:
@@ -532,7 +530,6 @@ spec:
             device: "Big POE Switch port 34"
             kind: "switch"
             check: "link"
-            unifi_label: "Theater Room Port"
         - record: rack_port_info
           expr: vector(1)
           labels:
@@ -704,7 +701,6 @@ spec:
             device: "Big POE Switch port 49"
             kind: "switch"
             check: "link"
-            unifi_label: "10GbE Switch"
             cable_type: "10G SFP+ DAC, 1 m (SFP-H10GB-CU1M)"
         - record: rack_device_info
           expr: vector(1)

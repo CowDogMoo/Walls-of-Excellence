@@ -75,8 +75,8 @@ networks:
 #   order     position from the top of the rack (1 = top), from the layout document
 #   u         lowest rack unit the item occupies (U1 is the bottom)   <- fill in
 #   height_u  how many rack units it occupies                         <- fill in if blank
-#   shelf     name of the shelf it sits on, instead of order / u
-#   mount     "rear" for items on the back of the rack
+#   shelf     name of the shelf it sits on, instead of order / u / height_u
+#   mount     "rear" for items on the back of the rack, instead of order / u / height_u
 #   power     which strip or UPS feeds it, and which outlet           <- fill in
 #   always_on false for things that sleep, so they are not reported missing
 devices:
@@ -867,7 +867,7 @@ devices:
 #   b             the far end: { device } or, for a switch-to-switch link, { device, port }
 #   through       set when b is not plugged into a directly: a virtual machine on a host,
 #                 or a device behind an unmanaged switch (name the thing it goes through)
-#   unifi_label   what UniFi calls the port today, only where that differs from b
+#   unifi_label   what UniFi calls the port at the a end today, only where that differs from b
 #   type          cable type, where known
 #   patch_panel   patch panel and port the run passes through        <- fill in
 #   label         the label on the cable                             <- fill in

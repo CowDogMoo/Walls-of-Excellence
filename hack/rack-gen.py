@@ -75,7 +75,7 @@ _DEVICE_KEYS = {
     "shelf", "mount", "quantity", "watts", "power", "always_on", "notes",
 }
 _POWER_KEYS = {"source", "outlet"}
-_CABLE_KEYS = {"a", "b", "through", "unifi_label", "type", "patch_panel", "label", "color", "notes"}
+_CABLE_KEYS = {"a", "b", "through", "unifi_label", "type", "patch_panel", "label", "color"}
 _END_KEYS = {"device", "port"}
 
 
@@ -211,11 +211,14 @@ def load_model(text):
                 raise RackError(f"mac {dev['mac']} is on both {macs[dev['mac']]!r} and {dev['name']!r}")
             macs[dev["mac"]] = dev["name"]
         shelf = dev["shelf"]
-        if shelf is not None:
-            if shelf not in devices or devices[shelf]["kind"] != "shelf":
-                raise RackError(f"device {dev['name']!r}: shelf {shelf!r} is not a device of kind shelf")
-            if dev["u"] is not None or dev["order"] is not None:
-                raise RackError(f"device {dev['name']!r}: give either shelf or order/u, not both")
+        if shelf is not None and (shelf not in devices or devices[shelf]["kind"] != "shelf"):
+            raise RackError(f"device {dev['name']!r}: shelf {shelf!r} is not a device of kind shelf")
+        placed_by = [key for key in ("shelf", "mount") if dev[key] is not None]
+        extra = placed_by[1:] + [key for key in ("order", "u", "height_u") if dev[key] is not None]
+        if placed_by and extra:
+            raise RackError(
+                f"device {dev['name']!r}: {placed_by[0]} already says where it is; remove {', '.join(extra)}"
+            )
         if dev["u"] is not None:
             if rack_h is None:
                 raise RackError(f"device {dev['name']!r} has a u but rack.height_u is blank")
@@ -223,10 +226,7 @@ def load_model(text):
             if top > rack_h:
                 raise RackError(f"device {dev['name']!r}: u {dev['u']} to {top} is above the {rack_h}U rack")
 
-    placed = sorted(
-        (d for d in devices.values() if d["u"] is not None and d["mount"] != "rear"),
-        key=lambda d: d["u"],
-    )
+    placed = sorted((d for d in devices.values() if d["u"] is not None), key=lambda d: d["u"])
     for low, high in zip(placed, placed[1:]):
         if low["u"] + (low["height_u"] or 1) - 1 >= high["u"]:
             raise RackError(f"{low['name']!r} and {high['name']!r} overlap in the rack")
@@ -259,7 +259,6 @@ def load_model(text):
             "patch_panel": _text(raw.get("patch_panel"), f"{what}: patch_panel"),
             "label": _text(raw.get("label"), f"{what}: label"),
             "color": _text(raw.get("color"), f"{what}: color"),
-            "notes": _text(raw.get("notes"), f"{what}: notes"),
         }
         if through is None:
             for end in (cable["a"], cable["b"]):
@@ -326,10 +325,10 @@ def port_expectations(model):
     devices = model["devices"]
     rows = []
     for cable in model["cables"]:
-        ends = [(cable["a"], cable["b"])]
+        ends = [(cable["a"], cable["b"], cable["unifi_label"])]
         if cable["b"][1] is not None:
-            ends.append((cable["b"], cable["a"]))
-        for (switch, port), (far, far_port) in ends:
+            ends.append((cable["b"], cable["a"], ""))
+        for (switch, port), (far, far_port), unifi_label in ends:
             dev = devices[far]
             by_mac = bool(dev["mac"]) and dev["kind"] not in UNIFI_KINDS
             if not by_mac:
@@ -349,7 +348,7 @@ def port_expectations(model):
                 "kind": dev["kind"],
                 "check": check,
                 "through": cable["through"] or "",
-                "unifi_label": cable["unifi_label"],
+                "unifi_label": unifi_label,
                 "cable_type": cable["type"],
                 "cable_label": cable["label"] or shared,
                 "cable_color": cable["color"] or shared,
@@ -1048,39 +1047,69 @@ def _position(dev):
     return ""
 
 
-def inventory_markdown(model):
-    """The rack's own contents as a markdown table, in drawing order."""
+_BLANK = "**?**"
+_DEVICE_HEADERS = ["IP", "Rated", "Power source", "Outlet", "In rack", "Notes"]
+
+
+def _device_cells(dev):
+    """The cells both inventory tables end with, in _DEVICE_HEADERS order."""
+    return [
+        dev["ip"],
+        "" if dev["watts"] is None else f"{dev['watts']} W",
+        (dev["power_source"] or _BLANK) if dev["has_power"] else "",
+        (dev["power_outlet"] or _BLANK) if dev["has_power"] else "",
+        {True: "yes", False: "no", None: _BLANK}[dev["in_rack"]],
+        dev["notes"],
+    ]
+
+
+def _rack_items(model):
+    """Everything on the rack drawing, in drawing order."""
     _, slots, rear, unplaced, children = elevation_layout(model)
     ordered = []
     for dev in slots:
         ordered.append(dev)
         ordered += children.get(dev["name"], [])
-    ordered += rear + unplaced
-    blank = "**?**"
+    return ordered + rear + unplaced
+
+
+def inventory_markdown(model):
+    """The rack's own contents as a markdown table, in drawing order."""
     rows = []
-    for dev in ordered:
+    for dev in _rack_items(model):
         placed = dev["shelf"] is not None or dev["mount"] == "rear"
         rows.append([
             _position(dev),
             _label(dev),
             dev["model"],
             dev["role"],
-            "" if placed else (f"U{dev['u']}" if dev["u"] is not None else blank),
-            "" if placed else (dev["height_u"] if dev["height_u"] is not None else blank),
-            "" if dev["watts"] is None else f"{dev['watts']} W",
-            (dev["power_source"] or blank) if dev["has_power"] else "",
-            (dev["power_outlet"] or blank) if dev["has_power"] else "",
-            {True: "yes", False: "no", None: blank}[dev["in_rack"]],
-            dev["notes"],
+            "" if placed else (f"U{dev['u']}" if dev["u"] is not None else _BLANK),
+            "" if placed else (dev["height_u"] if dev["height_u"] is not None else _BLANK),
+            *_device_cells(dev),
         ])
-    headers = [
-        "Position", "Item", "Model", "Role", "U", "Height (U)", "Rated", "Power source", "Outlet",
-        "In rack", "Notes",
-    ]
+    headers = ["Position", "Item", "Model", "Role", "U", "Height (U)", *_DEVICE_HEADERS]
     return (
         f"**{model['rack']['name']}**: {model['rack']['model'] or 'model not recorded'}. "
-        "Position counts from the top of the rack; U counts from the bottom. "
+        "Position counts from the top of the rack; U counts from the bottom. IP is the address "
+        "recorded in `rack.yaml`. "
         "**?** marks a fact still to be recorded in `rack.yaml`.\n\n" + _md_table(headers, rows)
+    )
+
+
+def outside_markdown(model):
+    """The listed devices that are not on the rack drawing, or "" when there are none."""
+    drawn = {dev["name"] for dev in _rack_items(model)}
+    rows = [
+        [_label(dev), dev["model"], dev["role"], *_device_cells(dev)]
+        for dev in model["devices"].values() if dev["name"] not in drawn
+    ]
+    if not rows:
+        return ""
+    return (
+        "Devices listed in `rack.yaml` that are outside the rack, and ISP hand-offs not yet confirmed "
+        "to be in it. IP is the address recorded in `rack.yaml`. "
+        "**?** marks a fact still to be recorded in `rack.yaml`.\n\n"
+        + _md_table(["Item", "Model", "Role", *_DEVICE_HEADERS], rows)
     )
 
 
@@ -1172,6 +1201,10 @@ def build_dashboard(model):
     panels.append(_text_panel(next(ids), "Rack inventory", {"h": 22, "w": 24, "x": 0, "y": y},
                               inventory_markdown(model)))
     y += 22
+    outside = outside_markdown(model)
+    if outside:
+        panels.append(_text_panel(next(ids), "Not in the rack", {"h": 14, "w": 24, "x": 0, "y": y}, outside))
+        y += 14
     panels.append(_text_panel(next(ids), "Notes, networks and open questions",
                               {"h": 16, "w": 24, "x": 0, "y": y}, notes_markdown(model)))
 
