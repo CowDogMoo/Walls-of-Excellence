@@ -36,13 +36,20 @@ spec:
               containerPort: 8080
             - name: postgresql
               containerPort: 5432
+          # This one container is Tomcat, guacd and PostgreSQL. The old bounds
+          # (95m, 745Mi) were sized from idle usage, and a remote session is not
+          # idle: guacd re-encodes every frame it relays. A Mac sharing two
+          # 2560x1440 displays over VNC is a 5120x1440 desktop, and at a tenth
+          # of a core the first frame took longer than anyone waits, so the
+          # session looked blank (2026-11-10: two thirds of CPU periods
+          # throttled during the attempt, memory peak 758M of 781M).
           resources:
             requests:
-              cpu: 35m
+              cpu: 100m
               memory: 600Mi
             limits:
-              cpu: 95m
-              memory: 745Mi
+              cpu: "2"
+              memory: 1536Mi
           readinessProbe:
             tcpSocket:
               port: 8080
