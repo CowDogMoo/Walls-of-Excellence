@@ -71,7 +71,8 @@ networks:
 #   name      unique; for UniFi gear and K3s nodes it must match the UniFi / node name
 #   kind      switch, gateway, access-point, node, nas, ups, amp, hub, bridge, pdu, fan,
 #             light, patch-panel, shelf, power-supply, space, isp, client, camera, other
-#   in_rack   true, false, or blank when nobody has confirmed it
+#   in_rack   true, false, or blank when nobody has confirmed it; with false, remove
+#             order / u / height_u / shelf / mount
 #   order     position from the top of the rack (1 = top), from the layout document
 #   u         lowest rack unit the item occupies (U1 is the bottom)   <- fill in
 #   height_u  how many rack units it occupies                         <- fill in if blank

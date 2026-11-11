@@ -213,11 +213,16 @@ def load_model(text):
         shelf = dev["shelf"]
         if shelf is not None and (shelf not in devices or devices[shelf]["kind"] != "shelf"):
             raise RackError(f"device {dev['name']!r}: shelf {shelf!r} is not a device of kind shelf")
-        placed_by = [key for key in ("shelf", "mount") if dev[key] is not None]
-        extra = placed_by[1:] + [key for key in ("order", "u", "height_u") if dev[key] is not None]
-        if placed_by and extra:
+        position = [key for key in ("shelf", "mount", "order", "u", "height_u") if dev[key] is not None]
+        if dev["in_rack"] is False and position:
             raise RackError(
-                f"device {dev['name']!r}: {placed_by[0]} already says where it is; remove {', '.join(extra)}"
+                f"device {dev['name']!r}: in_rack is false, so it has no place in the rack; "
+                f"remove {', '.join(position)}"
+            )
+        if position and position[0] in ("shelf", "mount") and position[1:]:
+            raise RackError(
+                f"device {dev['name']!r}: {position[0]} already says where it is; "
+                f"remove {', '.join(position[1:])}"
             )
         if dev["u"] is not None:
             if rack_h is None:
@@ -778,7 +783,7 @@ _FACT_COLUMNS = ["patch_panel", "cable_label", "cable_color"]
 
 
 def _organize(order, renames, extra_hidden=()):
-    hidden = {"Time": True, "__name__": True, "Value #A": True, "kind": True, "cable": True}
+    hidden = {"Time": True, "__name__": True, "Value #A": True, "cable": True}
     hidden.update({name: True for name in extra_hidden})
     return {
         "id": "organize",
@@ -841,11 +846,11 @@ def build_cable_table(panel_id, title, description, grid, switches):
         _target("D", f"max by (cable) ({info} * on (switch, port) group_left () rack:port_poe:watts)", table=True),
     ]
     order = [
-        "switch", "port", "device", "through", "check", "client", "ip", "vlan", "Value #C", "Value #D",
+        "switch", "port", "device", "kind", "through", "check", "client", "ip", "vlan", "Value #C", "Value #D",
         "unifi_label", "cable_type", "patch_panel", "cable_label", "cable_color", "mac",
     ]
     renames = {
-        "switch": "Switch", "port": "Port", "device": "Expected device", "through": "Through",
+        "switch": "Switch", "port": "Port", "device": "Expected device", "kind": "Kind", "through": "Through",
         "check": "Check", "client": "Seen as", "ip": "IP", "vlan": "VLAN", "Value #C": "Link",
         "Value #D": "PoE", "unifi_label": "UniFi label", "cable_type": "Cable type",
         "patch_panel": "Patch panel", "cable_label": "Cable label", "cable_color": "Colour",
@@ -1048,12 +1053,14 @@ def _position(dev):
 
 
 _BLANK = "**?**"
-_DEVICE_HEADERS = ["IP", "Rated", "Power source", "Outlet", "In rack", "Notes"]
+_DEVICE_HEADERS = ["Kind", "MAC", "IP", "Rated", "Power source", "Outlet", "In rack", "Notes"]
 
 
 def _device_cells(dev):
     """The cells both inventory tables end with, in _DEVICE_HEADERS order."""
     return [
+        dev["kind"],
+        dev["mac"],
         dev["ip"],
         "" if dev["watts"] is None else f"{dev['watts']} W",
         (dev["power_source"] or _BLANK) if dev["has_power"] else "",
@@ -1090,8 +1097,8 @@ def inventory_markdown(model):
     headers = ["Position", "Item", "Model", "Role", "U", "Height (U)", *_DEVICE_HEADERS]
     return (
         f"**{model['rack']['name']}**: {model['rack']['model'] or 'model not recorded'}. "
-        "Position counts from the top of the rack; U counts from the bottom. IP is the address "
-        "recorded in `rack.yaml`. "
+        "Position counts from the top of the rack; U counts from the bottom. MAC and IP are the "
+        "addresses recorded in `rack.yaml`. "
         "**?** marks a fact still to be recorded in `rack.yaml`.\n\n" + _md_table(headers, rows)
     )
 
@@ -1107,7 +1114,7 @@ def outside_markdown(model):
         return ""
     return (
         "Devices listed in `rack.yaml` that are outside the rack, and ISP hand-offs not yet confirmed "
-        "to be in it. IP is the address recorded in `rack.yaml`. "
+        "to be in it. MAC and IP are the addresses recorded in `rack.yaml`. "
         "**?** marks a fact still to be recorded in `rack.yaml`.\n\n"
         + _md_table(["Item", "Model", "Role", *_DEVICE_HEADERS], rows)
     )

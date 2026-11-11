@@ -56,7 +56,9 @@ Devices (`devices:`):
   and which outlet. Only the PoE-powered nodes are filled in. k8s7 draws no
   PoE, so record what powers it.
 - **`in_rack`**: blank for Hue Bridge #2 and #3, the Lutron shade buttons and
-  the two ISP hand-offs. Set `true` or `false`.
+  the two ISP hand-offs. Set `true` or `false`. A device marked `false` cannot
+  keep a place in the rack, so when you mark a Hue bridge `false`, delete its
+  `shelf` line too. The generator stops until you do.
 - **Patch panel 2**: its model is assumed to match patch panel 1.
 - **White box** on shelf 2: say what it is.
 - **Basement office switch**: the unmanaged switch assumed to sit behind
@@ -85,11 +87,11 @@ Cables (`cables:`):
 - **Cables**: the expected device and cable facts per port, next to the device
   seen there now.
 - **Room switches**: the same, for the small switches fed from the rack.
-- **Rack inventory**: every rack item with model, role, size, recorded IP,
-  rated watts, power feed and notes.
+- **Rack inventory**: every rack item with model, role, size, kind, recorded
+  MAC and IP, rated watts, power feed and notes.
 - **Not in the rack**: every listed device outside the rack, and the ISP
-  hand-offs until one is confirmed in it, with model, role, recorded IP, rated
-  watts, power feed and notes.
+  hand-offs until one is confirmed in it, with model, role, kind, recorded MAC
+  and IP, rated watts, power feed and notes.
 - **Notes**: rack notes, networks, and where the documents and the network
   disagree.
 

@@ -197,6 +197,18 @@ class ModelTest(unittest.TestCase):
             "shelf already says where it is; remove mount",
         )
 
+    def test_device_marked_outside_the_rack_cannot_keep_a_rack_position(self):
+        self.assert_rejected(
+            "in_rack: true\n    shelf: Shelf A", "in_rack: false\n    shelf: Shelf A",
+            "'Bridge #1': in_rack is false.*remove shelf",
+        )
+        for position in ("shelf: Shelf A", "mount: rear", "order: 3", "u: 3", "height_u: 1"):
+            with self.subTest(position=position):
+                self.assert_rejected(
+                    "    always_on: false\n", f"    always_on: false\n    {position}\n",
+                    f"'Laptop': in_rack is false.*remove {position.split(':')[0]}",
+                )
+
     def test_misspelt_keys_are_rejected(self):
         for old, new in (
             ("    height_u: 2\n", "    heigth_u: 2\n"),
@@ -243,9 +255,10 @@ class LayoutTest(unittest.TestCase):
             self.assertEqual([d["name"] for d in unplaced], expected, in_rack)
 
     def test_device_marked_outside_the_rack_is_not_on_its_shelf(self):
-        text = SAMPLE.replace("in_rack: true\n    shelf: Shelf A", "in_rack: false\n    shelf: Shelf A")
+        text = SAMPLE.replace("in_rack: true\n    shelf: Shelf A\n", "in_rack: false\n")
         self.assertNotIn("device Bridge #1", drawn(text))
         self.assertNotIn("Bridge #1", inventory(text))
+        self.assertIn("Bridge #1", outside(text))
 
     def test_device_on_a_shelf_with_no_position_is_still_shown(self):
         text = SAMPLE.replace("    u: 5\n", "")
@@ -258,12 +271,14 @@ class LayoutTest(unittest.TestCase):
         self.assertEqual(sorted([*inside, *others]), sorted(model(text)["devices"]))
         self.assertEqual(sorted(others), ["Edge Switch", "Fibre", "Laptop", "VM"])
         self.assertEqual(inside["Host"]["IP"], "10.0.0.3")
+        self.assertEqual((inside["Core Switch"]["Kind"], inside["Core Switch"]["MAC"]), ("switch", "aa:bb:cc:00:00:01"))
+        self.assertEqual((inside["Shelf A"]["Kind"], inside["Shelf A"]["MAC"]), ("shelf", ""))
         self.assertEqual(
             others["Laptop"],
             {
-                "Item": "Laptop", "Model": "Notebook", "Role": "Desk machine", "IP": "10.0.0.5",
-                "Rated": "65 W", "Power source": "Desk strip", "Outlet": "2", "In rack": "no",
-                "Notes": "Lives on the desk",
+                "Item": "Laptop", "Model": "Notebook", "Role": "Desk machine", "Kind": "client",
+                "MAC": "aa:bb:cc:00:00:05", "IP": "10.0.0.5", "Rated": "65 W", "Power source": "Desk strip",
+                "Outlet": "2", "In rack": "no", "Notes": "Lives on the desk",
             },
         )
         self.assertEqual((others["Fibre"]["In rack"], others["Fibre"]["Notes"]), ("**?**", "Fibre ONT"))
@@ -299,6 +314,11 @@ class OutputTest(unittest.TestCase):
         content = {p["title"]: p["options"]["content"] for p in dashboard["panels"] if p["type"] == "text"}
         self.assertEqual(sorted(table(content["Rack inventory"])), sorted(inventory()))
         self.assertEqual(sorted(table(content["Not in the rack"])), sorted(outside()))
+        for title in ("Cables", "Room switches"):
+            panel = next(p for p in dashboard["panels"] if p["title"] == title)
+            organize = next(t["options"] for t in panel["transformations"] if t["id"] == "organize")
+            self.assertEqual(organize["renameByName"]["kind"], "Kind", title)
+            self.assertNotIn("kind", organize["excludeByName"], title)
         rule = yaml.safe_load(first[rack_gen.RULE_OUT])
         self.assertEqual(rule["kind"], "PrometheusRule")
         groups = {group["name"]: group["rules"] for group in rule["spec"]["groups"]}
