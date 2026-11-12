@@ -340,6 +340,19 @@ class OutputTest(unittest.TestCase):
             named = {name for name, hide in organize["excludeByName"].items() if hide} | set(organize["renameByName"])
             self.assertEqual([value for value in values if value not in named], [], panel["title"])
 
+    def test_long_unbroken_names_shrink_to_fit_a_shelf_cell(self):
+        self.assertEqual(rack_gen._cell_size("k8s1"), 10)
+        self.assertEqual(rack_gen._cell_size("Living Room and Kitchen Amp"), 10)
+        self.assertLess(rack_gen._cell_size("grinnich_nas"), 10)
+        self.assertGreaterEqual(rack_gen._cell_size("a_very_long_unbroken_device_name"), 7)
+
+    def test_poe_watts_tile_keeps_zero_watt_switches(self):
+        """A switch delivering 0 W still needs a used value beside its budget."""
+        stat = rack_gen.build_poe_stat(1, {"h": 1, "w": 1, "x": 0, "y": 0})
+        used = next(t for t in stat["targets"] if t["refId"] == "A")["expr"]
+        self.assertNotIn("> 0", used.split(" and on ")[0])
+        self.assertIn("unpoller_device_max_power_total", used)
+
     def test_committed_files_match_rack_yaml(self):
         outputs = rack_gen.generate(rack_gen.FACTS.read_text(encoding="utf-8"))
         for path, body in outputs.items():
