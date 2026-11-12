@@ -514,6 +514,17 @@ def _label(dev):
     return dev["name"] + (f" ×{dev['quantity']}" if dev["quantity"] else "")
 
 
+def _cell_size(label, base=10, fits=10):
+    """Font size that keeps the longest unbroken word inside a shelf cell.
+
+    Spaces wrap; a name like grinnich_nas has none, so it shrinks instead.
+    """
+    longest = max((len(word) for word in label.split()), default=0)
+    if longest <= fits:
+        return base
+    return max(7, int(base * (fits + 0.5) / longest))
+
+
 def _state_color(dev):
     """Background colour: live state where there is something to poll."""
     if dev["kind"] == "shelf":
@@ -626,7 +637,7 @@ def build_elevation(model, panel_id, grid):
                 f"device {kid['name']}", _label(kid),
                 top_pct + row * cell_h + cell_h * 0.08, left_pct + col * cell_w + cell_w * 0.03,
                 cell_w * 0.94, cell_h * 0.84,
-                _state_color(kid), size=10,
+                _state_color(kid), size=_cell_size(_label(kid)),
             ))
 
     for kind, dev, units, label in segments:
@@ -987,7 +998,12 @@ def build_poe_stat(panel_id, grid):
         "datasource": DS,
         "gridPos": grid,
         "targets": [
-            _target("A", "sum by (name) (unpoller_device_port_poe_watts) > 0", "{{name}} used"),
+            _target(
+                "A",
+                "sum by (name) (unpoller_device_port_poe_watts)"
+                " and on (name) max by (name) (unpoller_device_max_power_total > 0)",
+                "{{name}} used",
+            ),
             _target("B", "max by (name) (unpoller_device_max_power_total > 0)", "{{name}} budget"),
         ],
         "fieldConfig": {
