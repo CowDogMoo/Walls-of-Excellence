@@ -1,33 +1,30 @@
 ---
-# Service + manually-managed Endpoints pointing at the Punch web UI running
-# on a macOS host outside the cluster. Traefik reaches Punch's homelab TLS
-# listener on port 7625 (separate from its loopback-only port 7624), which
-# refuses any connection without the client certificate in the
-# punch-transport ServersTransport.
+# Tailscale egress Service for the Punch web UI, which runs on
+# bringer-of-despair, a Mac outside the cluster. The Tailscale operator runs a
+# proxy that forwards to the Mac's tailnet IP and points externalName at it, so
+# Traefik reaches Punch's homelab TLS listener on port 7625 (separate from its
+# loopback-only port 7624) whether the Mac is on the home LAN or away on
+# Tailscale. The listener refuses any connection without the client
+# certificate in the punch-transport ServersTransport.
+#
+# The operator rewrites spec.externalName after creation, so Flux only creates
+# this Service and never updates it (ssa: IfNotPresent); otherwise each
+# reconcile would put the placeholder back. To change it, edit this file and
+# delete the live Service so Flux recreates it.
 apiVersion: v1
 kind: Service
 metadata:
-  name: punch
+  name: punch-tailnet
   namespace: punch
   annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+    tailscale.com/tailnet-ip: 100.65.148.46 # bringer-of-despair (macOS host)
     traefik.ingress.kubernetes.io/service.serversscheme: https
     traefik.ingress.kubernetes.io/service.serverstransport: punch-punch-transport@kubernetescrd
 spec:
+  type: ExternalName
+  externalName: placeholder # set by the Tailscale operator
   ports:
     - name: https
       port: 7625
       protocol: TCP
-      targetPort: 7625
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: punch # name MUST match the Service
-  namespace: punch
-subsets:
-  - addresses:
-      - ip: 192.168.20.27 # bringer-of-despair (macOS host), wired Ethernet DHCP reservation
-    ports:
-      - name: https
-        port: 7625
-        protocol: TCP

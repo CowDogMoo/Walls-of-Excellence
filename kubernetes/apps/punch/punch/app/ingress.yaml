@@ -17,7 +17,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: punch
+                name: punch-tailnet
                 port:
                   number: 7625
   tls:
