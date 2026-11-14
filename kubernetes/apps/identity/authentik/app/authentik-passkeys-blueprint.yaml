@@ -44,7 +44,11 @@ data:
         attrs:
           user_verification: required
           resident_key_requirement: preferred
-          authenticator_attachment: cross-platform
+          # null is "No preference": synced passkeys from a password manager
+          # (Apple Passwords, 1Password) and security keys are both accepted.
+          # Keep the explicit null. Deleting the line would leave the old
+          # cross-platform value in the database.
+          authenticator_attachment: null
 
       # === Setup Flow (Stage Configuration) ===
       - id: webauthn-setup-flow
@@ -57,7 +61,13 @@ data:
           designation: stage_configuration
           authentication: none
 
+      # authentik's own default blueprint already binds its stage
+      # (default-authenticator-webauthn-setup, order 0) to this flow, and that is
+      # the stage Settings > MFA Devices > Enroll starts. Binding ours at order 10
+      # as well made self-service enrollment ask for a second registration, so
+      # remove that binding. The stage itself stays for the enrollment flow below.
       - model: authentik_flows.flowstagebinding
+        state: absent
         identifiers:
           target: !KeyOf webauthn-setup-flow
           stage: !KeyOf webauthn-stage
