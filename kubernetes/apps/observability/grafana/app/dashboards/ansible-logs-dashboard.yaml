@@ -8,8 +8,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Ansible"
-    dashboard-version: "6.0.0"
-    last-modified: "2025-01-13"
+    dashboard-version: "6.1.0"
+    last-modified: "2026-11-14"
 data:
   ansible-logs.json: |
     {
@@ -19,7 +19,7 @@ data:
       "tags": ["ansible", "automation", "logs", "playbooks", "multi-host"],
       "timezone": "browser",
       "schemaVersion": 39,
-      "version": 11,
+      "version": 12,
       "refresh": "10s",
       "time": {
         "from": "now-3h",
@@ -35,12 +35,13 @@ data:
             "query": "label_values({application=\"ansible\"}, host)",
             "multi": true,
             "includeAll": true,
+            "allValue": ".+",
             "current": {
               "selected": true,
               "text": "All",
               "value": "$__all"
             },
-            "refresh": 1,
+            "refresh": 2,
             "sort": 1,
             "description": "Select one or more hosts to filter the dashboard"
           },
@@ -51,13 +52,14 @@ data:
             "datasource": { "type": "loki", "uid": "loki" },
             "query": "label_values({application=\"ansible\"}, environment)",
             "multi": false,
-            "includeAll": false,
+            "includeAll": true,
+            "allValue": ".+",
             "current": {
               "selected": true,
-              "text": "local",
-              "value": "local"
+              "text": "All",
+              "value": "$__all"
             },
-            "refresh": 1,
+            "refresh": 2,
             "sort": 1
           }
         ]
@@ -70,7 +72,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\"",
               "refId": "A"
             }
           ],
@@ -92,7 +94,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (host) (count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} [1h]))",
+              "expr": "sum by (host) (count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} [1h]))",
               "refId": "A",
               "legendFormat": "{{host}}"
             }
@@ -128,7 +130,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (host) (count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\" [1h]))",
+              "expr": "sum by (host) (count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\" [1h]))",
               "refId": "A",
               "legendFormat": "{{host}}"
             }
@@ -169,7 +171,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (OK|CHANGED|FAILED|SKIPPED|UNREACHABLE) - \" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - (OK|CHANGED|FAILED|SKIPPED|UNREACHABLE) - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -197,7 +199,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \"(FAILED|FATAL|ERROR|UNREACHABLE|MODULE FAILURE)\" [1h]))",
               "refId": "A"
             }
           ],
@@ -227,7 +229,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - CHANGED - \" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - CHANGED - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -257,7 +259,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - OK - \" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - OK - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -280,7 +282,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - SKIPPED - \" [1h]))",
+              "expr": "sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - SKIPPED - \" [1h]))",
               "refId": "A"
             }
           ],
@@ -303,7 +305,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "100 * (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - OK - \" [1h])) or vector(0)) / ((sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - (OK|CHANGED|FAILED|UNREACHABLE) - \" [1h])) or vector(0)))",
+              "expr": "100 * (sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - OK - \" [1h])) or vector(0)) / ((sum(count_over_time({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - (OK|CHANGED|FAILED|UNREACHABLE) - \" [1h])) or vector(0)))",
               "refId": "A"
             }
           ],
@@ -341,7 +343,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} [1m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} [1m]))",
               "refId": "A",
               "legendFormat": "{{host}}"
             }
@@ -372,22 +374,22 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - FAILED - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - FAILED - \" [5m]))",
               "refId": "A",
               "legendFormat": "Failed - {{host}}"
             },
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - CHANGED - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - CHANGED - \" [5m]))",
               "refId": "B",
               "legendFormat": "Changed - {{host}}"
             },
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - OK - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - OK - \" [5m]))",
               "refId": "C",
               "legendFormat": "OK - {{host}}"
             },
             {
-              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - SKIPPED - \" [5m]))",
+              "expr": "sum by (host) (rate({application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - SKIPPED - \" [5m]))",
               "refId": "D",
               "legendFormat": "Skipped - {{host}}"
             }
@@ -449,7 +451,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - CHANGED - \"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - CHANGED - \"",
               "refId": "A"
             }
           ],
@@ -470,7 +472,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} |~ \" - SKIPPED - \"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} |~ \" - SKIPPED - \"",
               "refId": "A"
             }
           ],
@@ -491,7 +493,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"} | pattern `<_> <_> <_> <_> - <playbook> - <task> - <module> - <status> - <_>` | __error__=\"\"",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=~\"$environment\"} | pattern `<_> <_> <_> <_> - <playbook> - <task> - <module> - <status> - <_>` | __error__=\"\"",
               "refId": "A",
               "format": "table"
             }
@@ -587,7 +589,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "targets": [
             {
-              "expr": "{application=\"ansible\",host=~\"$host\",environment=\"$environment\"}",
+              "expr": "{application=\"ansible\",host=~\"$host\",environment=~\"$environment\"}",
               "refId": "A"
             }
           ],
