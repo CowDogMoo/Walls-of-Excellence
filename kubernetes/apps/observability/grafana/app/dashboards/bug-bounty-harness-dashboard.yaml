@@ -1,0 +1,2972 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bug-bounty-harness-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Bug Bounty"
+    dashboard-version: "1.0.0"
+    last-modified: "2026-11-14"
+data:
+  bug-bounty-harness.json: |
+    {
+      "uid": "bbh-harness-results",
+      "title": "Bug Bounty Harness",
+      "description": "Scored runs and replays of the bbh-toolkit evaluation harness, from Loki (published by harness/eval/publish_results.py).",
+      "tags": ["bbh", "harness", "loki"],
+      "editable": true,
+      "graphTooltip": 1,
+      "schemaVersion": 41,
+      "version": 1,
+      "time": {
+        "from": "now-14d",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "utc",
+      "refresh": "",
+      "links": [
+        {
+          "title": "Harness README",
+          "type": "link",
+          "targetBlank": true,
+          "icon": "doc",
+          "url": "https://github.com/l50/bbh-toolkit/blob/main/harness/README.md#results-dashboard"
+        }
+      ],
+      "annotations": {
+        "list": []
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "label": "Loki",
+            "type": "datasource",
+            "query": "loki",
+            "refresh": 1,
+            "current": {
+              "selected": true,
+              "text": "Loki",
+              "value": "loki"
+            }
+          },
+          {
+            "name": "lab",
+            "label": "Lab",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness\"}, lab)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "description": "Lab targets shown in the trends and the run table.",
+            "definition": "label_values({job=\"bbh-harness\"}, lab)",
+            "allValue": ".+",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            }
+          },
+          {
+            "name": "arm",
+            "label": "Configuration",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness\"}, arm)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "description": "Configurations (hosted skeptic, cascade, local, map-only) shown in the trends and table.",
+            "definition": "label_values({job=\"bbh-harness\"}, arm)",
+            "allValue": ".+",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            }
+          },
+          {
+            "name": "kind",
+            "label": "Kind",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness\"}, kind)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "description": "run: a full run_eval.sh run; replay: stored candidates replayed through a skeptic.",
+            "definition": "label_values({job=\"bbh-harness\"}, kind)",
+            "allValue": ".+",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            }
+          },
+          {
+            "name": "cmp_lab",
+            "label": "Compare: lab",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness\"}, lab)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": false,
+            "includeAll": false,
+            "description": "Lab target of the latest-run comparisons.",
+            "definition": "label_values({job=\"bbh-harness\"}, lab)",
+            "current": {
+              "selected": true,
+              "text": "vampi",
+              "value": "vampi"
+            }
+          },
+          {
+            "name": "cmp_arm",
+            "label": "Compare: configuration",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness\", lab=\"$cmp_lab\"}, arm)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": false,
+            "includeAll": false,
+            "description": "Configuration of the latest-run comparisons.",
+            "definition": "label_values({job=\"bbh-harness\", lab=\"$cmp_lab\"}, arm)",
+            "current": {
+              "selected": true,
+              "text": "hosted",
+              "value": "hosted"
+            }
+          },
+          {
+            "name": "cmp_kind",
+            "label": "Compare: kind",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\"}, kind)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": false,
+            "includeAll": false,
+            "description": "Kind of the latest-run comparisons.",
+            "definition": "label_values({job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\"}, kind)",
+            "current": {
+              "selected": true,
+              "text": "run",
+              "value": "run"
+            }
+          },
+          {
+            "name": "baseline",
+            "label": "Baseline run id (regex)",
+            "type": "textbox",
+            "query": "2026-11-12-(main|crapi)-run2",
+            "current": {
+              "selected": true,
+              "text": "2026-11-12-(main|crapi)-run2",
+              "value": "2026-11-12-(main|crapi)-run2"
+            },
+            "description": "A regular expression on run_id naming the baseline run. The default is the median rep of the 2026-11-12 Phase 2 baseline (main and crAPI). Copy a run_id from the run table to compare against another run."
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "text",
+          "id": 1,
+          "title": "",
+          "gridPos": {
+            "h": 3,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "One record per harness run (`run_eval.sh`, or a `replay_skeptic.sh` replicate) and lab target, published to Loki by `harness/eval/publish_results.py`. **Precision, recall and false positives are the final stage's**: the skeptic's for VAmPI and crAPI, the map stage's (solved record) for Juice Shop and WebGoat. *Real findings kept* and *false confirmations* exist only for replays of hand-audited candidates. Replays score a fixed candidate set, so compare a replay with replays. Field reference: harness README, *Results dashboard*."
+          }
+        },
+        {
+          "type": "row",
+          "title": "Latest run against the previous run ($cmp_lab \u00b7 $cmp_arm \u00b7 $cmp_kind)",
+          "collapsed": false,
+          "id": 2,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 3
+          },
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "id": 3,
+          "title": "Precision",
+          "description": "Precision of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 0,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | final_precision!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^final_precision$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.7
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.85
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 4,
+          "title": "Recall",
+          "description": "Recall of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 3,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | final_recall!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^final_recall$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 5,
+          "title": "False positives",
+          "description": "False positives of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 6,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | final_fp!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^final_fp$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 3
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 6,
+          "title": "Real findings kept",
+          "description": "Real findings kept of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 9,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | real_kept_ratio!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^real_kept_ratio$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.9
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 7,
+          "title": "False confirmations",
+          "description": "False confirmations of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 12,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | false_confirmations!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^false_confirmations$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 8,
+          "title": "Output contract",
+          "description": "Output contract of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 15,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | contract_met!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^contract_met$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no run",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "broken",
+                      "color": "red"
+                    },
+                    "1": {
+                      "text": "met",
+                      "color": "green"
+                    }
+                  }
+                }
+              ]
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 9,
+          "title": "Wall time",
+          "description": "Wall time of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 18,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | wall_seconds!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^wall_seconds$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 10,
+          "title": "Cost (squad estimate)",
+          "description": "Cost (squad estimate) of the latest run that records it, and its change from the run before that one (same lab, configuration and kind; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 21,
+            "y": 4
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | run_cost_usd!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^run_cost_usd$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyUSD",
+              "decimals": 2,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "row",
+          "title": "Latest run against the baseline ($baseline)",
+          "collapsed": false,
+          "id": 11,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 8
+          },
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "id": 12,
+          "title": "Precision",
+          "description": "Precision of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 0,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | final_precision!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | final_precision!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^final_precision$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.7
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.85
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 13,
+          "title": "Recall",
+          "description": "Recall of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 3,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | final_recall!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | final_recall!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^final_recall$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 14,
+          "title": "False positives",
+          "description": "False positives of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 6,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | final_fp!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | final_fp!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^final_fp$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 3
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 15,
+          "title": "Real findings kept",
+          "description": "Real findings kept of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 9,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | real_kept_ratio!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | real_kept_ratio!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^real_kept_ratio$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.9
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 16,
+          "title": "False confirmations",
+          "description": "False confirmations of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 12,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | false_confirmations!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | false_confirmations!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^false_confirmations$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 17,
+          "title": "Output contract",
+          "description": "Output contract of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 15,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | contract_met!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | contract_met!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^contract_met$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no run",
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "broken",
+                      "color": "red"
+                    },
+                    "1": {
+                      "text": "met",
+                      "color": "green"
+                    }
+                  }
+                }
+              ]
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 18,
+          "title": "Wall time",
+          "description": "Wall time of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 18,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | wall_seconds!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | wall_seconds!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^wall_seconds$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 19,
+          "title": "Cost (squad estimate)",
+          "description": "Cost (squad estimate) of the latest run that records it, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 21,
+            "y": 9
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\"} | json | run_cost_usd!=\"\" | run_id=~\"${baseline:raw}\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | run_cost_usd!=\"\"",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^run_cost_usd$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "inverted"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyUSD",
+              "decimals": 2,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "row",
+          "title": "Trends by lab, configuration and kind",
+          "collapsed": false,
+          "id": 20,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 13
+          },
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "id": 21,
+          "title": "Precision (final stage)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 14
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_precision!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "final_precision"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.7
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.85
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 22,
+          "title": "Recall (final stage)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 14
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_recall!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "final_recall"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "max": 1,
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 23,
+          "title": "False positives (final stage)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 22
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_fp!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "final_fp"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 24,
+          "title": "Map-stage precision (before the skeptic)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 22
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | map_precision!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "map_precision"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "max": 1,
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 25,
+          "title": "Real findings kept (hand audit, replays)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 30
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | real_kept_ratio!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "real_kept_ratio"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "max": 1,
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 26,
+          "title": "False confirmations (hand audit, replays)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 30
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | false_confirmations!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "false_confirmations"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 27,
+          "title": "Wall time per run",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 38
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | wall_seconds!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "wall_seconds"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 28,
+          "title": "Cost per run (squad estimate)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per run: the record's value, plotted at the time it was published (a backfilled run at the time it was made).",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 38
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | run_cost_usd!=\"\"",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": ["Time", "lab", "arm", "kind", "run_cost_usd"]
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "partitionByValues",
+              "options": {
+                "fields": ["lab", "arm", "kind"],
+                "keepFields": false,
+                "naming": {
+                  "asLabels": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "currencyUSD",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "row",
+          "title": "Runs",
+          "collapsed": false,
+          "id": 29,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 46
+          },
+          "panels": []
+        },
+        {
+          "type": "table",
+          "id": 30,
+          "title": "Every run (newest first)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 47
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json",
+              "queryType": "range",
+              "maxLines": 1000,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "schema": true,
+                  "record_id": true,
+                  "source": true,
+                  "commit_source": true,
+                  "commit_dirty": true,
+                  "started_at": true,
+                  "final_stage": true,
+                  "final_tp": true,
+                  "final_found": true,
+                  "final_known": true,
+                  "map_tp": true,
+                  "map_fp": true,
+                  "map_recall": true,
+                  "map_found": true,
+                  "map_known": true,
+                  "map_reported": true,
+                  "map_errored": true,
+                  "skeptic_tp": true,
+                  "skeptic_fp": true,
+                  "skeptic_precision": true,
+                  "skeptic_recall": true,
+                  "skeptic_found": true,
+                  "skeptic_known": true,
+                  "skeptic_reported": true,
+                  "contract_problems": true,
+                  "real_kept_ratio": true,
+                  "noise_rejected": true,
+                  "noise_total": true,
+                  "no_verdict": true,
+                  "agent_seconds": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "lab": 1,
+                  "arm": 2,
+                  "kind": 3,
+                  "model": 4,
+                  "final_precision": 5,
+                  "final_recall": 6,
+                  "final_fp": 7,
+                  "map_precision": 8,
+                  "real_kept": 9,
+                  "real_total": 10,
+                  "false_confirmations": 11,
+                  "contract_met": 12,
+                  "wall_seconds": 13,
+                  "run_cost_usd": 14,
+                  "commit": 15,
+                  "run_id": 16,
+                  "harness_lab": 17,
+                  "provider": 18,
+                  "local_model": 19,
+                  "replay_set": 20,
+                  "skeptic_errored": 21,
+                  "ts_approx": 22,
+                  "note": 23
+                },
+                "renameByName": {
+                  "final_precision": "precision",
+                  "final_recall": "recall",
+                  "final_fp": "FP",
+                  "map_precision": "map precision",
+                  "real_kept": "real kept",
+                  "real_total": "real total",
+                  "false_confirmations": "false confirms",
+                  "contract_met": "contract",
+                  "wall_seconds": "wall",
+                  "run_cost_usd": "cost",
+                  "harness_lab": "harness lab",
+                  "local_model": "local model",
+                  "replay_set": "replay set",
+                  "skeptic_errored": "skeptic errored",
+                  "ts_approx": "time approx."
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            },
+            "sortBy": [
+              {
+                "displayName": "Time",
+                "desc": true
+              }
+            ]
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "precision"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percentunit"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 0.7
+                        },
+                        {
+                          "color": "green",
+                          "value": 0.85
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "map precision"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percentunit"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 0.7
+                        },
+                        {
+                          "color": "green",
+                          "value": 0.85
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "recall"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percentunit"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "contract"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "0": {
+                            "text": "broken",
+                            "color": "red"
+                          },
+                          "1": {
+                            "text": "met",
+                            "color": "green"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wall"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "cost"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "currencyUSD"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 165
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
