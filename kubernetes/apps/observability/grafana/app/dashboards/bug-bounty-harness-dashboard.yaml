@@ -1808,52 +1808,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_precision!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_precision!=\"\" | unwrap final_precision | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "final_precision"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -1871,7 +1831,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -1929,52 +1888,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_recall!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_recall!=\"\" | unwrap final_recall | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "final_recall"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -1992,7 +1911,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -2033,52 +1951,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_fp!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | final_fp!=\"\" | unwrap final_fp | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "final_fp"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2096,7 +1974,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -2135,52 +2012,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | map_precision!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | map_precision!=\"\" | unwrap map_precision | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "map_precision"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2198,7 +2035,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -2239,52 +2075,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | real_kept_ratio!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | real_kept_ratio!=\"\" | unwrap real_kept_ratio | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "real_kept_ratio"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2302,7 +2098,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -2343,52 +2138,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | false_confirmations!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | false_confirmations!=\"\" | unwrap false_confirmations | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "false_confirmations"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2406,7 +2161,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -2445,52 +2199,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | wall_seconds!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | wall_seconds!=\"\" | unwrap wall_seconds | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "wall_seconds"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2508,7 +2222,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
@@ -2547,52 +2260,12 @@ data:
                 "type": "loki",
                 "uid": "${datasource}"
               },
-              "expr": "{job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | run_cost_usd!=\"\"",
+              "expr": "max_over_time({job=\"bbh-harness\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | run_cost_usd!=\"\" | unwrap run_cost_usd | __error__=\"\" [$__auto]) by (lab, arm, kind)",
               "queryType": "range",
-              "maxLines": 5000,
-              "direction": "forward"
+              "legendFormat": "{{lab}} \u00b7 {{arm}} \u00b7 {{kind}}"
             }
           ],
-          "transformations": [
-            {
-              "id": "extractFields",
-              "options": {
-                "source": "Line",
-                "format": "json",
-                "replace": true,
-                "keepTime": true
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": {
-                  "names": ["Time", "lab", "arm", "kind", "run_cost_usd"]
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "sort": [
-                  {
-                    "field": "Time",
-                    "desc": false
-                  }
-                ]
-              }
-            },
-            {
-              "id": "partitionByValues",
-              "options": {
-                "fields": ["lab", "arm", "kind"],
-                "keepFields": false,
-                "naming": {
-                  "asLabels": true
-                }
-              }
-            }
-          ],
+          "maxDataPoints": 6000,
           "options": {
             "legend": {
               "displayMode": "list",
@@ -2610,7 +2283,6 @@ data:
               "color": {
                 "mode": "palette-classic"
               },
-              "displayName": "${__field.labels.lab} \u00b7 ${__field.labels.arm} \u00b7 ${__field.labels.kind}",
               "custom": {
                 "drawStyle": "line",
                 "lineWidth": 1,
