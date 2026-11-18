@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,14 +9,14 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Bug Bounty"
-    dashboard-version: "1.0.1"
-    last-modified: "2026-11-16"
+    dashboard-version: "1.1.0"
+    last-modified: "2026-11-18"
 data:
   bug-bounty-harness.json: |
     {
       "uid": "bbh-harness-results",
       "title": "Bug Bounty Harness",
-      "description": "Scored runs and replays of the bbh-toolkit evaluation harness, from Loki (published by harness/eval/publish_results.py).",
+      "description": "Scored runs and replays of the bbh-toolkit evaluation harness, and what their agents did, live while they run, from Loki (published by harness/eval/publish_results.py and harness/eval/publish_agent_events.py).",
       "tags": ["bbh", "harness", "loki"],
       "editable": true,
       "graphTooltip": 1,
@@ -27,7 +28,7 @@ data:
       },
       "timepicker": {},
       "timezone": "utc",
-      "refresh": "",
+      "refresh": "10s",
       "links": [
         {
           "title": "Harness README",
@@ -194,6 +195,66 @@ data:
               "value": "2026-11-12-(main|crapi)-run2"
             },
             "description": "A regular expression on run_id naming the baseline run. The default is the median rep of the 2026-11-12 Phase 2 baseline (main and crAPI). Copy a run_id from the run table to compare against another run."
+          },
+          {
+            "name": "run",
+            "label": "Agent run",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-agent\"}, run_id)",
+            "definition": "label_values({job=\"bbh-agent\"}, run_id)",
+            "refresh": 2,
+            "sort": 2,
+            "multi": false,
+            "includeAll": false,
+            "description": "The run whose agents the Agent activity row shows (newest first; the newest run when the dashboard opens, including one still running). The run table's run_id and Running now's run_id link here."
+          },
+          {
+            "name": "instance",
+            "label": "Agent instance",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-agent\", run_id=\"$run\"}, instance)",
+            "definition": "label_values({job=\"bbh-agent\", run_id=\"$run\"}, instance)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "description": "Lab instances shown in the Agent activity row.",
+            "allValue": ".+",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            }
+          },
+          {
+            "name": "stage",
+            "label": "Agent stage",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-agent\", run_id=\"$run\"}, stage)",
+            "definition": "label_values({job=\"bbh-agent\", run_id=\"$run\"}, stage)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "description": "Stages shown in the Agent activity row: map, skeptic, or in a cascade local and adjudicator.",
+            "allValue": ".+",
+            "current": {
+              "selected": true,
+              "text": ["All"],
+              "value": ["$__all"]
+            }
           }
         ]
       },
@@ -210,7 +271,407 @@ data:
           },
           "options": {
             "mode": "markdown",
-            "content": "One record per harness run (`run_eval.sh`, or a `replay_skeptic.sh` replicate) and lab target, published to Loki by `harness/eval/publish_results.py`. **Precision, recall and false positives are the final stage's**: the skeptic's for VAmPI and crAPI, the map stage's (solved record) for Juice Shop and WebGoat. *Real findings kept* and *false confirmations* exist only for replays of hand-audited candidates. Replays score a fixed candidate set, so compare a replay with replays. Field reference: harness README, *Results dashboard*."
+            "content": "One record per harness run (`run_eval.sh`, or a `replay_skeptic.sh` replicate) and lab target, published to Loki by `harness/eval/publish_results.py`. **Precision, recall and false positives are the final stage's**: the skeptic's for VAmPI and crAPI, the map stage's (solved record) for Juice Shop and WebGoat. *Real findings kept* and *false confirmations* exist only for replays of hand-audited candidates. Replays score a fixed candidate set, so compare a replay with replays. Field reference: harness README, *Results dashboard*. **Agent activity**: what the agents of one run did and why (their turns, tool calls and decisions, redacted), from `harness/eval/publish_agent_events.py`; pick the run with `Agent run` or follow a `run_id` link in the run table. **Running now**: every agent run in progress (published live, every 12 s, by `publish_agent_events.py follow`, which `run_eval.sh` starts beside its agents), with what it is doing and why; the dashboard refreshes every 10 s."
+          }
+        },
+        {
+          "type": "row",
+          "id": 40,
+          "title": "Running now",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 3
+          },
+          "panels": []
+        },
+        {
+          "type": "table",
+          "id": 41,
+          "title": "Running now",
+          "description": "One row per agent run in progress: one that published events in the last 30 minutes and has not yet published its summary (an agent run's summary is published when it ends). last event says how long ago it last did something; latest tool and its arguments are its most recent tool call (one still running is published as a step, then as a tool call once it returns); latest explanation is the most recent thing it said, which is why it is doing what it does; latest decision is the most recent finding or verdict it has written, as it wrote it: a verdict is matched to its candidate only once the agent run ends, so decided on is empty for a verdict without a title of its own, and the Verdict log has the decisions once it ends. An agent run whose run was interrupted stays here, with a growing last event, until it is 30 minutes old. A run against a target other than a local lab is metadata only: no arguments, explanations or decisions.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 4
+          },
+          "timeFrom": "30m",
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-agent\"}",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            },
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "run_id": {
+                    "operation": "groupby",
+                    "aggregations": []
+                  },
+                  "tag": {
+                    "operation": "groupby",
+                    "aggregations": []
+                  },
+                  "Time": {
+                    "operation": "aggregate",
+                    "aggregations": ["last"]
+                  },
+                  "provider": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "model": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "tool": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "args": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "text": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "decision": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "title": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  },
+                  "activity": {
+                    "operation": "aggregate",
+                    "aggregations": ["lastNotNull"]
+                  }
+                }
+              }
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "type": "exclude",
+                "match": "any",
+                "filters": [
+                  {
+                    "fieldName": "activity (lastNotNull)",
+                    "config": {
+                      "id": "isNotNull",
+                      "options": {}
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time (last)",
+                    "desc": true
+                  }
+                ]
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "activity (lastNotNull)": true,
+                  "model (lastNotNull)": true
+                },
+                "indexByName": {
+                  "Time (last)": 0,
+                  "tag": 1,
+                  "run_id": 2,
+                  "provider (lastNotNull)": 3,
+                  "tool (lastNotNull)": 4,
+                  "args (lastNotNull)": 5,
+                  "text (lastNotNull)": 6,
+                  "decision (lastNotNull)": 7,
+                  "title (lastNotNull)": 8
+                },
+                "renameByName": {
+                  "Time (last)": "last event",
+                  "tag": "agent run",
+                  "provider (lastNotNull)": "provider",
+                  "tool (lastNotNull)": "latest tool",
+                  "args (lastNotNull)": "its arguments",
+                  "text (lastNotNull)": "latest explanation",
+                  "decision (lastNotNull)": "latest decision",
+                  "title (lastNotNull)": "decided on"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "md",
+            "footer": {
+              "show": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": true
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "last event"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeFromNow"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 150
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "agent run"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "run_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Show this run in Agent activity",
+                        "url": "/d/bbh-harness-results/bug-bounty-harness?var-run=${__value.raw}&${__url_time_range}"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "latest tool"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 90
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "its arguments"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "auto",
+                      "wrapText": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "latest explanation"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "auto",
+                      "wrapText": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "latest decision"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "confirmed": {
+                            "color": "green"
+                          },
+                          "rejected": {
+                            "color": "red"
+                          },
+                          "reported": {
+                            "color": "blue"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 110
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "decided on"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "decided on"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "auto",
+                      "wrapText": true
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "logs",
+          "id": 42,
+          "title": "Live feed (last 30 minutes, newest first)",
+          "description": "Everything every agent published in the last 30 minutes, newest first: \u2026 a step (a tool call still running, what the agent is saying while its turn is still being written, or \u2696 a finding or verdict it has written so far; the ollama path shows squad's log lines until the agent run ends), \u2192 a finished tool call (duration, \u2717 for an error, the redacted arguments), \ud83d\udcac what the agent said, \u2696 a decision (published when its agent run ends), \u25a0 an agent run's end. Pick a run in Agent run below for its whole timeline.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "timeFrom": "30m",
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-agent\"} | json | event!=\"turn\" or text!=\"\" | line_format `{{.tag}}  {{if eq .event \"step\"}}\u2026 {{if .tool}}{{.tool}}  {{.args}}{{else if .decision}}\u2696 {{.decision}}{{if .title}}: {{.title}}{{end}}{{if .reason}} ({{.reason}}){{end}}{{else}}\ud83d\udcac {{.text}}{{end}}{{else if eq .event \"tool\"}}\u2192 {{.tool}} {{.duration_ms}}ms{{if eq .is_error \"true\"}} \u2717{{end}}  {{.args}}{{if .error}}  \u21d2 {{.error}}{{end}}{{else if eq .event \"decision\"}}\u2696 {{.decision}}: {{.title}}{{if .reason}} ({{.reason}}){{end}}{{else if eq .event \"run\"}}\u25a0 ended: {{.turns}} turns, {{.tool_calls}} tool calls, {{.tool_errors}} errors{{else}}\ud83d\udcac {{.text}}{{end}}`",
+              "queryType": "range",
+              "maxLines": 1000,
+              "direction": "backward"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
           }
         },
         {
@@ -222,7 +683,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 3
+            "y": 22
           },
           "panels": []
         },
@@ -239,7 +700,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 0,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -335,7 +796,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 3,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -423,7 +884,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 6,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -519,7 +980,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 9,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -615,7 +1076,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 12,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -707,7 +1168,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 15,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -814,7 +1275,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 18,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -902,7 +1363,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 21,
-            "y": 4
+            "y": 23
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -986,7 +1447,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 8
+            "y": 27
           },
           "panels": []
         },
@@ -1003,7 +1464,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 0,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1103,7 +1564,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 3,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1195,7 +1656,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 6,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1295,7 +1756,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 9,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1395,7 +1856,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 12,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1491,7 +1952,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 15,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1602,7 +2063,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 18,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1694,7 +2155,7 @@ data:
             "h": 4,
             "w": 3,
             "x": 21,
-            "y": 9
+            "y": 28
           },
           "timeFrom": "30d",
           "hideTimeOverride": true,
@@ -1782,7 +2243,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 13
+            "y": 32
           },
           "panels": []
         },
@@ -1799,7 +2260,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 33
           },
           "targets": [
             {
@@ -1879,7 +2340,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 33
           },
           "targets": [
             {
@@ -1942,7 +2403,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 41
           },
           "targets": [
             {
@@ -2003,7 +2464,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 41
           },
           "targets": [
             {
@@ -2066,7 +2527,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 49
           },
           "targets": [
             {
@@ -2129,7 +2590,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 49
           },
           "targets": [
             {
@@ -2190,7 +2651,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 38
+            "y": 57
           },
           "targets": [
             {
@@ -2251,7 +2712,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 38
+            "y": 57
           },
           "targets": [
             {
@@ -2308,7 +2769,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 46
+            "y": 65
           },
           "panels": []
         },
@@ -2324,7 +2785,7 @@ data:
             "h": 14,
             "w": 24,
             "x": 0,
-            "y": 47
+            "y": 66
           },
           "targets": [
             {
@@ -2636,8 +3097,789 @@ data:
                     "value": 165
                   }
                 ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "run_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Agent activity for this run",
+                        "url": "/d/bbh-harness-results/bug-bounty-harness?${__url_time_range}&var-run=${__value.raw}#agent-activity"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
+          }
+        },
+        {
+          "type": "row",
+          "id": 31,
+          "title": "Agent activity ($run)",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 80
+          },
+          "panels": []
+        },
+        {
+          "type": "logs",
+          "id": 32,
+          "title": "Decision log",
+          "description": "What each agent said before acting (\ud83d\udcac, the assistant's own text), every tool call it made (\u2192 tool, duration, output size, \u2717 for an error, then a redacted preview of the arguments), and its decisions (\u2696: the map stage's reported findings and the skeptic's verdicts with their reasons). Oldest first. Arguments are redacted and cut to 512 bytes, text to 1000 characters; tool output is never published, so a failed call shows only squad's one-line error (ollama) or a Bash call's exit code (Claude Code). A run against a target other than a local lab is metadata only, so it shows tool calls without arguments or text, and no decisions. During a run it fills as the agents work (a tool call appears once it returns, decisions once their agent run ends; Running now and the live feed show what is in progress).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 81
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" or event=\"decision\" or text!=\"\" | line_format `{{.tag}} #{{.seq}}  {{if eq .event \"tool\"}}\u2192 {{.tool}} {{.duration_ms}}ms {{.output_bytes}}B{{if eq .is_error \"true\"}} \u2717{{if .denied}}{{if eq .denied \"true\"}} denied{{end}}{{end}}{{end}}  {{.args}}{{if .error}}  \u21d2 {{.error}}{{end}}{{else if eq .event \"decision\"}}\u2696 {{.decision}}: {{.title}}{{if .reason}} ({{.reason}}){{end}}{{else}}\ud83d\udcac {{.text}}{{end}}`",
+              "queryType": "range",
+              "maxLines": 5000,
+              "direction": "forward"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Ascending"
+          }
+        },
+        {
+          "type": "table",
+          "id": 33,
+          "title": "Agent runs",
+          "description": "One row per agent run: its turns, tool calls, tool errors and refusals, decisions (findings reported, or verdicts confirmed and rejected; a metadata-only run publishes no decisions), wall time, tokens and squad's cost estimate. activity is missing when the publisher found no transcript for the agent run.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 95
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"run\"",
+              "queryType": "range",
+              "maxLines": 200,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "schema": true,
+                  "run_id": true,
+                  "event": true,
+                  "seq": true,
+                  "instance": true,
+                  "lab": true,
+                  "session": true,
+                  "cc_session": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "tag": 1,
+                  "stage": 2,
+                  "agent": 3,
+                  "provider": 4,
+                  "model": 5,
+                  "status": 6,
+                  "activity": 7,
+                  "turns": 8,
+                  "tool_calls": 9,
+                  "tool_errors": 10,
+                  "tool_denied": 11,
+                  "decisions": 12,
+                  "reported": 13,
+                  "confirmed": 14,
+                  "rejected": 15,
+                  "duration_ms": 16,
+                  "input_tokens": 17,
+                  "output_tokens": 18,
+                  "cost_usd": 19,
+                  "detail": 20
+                },
+                "renameByName": {
+                  "tool_calls": "tool calls",
+                  "tool_errors": "tool errors",
+                  "tool_denied": "refused",
+                  "duration_ms": "wall",
+                  "input_tokens": "tokens in",
+                  "output_tokens": "tokens out",
+                  "cost_usd": "cost"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "minWidth": 55
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "wall"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "cost"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "currencyUSD"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "tool errors"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "text",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 1
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "activity"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "missing": {
+                            "text": "no transcript",
+                            "color": "orange"
+                          },
+                          "recorded": {
+                            "text": "recorded",
+                            "color": "green"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 165
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "bargauge",
+          "id": 34,
+          "title": "Tool calls per agent run",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (tag) (count_over_time({job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" [$__range]))",
+              "queryType": "instant",
+              "legendFormat": "{{tag}}"
+            }
+          ],
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "basic",
+            "showUnfilled": true,
+            "valueMode": "color",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": true
+            },
+            "text": {
+              "titleSize": 12
+            },
+            "namePlacement": "left"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "min": 0,
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "id": 35,
+          "title": "Calls and errors by tool",
+          "description": "For the selected run: calls, errors and refused calls (denied by readonly mode, the sandbox or the working-directory guard) per tool.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (tool) (count_over_time({job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" [$__range]))",
+              "queryType": "instant",
+              "format": "table"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (tool) (count_over_time({job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" | is_error=\"true\" [$__range]))",
+              "queryType": "instant",
+              "format": "table"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (tool) (count_over_time({job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" | denied=\"true\" [$__range]))",
+              "queryType": "instant",
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "renameByName": {
+                  "Value #A": "calls",
+                  "Value #B": "errors",
+                  "Value #C": "refused"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "calls",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "minWidth": 60
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "id": 36,
+          "title": "Latency by tool (all runs in range)",
+          "description": "Tool-call duration per provider and tool across every run in the time range: median, 90th percentile and slowest.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 102
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "quantile_over_time(0.5, {job=\"bbh-agent\", live=\"\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" | unwrap duration_ms | __error__=\"\" [$__range]) by (provider, tool)",
+              "queryType": "instant",
+              "format": "table"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "quantile_over_time(0.9, {job=\"bbh-agent\", live=\"\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" | unwrap duration_ms | __error__=\"\" [$__range]) by (provider, tool)",
+              "queryType": "instant",
+              "format": "table"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "max_over_time({job=\"bbh-agent\", live=\"\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"tool\" | unwrap duration_ms | __error__=\"\" [$__range]) by (provider, tool)",
+              "queryType": "instant",
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "renameByName": {
+                  "Value #A": "p50",
+                  "Value #B": "p90",
+                  "Value #C": "max"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "p90",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "decimals": 0,
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "minWidth": 60
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "id": 37,
+          "title": "Verdict log",
+          "description": "Every decision of the selected run: the map stage's reported findings, and each skeptic verdict with its reason. This is the clearest record of why the skeptic kept or dropped a candidate. A finding's evidence and a verdict's impact and reproduction quote responses, so they are not published; a metadata-only run publishes no decisions. An agent run's decisions appear once it ends, from the files the harness keeps (Running now and the live feed show its findings and verdicts as it writes them).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 110
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-agent\", live=\"\", run_id=\"$run\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"decision\"",
+              "queryType": "range",
+              "maxLines": 2000,
+              "direction": "forward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "schema": true,
+                  "run_id": true,
+                  "event": true,
+                  "seq": true,
+                  "instance": true,
+                  "lab": true,
+                  "session": true,
+                  "cc_session": true,
+                  "agent": true,
+                  "provider": true,
+                  "model": true,
+                  "ts_approx": true,
+                  "detail": true,
+                  "Time": true
+                },
+                "indexByName": {
+                  "tag": 0,
+                  "stage": 1,
+                  "index": 2,
+                  "decision": 3,
+                  "title": 4,
+                  "severity": 5,
+                  "cwe": 6,
+                  "endpoint": 7,
+                  "reason": 8
+                },
+                "renameByName": {
+                  "index": "#"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": true
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "decision"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "confirmed": {
+                            "color": "green"
+                          },
+                          "rejected": {
+                            "color": "red"
+                          },
+                          "reported": {
+                            "color": "blue"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 38,
+          "title": "Tool calls per run, by provider",
+          "description": "Tool calls the agents of each run made, summed per provider (each point is the runs that ended in that interval). Read beside the precision and recall trends above.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 120
+          },
+          "maxDataPoints": 6000,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (provider) (sum_over_time({job=\"bbh-agent\", live=\"\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"run\" | unwrap tool_calls | __error__=\"\" [$__auto]))",
+              "queryType": "range",
+              "legendFormat": "{{provider}}"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 39,
+          "title": "Tool-error rate per run, by provider",
+          "description": "Share of the agents' tool calls that failed or were refused, per provider and interval.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 120
+          },
+          "maxDataPoints": 6000,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (provider) (sum_over_time({job=\"bbh-agent\", live=\"\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"run\" | unwrap tool_errors | __error__=\"\" [$__auto])) / sum by (provider) (sum_over_time({job=\"bbh-agent\", live=\"\", instance=~\"$instance\", stage=~\"$stage\"} | json | event=\"run\" | unwrap tool_calls | __error__=\"\" [$__auto]))",
+              "queryType": "range",
+              "legendFormat": "{{provider}}"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "unit": "percentunit",
+              "decimals": 1,
+              "max": 1
+            },
+            "overrides": []
           }
         }
       ]
