@@ -13,3 +13,17 @@ spec:
     sourceRange:
       - 192.168.20.0/24
       - 10.42.0.0/16
+---
+# One htpasswd line per producer, so a producer can be revoked on its own and
+# Traefik's access log names it (ClientUsername). The credential is stripped
+# before the request reaches Loki or Tempo. Not referenced by any ingress yet.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: ingest-auth
+  namespace: observability
+spec:
+  basicAuth:
+    secret: observability-ingest-auth
+    realm: observability-ingest
+    removeHeader: true
