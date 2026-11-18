@@ -46,9 +46,7 @@ spec:
         limits:
           memory: 4Gi
 
-      compactor:
-        compaction:
-          block_retention: 72h
+      retention: 336h
 
       storage:
         trace:
@@ -120,7 +118,7 @@ spec:
 
       queryFrontend:
         search:
-          max_duration: 168h
+          max_duration: 336h
 
       overrides:
         defaults:
