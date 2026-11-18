@@ -1,0 +1,15 @@
+---
+# Source allowlist for the loki.techvomit.xyz ingress (push, OTLP logs,
+# query_range) and tempo.techvomit.xyz/v1/traces.
+# Traefik's Service uses externalTrafficPolicy: Local, so the client address
+# Traefik sees is the real client address.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: ingest-allowlist
+  namespace: observability
+spec:
+  ipAllowList:
+    sourceRange:
+      - 192.168.20.0/24
+      - 10.42.0.0/16
