@@ -48,7 +48,7 @@ spec:
 
       compactor:
         compaction:
-          block_retention: 72h
+          block_retention: 336h
 
       storage:
         trace:
@@ -120,7 +120,7 @@ spec:
 
       queryFrontend:
         search:
-          max_duration: 168h
+          max_duration: 336h
 
       overrides:
         defaults:
