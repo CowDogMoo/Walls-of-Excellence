@@ -9,8 +9,8 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Bug Bounty"
-    dashboard-version: "1.0.1"
-    last-modified: "2026-11-16"
+    dashboard-version: "1.1.0"
+    last-modified: "2026-11-18"
 data:
   bug-bounty-harness.json: |
     {
