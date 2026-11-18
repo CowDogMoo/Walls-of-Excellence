@@ -10,6 +10,7 @@ resources:
   - ./blackbox-exporter/ks.yaml
   - ./goldilocks/ks.yaml
   - ./grafana/ks.yaml
+  - ./ingest-auth/ks.yaml
   - ./kube-prometheus-stack/ks.yaml
   - ./loki/ks.yaml
   - ./robusta/ks.yaml

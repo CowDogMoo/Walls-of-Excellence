@@ -1,0 +1,17 @@
+---
+# Write access to loki.techvomit.xyz and tempo.techvomit.xyz/v1/traces.
+# Traefik's Service uses externalTrafficPolicy: Local, so the client address
+# Traefik sees is the real LAN address. Tailnet clients arrive through the
+# Tailscale subnet router, SNATed to its pod address (10.42.0.0/16); pods can
+# already reach loki:3100 and tempo:4318 directly, so allowing that range
+# adds no exposure.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: ingest-allowlist
+  namespace: observability
+spec:
+  ipAllowList:
+    sourceRange:
+      - 192.168.20.0/24 # Boss VLAN (workstations, k8s nodes)
+      - 10.42.0.0/16 # pod CIDR: tailnet via subnet router

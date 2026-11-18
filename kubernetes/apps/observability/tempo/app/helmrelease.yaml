@@ -14,13 +14,6 @@ spec:
     - kustomize:
         patches:
           - target:
-              kind: Ingress
-              name: tempo
-            patch: |
-              - op: replace
-                path: /spec/rules/0/http/paths/0/backend/service/port/number
-                value: 3200
-          - target:
               kind: ServiceMonitor
               name: tempo
             patch: |
@@ -151,16 +144,11 @@ spec:
           memory: 16Mi
         limits:
           memory: 64Mi
+      # Grafana reads Tempo through the in-cluster Service; the query API
+      # (and /shutdown, /flush, /debug/pprof on the same port) stays off the
+      # ingress. Writes go through ingress-otlp.yaml only.
       ingress:
-        enabled: true
-        ingressClassName: ingress-traefik
-        path: /
-        pathType: Prefix
-        hosts:
-          - &host tempo.techvomit.xyz
-        tls:
-          - hosts:
-              - *host
+        enabled: false
 
     serviceMonitor:
       enabled: true

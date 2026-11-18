@@ -195,11 +195,22 @@ spec:
       ingress:
         enabled: true
         ingressClassName: ingress-traefik
+        annotations:
+          # LAN/tailnet only (observability/ingest-auth). Only the paths
+          # producers use are routed; admin paths (/flush, /ingester/shutdown,
+          # delete API, ruler API, /config) are not reachable through the
+          # ingress.
+          traefik.ingress.kubernetes.io/router.middlewares: observability-ingest-allowlist@kubernetescrd
         hosts:
           - host: &host loki.techvomit.xyz
             paths:
-              - path: /
-                pathType: Prefix
+              - path: /loki/api/v1/push
+                pathType: Exact
+              - path: /otlp/v1/logs
+                pathType: Exact
+              # publish_results.py reads back what it already published
+              - path: /loki/api/v1/query_range
+                pathType: Exact
         tls:
           - hosts:
               - *host

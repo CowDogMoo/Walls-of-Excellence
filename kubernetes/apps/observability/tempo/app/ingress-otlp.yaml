@@ -4,6 +4,8 @@ kind: Ingress
 metadata:
   name: tempo-otlp
   namespace: observability
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: observability-ingest-allowlist@kubernetescrd
 spec:
   ingressClassName: ingress-traefik
   rules:
@@ -11,7 +13,7 @@ spec:
       http:
         paths:
           - path: /v1/traces
-            pathType: Prefix
+            pathType: Exact
             backend:
               service:
                 name: tempo
