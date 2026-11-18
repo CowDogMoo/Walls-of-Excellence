@@ -46,9 +46,7 @@ spec:
         limits:
           memory: 4Gi
 
-      compactor:
-        compaction:
-          block_retention: 336h
+      retention: 336h
 
       storage:
         trace:
