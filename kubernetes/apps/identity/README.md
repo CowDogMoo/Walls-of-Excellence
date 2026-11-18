@@ -222,8 +222,9 @@ deploy time rather than expanded at container start.
 ### View Logs
 
 ```bash
-# Server logs
-kubectl logs -n identity deploy/authentik-server -f
+# Server logs (deploy/authentik-server would follow only one of the two replicas)
+kubectl logs -n identity -f --prefix \
+  -l app.kubernetes.io/name=authentik,app.kubernetes.io/component=server
 
 # Worker logs
 kubectl logs -n identity deploy/authentik-worker -f

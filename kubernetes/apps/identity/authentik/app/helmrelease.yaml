@@ -102,8 +102,9 @@ spec:
         - authentik-users-blueprint
 
     server:
-      # Two replicas on different nodes so one node losing DNS or the network
-      # doesn't take auth down; the PDB keeps a voluntary drain from evicting both.
+      # Two replicas so one node losing DNS or the network doesn't take auth
+      # down. The anti-affinity below only prefers separate nodes; it doesn't
+      # require them. The PDB keeps a voluntary drain from evicting both.
       replicas: 2
       pdb:
         enabled: true
