@@ -1,5 +1,6 @@
 ---
-# Write access to loki.techvomit.xyz and tempo.techvomit.xyz/v1/traces.
+# Source allowlist for the loki.techvomit.xyz ingress (push, OTLP logs,
+# query_range) and tempo.techvomit.xyz/v1/traces.
 # Traefik's Service uses externalTrafficPolicy: Local, so the client address
 # Traefik sees is the real LAN address. Tailnet clients arrive through the
 # Tailscale subnet router, SNATed to its pod address (10.42.0.0/16); pods can
