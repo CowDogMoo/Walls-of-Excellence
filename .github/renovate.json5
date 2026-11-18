@@ -38,6 +38,18 @@
       datasourceTemplate: '{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
+    {
+      customType: 'regex',
+      description: 'Track the Flux distribution manifests artifact pinned in the FluxInstance',
+      managerFilePatterns: [
+        '/kubernetes/.+\\.ya?ml$/',
+      ],
+      matchStrings: [
+        'artifact:\\s*oci://(?<depName>ghcr\\.io/controlplaneio-fluxcd/flux-operator-manifests):(?<currentValue>v\\d+\\.\\d+\\.\\d+)',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'semver',
+    },
   ],
   packageRules: [
     {
@@ -50,10 +62,10 @@
       allowedVersions: '!/^1\\.30\\.11$/',
     },
     {
-      description: 'Hold Flux Alert and Provider at v1beta3 until the cluster runs Flux v2.10+ (notification-controller v1.10+), which first serves notification.toolkit.fluxcd.io/v1 for these kinds',
-      matchDatasources: ['kubernetes-api'],
-      matchPackageNames: ['Alert', 'Provider'],
-      allowedVersions: '!/^notification\\.toolkit\\.fluxcd\\.io\\/v1$/',
+      description: 'Review Flux core upgrades by hand: this artifact picks the Flux version the operator installs, and Flux minors can carry breaking changes',
+      matchDatasources: ['docker'],
+      matchPackageNames: ['ghcr.io/controlplaneio-fluxcd/flux-operator-manifests'],
+      automerge: false,
     },
   ],
 }
