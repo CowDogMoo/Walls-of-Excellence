@@ -12,6 +12,8 @@ spec:
   dependsOn:
     # Traefik's chart installs the Middleware CRD.
     - name: ingress-traefik
+    # Serves the ClusterSecretStore the ExternalSecret reads from.
+    - name: onepassword
   interval: 1h
   path: ./kubernetes/apps/observability/ingest-auth/app
   prune: true
