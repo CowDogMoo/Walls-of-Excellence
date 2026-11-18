@@ -49,5 +49,11 @@
       ],
       allowedVersions: '!/^1\\.30\\.11$/',
     },
+    {
+      description: 'Hold Flux Alert and Provider at v1beta3 until the cluster runs Flux v2.10+ (notification-controller v1.10+), which first serves notification.toolkit.fluxcd.io/v1 for these kinds',
+      matchDatasources: ['kubernetes-api'],
+      matchPackageNames: ['Alert', 'Provider'],
+      allowedVersions: '!/^notification\\.toolkit\\.fluxcd\\.io\\/v1$/',
+    },
   ],
 }
