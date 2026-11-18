@@ -102,7 +102,13 @@ spec:
         - authentik-users-blueprint
 
     server:
-      replicas: 1
+      # Two replicas so one node losing DNS or the network doesn't take auth
+      # down. The anti-affinity below only prefers separate nodes; it doesn't
+      # require them. The PDB keeps a voluntary drain from evicting both.
+      replicas: 2
+      pdb:
+        enabled: true
+        minAvailable: 1
       podAnnotations:
         reloader.stakater.com/auto: "true"
       envFrom:
@@ -143,9 +149,16 @@ spec:
                     app.kubernetes.io/component: primary
                 topologyKey: kubernetes.io/hostname
 
+      # Startup and liveness use a plain TCP check on the HTTP port. The
+      # /-/health/live/ endpoint is proxied to Django, whose tenant middleware
+      # opens a Postgres connection, so a DNS or database blip there turns into
+      # liveness kills and CrashLoopBackOff. Restarting can't fix the database;
+      # readiness stays database-aware so traffic only reaches pods that can serve.
+      # httpGet: null drops the chart's default HTTP check, which Helm would
+      # otherwise merge in next to tcpSocket.
       startupProbe:
-        httpGet:
-          path: /-/health/live/
+        httpGet: null
+        tcpSocket:
           port: 9000
         initialDelaySeconds: 90
         periodSeconds: 10
@@ -153,8 +166,8 @@ spec:
         failureThreshold: 60
 
       livenessProbe:
-        httpGet:
-          path: /-/health/live/
+        httpGet: null
+        tcpSocket:
           port: 9000
         initialDelaySeconds: 60
         periodSeconds: 30
