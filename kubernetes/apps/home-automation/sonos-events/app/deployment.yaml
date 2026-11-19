@@ -37,6 +37,19 @@ spec:
               value: 192.168.30.104,192.168.30.101
             - name: POLL_SECONDS
               value: "2"
+            # Speakers push changes to this address, so it must be one they
+            # can reach: the node's own, with the port published on it.
+            - name: CALLBACK_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: CALLBACK_PORT
+              value: "14000"
+          ports:
+            - name: callback
+              containerPort: 14000
+              hostPort: 14000
+              protocol: TCP
           resources:
             requests:
               cpu: 20m
