@@ -170,7 +170,7 @@ spec:
             // which embeds the OAuth client secret and refresh token. Redact
             // both values before the line reaches Loki; other lines pass through.
             stage.match {
-              selector = "{namespace=\"home-automation\", app_name=\"frigate\"} |~ \"(client_secret|refresh_token)=\""
+              selector = "{namespace=\"home-automation\", app_name=\"frigate\"}"
               stage.replace {
                 expression = "(?:client_secret|refresh_token)=([^&\\s\"']+)"
                 replace    = "REDACTED"
