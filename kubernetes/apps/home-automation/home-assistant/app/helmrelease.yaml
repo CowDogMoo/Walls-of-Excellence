@@ -57,8 +57,9 @@ spec:
                 echo "$(date): OIDC component ${OIDC_VERSION} installed successfully"
                 ls -la /config/custom_components/auth_oidc/
           # Installs the pinned throwingshade build into /config/ts, which the
-          # ts sidecars and HA shell_commands run. Any failure inside the copy
-          # script keeps the existing /config/ts and exits 0 so HA still starts.
+          # ts sidecars, HA shell_commands, and the troy-backup CronJob run.
+          # Any failure inside the copy script keeps the existing /config/ts
+          # and exits 0 so HA still starts.
           # A failed image pull (registry outage on a new tag, expired or
           # revoked ghcr-pull token, home-assistant-ghcr ExternalSecret not
           # synced, tag missing for arm64) holds the pod in Init until the pull
@@ -68,8 +69,9 @@ spec:
           install-ts:
             image:
               repository: ghcr.io/cowdogmoo/throwingshade
-              # Full throwingshade commit SHA (v2.1.2-3-g9208c55, stall retry)
-              tag: 9208c55561a6bd1854ca6664df97e6bf8564fc6b
+              # Full throwingshade commit SHA (v2.1.2-8-g249f314, monitor reloads
+              # refreshed config, foreign TRO.Y replies retried, Lutron raw bytes)
+              tag: 249f314262567d732e966993cbb2b8da576e5644
               pullPolicy: IfNotPresent
             env:
               HOME: /tmp

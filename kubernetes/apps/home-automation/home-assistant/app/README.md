@@ -85,10 +85,11 @@ Configured in `helmrelease.yaml`:
 
 The `install-ts` init container copies `ts` from the private
 `ghcr.io/cowdogmoo/throwingshade` image into `/config/ts`, which the
-`ts-config-monitor` and `ts-monitor` sidecars and the Home Assistant
-shell_commands run. The image tag is the full throwingshade commit SHA; to
-update `ts`, build and push a new commit's image (see the throwingshade
-template in warpgate-templates) and change the `install-ts` tag.
+`ts-config-monitor` and `ts-monitor` sidecars, the Home Assistant
+shell_commands, and the weekly `troy-backup` CronJob run. The image tag is the
+full throwingshade commit SHA; to update `ts`, build and push a new commit's
+image (see the throwingshade template in warpgate-templates) and change the
+`install-ts` tag.
 
 At pod start the init container does nothing when `/config/ts` already matches
 the image. Otherwise it stages the binary in `/config`, checks that it runs
