@@ -15,5 +15,6 @@ resources:
   - ./loki/ks.yaml
   - ./robusta/ks.yaml
   - ./tempo/ks.yaml
+  - ./unifi-events/ks.yaml
   - ./unpoller/ks.yaml
   - ./vector/ks.yaml

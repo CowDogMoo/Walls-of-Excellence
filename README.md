@@ -219,7 +219,7 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **50 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **51 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
@@ -238,7 +238,7 @@ Flux reconciles **50 applications** across **18 namespaces** from [`kubernetes/a
 | `media` | [immich](kubernetes/apps/media/immich) |
 | `monitoring` | [runzero-explorer](kubernetes/apps/monitoring/runzero-explorer) |
 | `networking` | [adguard-home](kubernetes/apps/networking/adguard-home), [external-dns](kubernetes/apps/networking/external-dns), [ingress-traefik](kubernetes/apps/networking/ingress-traefik), [tailscale-operator](kubernetes/apps/networking/tailscale-operator) |
-| `observability` | [alloy](kubernetes/apps/observability/alloy), [blackbox-exporter](kubernetes/apps/observability/blackbox-exporter), [goldilocks](kubernetes/apps/observability/goldilocks), [grafana](kubernetes/apps/observability/grafana), [ingest-auth](kubernetes/apps/observability/ingest-auth), [kube-prometheus-stack](kubernetes/apps/observability/kube-prometheus-stack), [loki](kubernetes/apps/observability/loki), [robusta](kubernetes/apps/observability/robusta), [tempo](kubernetes/apps/observability/tempo), [unpoller](kubernetes/apps/observability/unpoller), [vector](kubernetes/apps/observability/vector) |
+| `observability` | [alloy](kubernetes/apps/observability/alloy), [blackbox-exporter](kubernetes/apps/observability/blackbox-exporter), [goldilocks](kubernetes/apps/observability/goldilocks), [grafana](kubernetes/apps/observability/grafana), [ingest-auth](kubernetes/apps/observability/ingest-auth), [kube-prometheus-stack](kubernetes/apps/observability/kube-prometheus-stack), [loki](kubernetes/apps/observability/loki), [robusta](kubernetes/apps/observability/robusta), [tempo](kubernetes/apps/observability/tempo), [unifi-events](kubernetes/apps/observability/unifi-events), [unpoller](kubernetes/apps/observability/unpoller), [vector](kubernetes/apps/observability/vector) |
 | `punch` | [punch](kubernetes/apps/punch/punch) |
 | `system-upgrade` | [system-upgrade-controller](kubernetes/apps/system-upgrade/system-upgrade-controller) |
 
