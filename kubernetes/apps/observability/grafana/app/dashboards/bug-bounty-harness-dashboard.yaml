@@ -3187,7 +3187,7 @@ data:
           "type": "table",
           "id": 33,
           "title": "Agent runs",
-          "description": "One row per agent run: its turns, tool calls, tool errors and refusals, decisions (findings reported, or verdicts confirmed and rejected; a metadata-only run publishes no decisions), wall time, tokens and squad's cost estimate. activity is missing when the publisher found no record of the agent run's turns (no squad events, and for a squad that predates them no transcript). trace_id opens the agent run's trace in Tempo: its turn spans and, under each, its tool calls, with their timing, sizes, tokens and errors (no text or tool output; Tempo keeps traces for 3 days).",
+          "description": "One row per agent run: its turns, tool calls, tool errors and refusals, decisions (findings reported, or verdicts confirmed and rejected; a metadata-only run publishes no decisions), wall time, tokens and squad's cost estimate. activity is missing when the publisher found no record of the agent run's turns (no squad events, and for a squad that predates them no transcript). trace_id opens the agent run's trace in Tempo: its turn spans and, under each, its tool calls, with their timing, sizes, tokens and errors (no text or tool output; Tempo keeps traces for 14 days).",
           "datasource": {
             "type": "loki",
             "uid": "${datasource}"
@@ -3420,7 +3420,7 @@ data:
           "type": "table",
           "id": 43,
           "title": "Traces ($run)",
-          "description": "Every agent run of the run as a trace in Tempo, found by the bbh.run_id resource attribute run_eval.sh gives squad's exporter (TraceQL { resource.bbh.run_id = \"$run\" }). Open a trace for its waterfall: squad.run, then a chat <model> span per model turn with its tool.<Name> spans under it. Spans carry names, timing, sizes, token counts and errors, never assistant text, tool arguments or tool output. The table searches the last 3 days, not the dashboard's range (while that range is a relative one, as the default last 14 days is): Tempo keeps traces for 3 days and refuses a search over more than 7. So an older run lists none; its agent events above stay for 14.",
+          "description": "Every agent run of the run as a trace in Tempo, found by the bbh.run_id resource attribute run_eval.sh gives squad's exporter (TraceQL { resource.bbh.run_id = \"$run\" }). Open a trace for its waterfall: squad.run, then a `chat <model>` span per model turn with its `tool.<Name>` spans under it. Spans carry names, timing, sizes, token counts and errors, never assistant text, tool arguments or tool output. The table searches the last 14 days, not the dashboard's range (while that range is a relative one): Tempo keeps traces for 14 days and refuses a search over more than 14, which a wider range would be. So a run older than 14 days lists none, as its agent events above are gone too.",
           "datasource": {
             "type": "tempo",
             "uid": "${tempo}"
@@ -3431,7 +3431,7 @@ data:
             "x": 0,
             "y": 102
           },
-          "timeFrom": "3d",
+          "timeFrom": "14d",
           "targets": [
             {
               "refId": "A",
