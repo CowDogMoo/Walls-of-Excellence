@@ -202,10 +202,10 @@ spec:
         enabled: true
         ingressClassName: ingress-traefik
         annotations:
-          # Source-restricted by observability/ingest-auth. Only the paths
-          # producers use are routed; admin paths (/flush, /ingester/shutdown,
-          # delete API, ruler API, /config) are not reachable through the
-          # ingress.
+          # Source-restricted and credential-gated by observability/ingest-auth.
+          # Only the paths producers use are routed; admin paths (/flush,
+          # /ingester/shutdown, delete API, ruler API, /config) are not
+          # reachable through the ingress.
           traefik.ingress.kubernetes.io/router.middlewares: observability-ingest-allowlist@kubernetescrd,observability-ingest-auth@kubernetescrd
         hosts:
           - host: &host loki.techvomit.xyz
