@@ -51,6 +51,12 @@ spec:
         max_chunk_age: 6h
       limits_config:
         retention_period: 14d
+        # A guest's phone can keep a speaker in its Spotify device list for
+        # months, so the speaker log has to outlive the visit that caused it.
+        retention_stream:
+          - selector: '{job="sonos-events"}'
+            priority: 1
+            period: 8760h
         reject_old_samples: true
         reject_old_samples_max_age: 336h # 14 days - match retention
         unordered_writes: true

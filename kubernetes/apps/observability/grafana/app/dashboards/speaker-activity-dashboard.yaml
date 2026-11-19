@@ -1,0 +1,334 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: speaker-activity-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Home Automation"
+data:
+  speaker-activity.json: |
+    {
+      "uid": "speaker-activity",
+      "title": "Speaker Activity",
+      "description": "What every Sonos speaker played, when, and what kind of controller started it",
+      "tags": [
+        "home-automation",
+        "sonos",
+        "audio"
+      ],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "1m",
+      "time": {
+        "from": "now-24h",
+        "to": "now"
+      },
+      "links": [
+        {
+          "title": "Home Automation Overview",
+          "type": "link",
+          "url": "/d/home-automation-overview",
+          "icon": "dashboard"
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "type": "query",
+            "name": "room",
+            "label": "Room",
+            "datasource": {
+              "type": "loki",
+              "uid": "loki"
+            },
+            "query": {
+              "type": 1,
+              "label": "room",
+              "stream": "{job=\"sonos-events\"}"
+            },
+            "refresh": 2,
+            "multi": true,
+            "includeAll": true,
+            "allValue": ".+",
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            }
+          },
+          {
+            "type": "textbox",
+            "name": "wifi_device",
+            "label": "Wi-Fi device (regex)",
+            "query": ".*(iPhone|iPad|Phone|Pixel|Galaxy|Mac|Watch).*",
+            "current": {
+              "text": ".*(iPhone|iPad|Phone|Pixel|Galaxy|Mac|Watch).*",
+              "value": ".*(iPhone|iPad|Phone|Pixel|Galaxy|Mac|Watch).*"
+            },
+            "options": [
+              {
+                "selected": true,
+                "text": ".*(iPhone|iPad|Phone|Pixel|Galaxy|Mac|Watch).*",
+                "value": ".*(iPhone|iPad|Phone|Pixel|Galaxy|Mac|Watch).*"
+              }
+            ]
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "text",
+          "title": "How to read this",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "Find the `playback_started` line for the room and read its **source**.\n\n- `spotify_connect`: a Spotify app picked the speaker, possibly from outside the house\n- `airplay`: an Apple device on the network\n- `sonos_app_spotify`, `sonos_app_queue`: the Sonos app\n- `stream`: Music Assistant or Home Assistant\n- `tv`, `line_in`, `radio`: the input itself\n\nSpeakers never learn the Spotify account name. Match the first unexplained `spotify_connect` play to the phones in the bottom panel. Details: observability README."
+          }
+        },
+        {
+          "id": 2,
+          "type": "logs",
+          "title": "What played, where, and from what",
+          "description": "Every start, stop, track and source change on every speaker group.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "prettifyLogMessage": false
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{job=\"sonos-events\", room=~\"$room\", event=~\"playback_started|playback_stopped|source_changed|track_changed\"} | json title=\"title\", artist=\"artist\", session=\"session\", stream_host=\"stream_host\", grp=\"group\" | line_format \"{{.room}} · {{.event}} · {{.source}}{{if .title}} · {{.title}}{{end}}{{if .artist}} — {{.artist}}{{end}}{{if .session}} · session {{.session}}{{end}}{{if .stream_host}} · from {{.stream_host}}{{end}}\"",
+              "maxLines": 1000
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Playback starts by room",
+          "description": "How often each room started playing.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 80,
+                "stacking": {
+                  "mode": "normal"
+                }
+              },
+              "min": 0,
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "sum by (room) (count_over_time({job=\"sonos-events\", room=~\"$room\", event=\"playback_started\"}[$__interval]))",
+              "legendFormat": "{{room}}"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Playback starts by source",
+          "description": "What kind of controller started the music.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 80,
+                "stacking": {
+                  "mode": "normal"
+                }
+              },
+              "min": 0,
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "sum by (source) (count_over_time({job=\"sonos-events\", room=~\"$room\", event=\"playback_started\"}[$__interval]))",
+              "legendFormat": "{{source}}"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "logs",
+          "title": "New Spotify Connect and AirPlay sessions",
+          "description": "Each time an app took hold of a speaker. A burst of new Spotify sessions with short plays is somebody selecting the wrong speaker.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 29
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending",
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "prettifyLogMessage": false
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{job=\"sonos-events\", room=~\"$room\", event=\"session_started\"} | json title=\"title\", artist=\"artist\", session=\"session\", stream_host=\"stream_host\", grp=\"group\" | line_format \"{{.room}} · {{.event}} · {{.source}}{{if .title}} · {{.title}}{{end}}{{if .artist}} — {{.artist}}{{end}}{{if .session}} · session {{.session}}{{end}}{{if .stream_host}} · from {{.stream_host}}{{end}}\"",
+              "maxLines": 1000
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "state-timeline",
+          "title": "Wi-Fi devices present",
+          "description": "Wireless clients matching the Wi-Fi device filter. Zoom to the moment a speaker first played a stranger's music to see whose phone was in the house. Prometheus keeps 14 days.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 37
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "fillOpacity": 80,
+                "lineWidth": 0
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "text": "on Wi-Fi",
+                      "color": "green"
+                    }
+                  }
+                }
+              ],
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showValue": "never",
+            "mergeValues": true,
+            "rowHeight": 0.8,
+            "legend": {
+              "showLegend": false
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count by (name, mac, essid) (unpoller_client_uptime_seconds{wired=\"false\", name=~\"$wifi_device\"}) > bool 0",
+              "legendFormat": "{{name}} {{mac}} ({{essid}})"
+            }
+          ]
+        }
+      ]
+    }

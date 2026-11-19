@@ -183,6 +183,30 @@ spec:
               }
             }
 
+            // Sonos playback events: one JSON line per change
+            stage.match {
+              selector = "{namespace=\"home-automation\", app_name=\"sonos-events\"}"
+              stage.json {
+                expressions = {
+                  event  = "event",
+                  room   = "room",
+                  source = "source",
+                }
+              }
+              stage.labels {
+                values = {
+                  event  = "",
+                  room   = "",
+                  source = "",
+                }
+              }
+              stage.static_labels {
+                values = {
+                  job = "sonos-events",
+                }
+              }
+            }
+
             // Parse home-assistant logs
             stage.match {
               selector = "{namespace=\"home-automation\", app_name=\"home-assistant\"}"

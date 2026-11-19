@@ -12,5 +12,6 @@ resources:
   - ./mealie/ks.yaml
   - ./mosquitto/ks.yaml
   - ./music-assistant/ks.yaml
+  - ./sonos-events/ks.yaml
   - ./troy-backup/ks.yaml
   - ./zigbee2mqtt/ks.yaml
