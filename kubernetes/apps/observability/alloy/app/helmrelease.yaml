@@ -166,6 +166,17 @@ spec:
             // Strip the CRI wrapper (timestamp stream flags) from filesystem-scraped lines
             stage.cri {}
 
+            // go2rtc logs failed stream dials with the whole nest: source URL,
+            // which embeds the OAuth client secret and refresh token. Redact
+            // both values before the line reaches Loki; other lines pass through.
+            stage.match {
+              selector = "{namespace=\"home-automation\", app_name=\"frigate\"}"
+              stage.replace {
+                expression = "(?:client_secret|refresh_token)=([^&\\s\"']+)"
+                replace    = "REDACTED"
+              }
+            }
+
             // Parse JSON logs from troy-backup and throwingshade
             stage.match {
               selector = "{namespace=\"home-automation\", container=\"troy-backup\"}"
