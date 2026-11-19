@@ -16,7 +16,8 @@ spec:
 ---
 # One htpasswd line per producer, so a producer can be revoked on its own and
 # Traefik's access log names it (ClientUsername). The credential is stripped
-# before the request reaches Loki or Tempo. Not referenced by any ingress yet.
+# before the request reaches Loki or Tempo. Referenced by the Loki and Tempo
+# OTLP ingresses.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
