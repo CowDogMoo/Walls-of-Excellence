@@ -47,7 +47,7 @@ spec:
                   # Run the backup inside the home-assistant pod
                   echo "Running backup command..."
                   kubectl exec -n home-automation "$POD_NAME" -c app -- \
-                    /config/cowdogmoo/throwingshade/dist/throwingshade_linux_arm64/ts backup -o "$BACKUP_FILE"
+                    /config/ts backup -o "$BACKUP_FILE"
 
                   echo "Backup completed: $BACKUP_FILE"
 

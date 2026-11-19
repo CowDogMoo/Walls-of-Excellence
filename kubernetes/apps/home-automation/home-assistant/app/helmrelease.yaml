@@ -57,8 +57,9 @@ spec:
                 echo "$(date): OIDC component ${OIDC_VERSION} installed successfully"
                 ls -la /config/custom_components/auth_oidc/
           # Installs the pinned throwingshade build into /config/ts, which the
-          # ts sidecars and HA shell_commands run. Any failure inside the copy
-          # script keeps the existing /config/ts and exits 0 so HA still starts.
+          # ts sidecars, HA shell_commands, and the troy-backup CronJob run.
+          # Any failure inside the copy script keeps the existing /config/ts
+          # and exits 0 so HA still starts.
           # A failed image pull (registry outage on a new tag, expired or
           # revoked ghcr-pull token, home-assistant-ghcr ExternalSecret not
           # synced, tag missing for arm64) holds the pod in Init until the pull
