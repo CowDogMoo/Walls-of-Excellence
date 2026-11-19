@@ -1,0 +1,32 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vector-syslog-rules
+  namespace: observability
+spec:
+  groups:
+    - name: vector-syslog
+      rules:
+        - alert: UnifiSyslogSilent
+          expr: |
+            sum(rate(vector_component_received_events_total{component_id="unifi_raw"}[15m])) == 0
+            or
+            absent(vector_component_received_events_total{component_id="unifi_raw"})
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "No UniFi syslog is arriving"
+            description: "vector-syslog has received nothing on UDP 514 for 30 minutes. The gateway sends to a fixed address, so check that the vector-syslog Service still holds 192.168.20.14 and that remote syslog is enabled on the gateway."
+        - alert: UnifiSyslogNotStored
+          expr: |
+            sum(rate(vector_component_sent_events_total{component_id="to_loki"}[15m])) == 0
+            and
+            sum(rate(vector_component_received_events_total{component_id="unifi_raw"}[15m])) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "UniFi syslog is arriving but not reaching Loki"
+            description: "vector-syslog is receiving UniFi syslog but has sent nothing to Loki for 30 minutes."

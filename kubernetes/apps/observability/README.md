@@ -50,3 +50,43 @@ in its device list and can start it from anywhere afterwards. To name the
 person, find the first `spotify_connect` playback nobody in the house chose
 and check which phone was on the Wi-Fi at that moment (the dashboard's bottom
 panel).
+
+## UniFi logs
+
+Two streams hold what the gateway knows about clients and traffic.
+
+`{source="unifi"}` is the gateway's syslog. It arrives at `vector-syslog` on
+192.168.20.14 (UDP 514). The gateway is configured with that address, so the
+Service pins it, and `UnifiSyslogSilent` fires when nothing has arrived for 30
+minutes. Structured events have `event_type!="raw_syslog"`, and every key the
+gateway sends becomes a JSON field: `client_mac`, `client_alias`,
+`connected_to_device_name` and `wifi_rssi` on Wi-Fi events, and
+`src_client_mac`, `dst`, `dpt`, `proto` and `policy_name` on firewall blocks.
+The rest is device syslog from access points and switches, with the sender in
+the `device` label and the daemon in `program`.
+
+`{job="unifi-events"}` comes from `unifi-events`, which reads the controller's
+flow and client-event APIs once a minute. Lines with `kind="flow"` are traffic
+flows, both allowed and blocked, with the source MAC, both ports, the
+destination domain and the firewall policy that matched. Lines with
+`kind="client_event"` are connects, disconnects and roams. The controller
+itself keeps only a few hours of flows, so this stream is the history.
+
+Which devices talked to a speaker, and on which port:
+
+```logql
+{job="unifi-events", kind="flow"} | json | dst_ip="192.168.30.104"
+  | line_format "{{.src_name}} {{.src_mac}} -> :{{.dst_port}} x{{.count}} ({{.policy}})"
+```
+
+Where a phone has been on the Wi-Fi:
+
+```logql
+{job="unifi-events", kind="client_event"} | json | client_mac="aa:bb:cc:dd:ee:ff"
+```
+
+A flow is recorded only when it crosses the gateway. A phone on the same
+network as a speaker reaches it directly, and only the speaker's own log
+(above) shows that. Repeats of one conversation within a poll are folded into
+one line: `count` says how many there were and `last_time` when the newest
+one started.

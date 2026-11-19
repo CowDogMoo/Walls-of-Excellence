@@ -207,6 +207,35 @@ spec:
               }
             }
 
+            // UniFi flow and client-event records: one JSON line each
+            stage.match {
+              selector = "{namespace=\"observability\", app_name=\"unifi-events\"}"
+              stage.json {
+                expressions = {
+                  kind   = "kind",
+                  action = "action",
+                  event  = "event",
+                  ts     = "ts",
+                }
+              }
+              stage.labels {
+                values = {
+                  kind   = "",
+                  action = "",
+                  event  = "",
+                }
+              }
+              stage.timestamp {
+                source = "ts"
+                format = "RFC3339Nano"
+              }
+              stage.static_labels {
+                values = {
+                  job = "unifi-events",
+                }
+              }
+            }
+
             // Parse home-assistant logs
             stage.match {
               selector = "{namespace=\"home-automation\", app_name=\"home-assistant\"}"
