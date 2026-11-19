@@ -26,9 +26,14 @@ Who last touched a Deployment:
 
 ## Speaker activity
 
-`sonos-events` (in `home-automation`) polls every Sonos group every two
-seconds and prints one JSON line whenever a speaker starts, stops, changes
-track or changes source. Alloy ships the lines to Loki as
+`sonos-events` (in `home-automation`) has every Sonos speaker push its
+playback state to it and prints one JSON line whenever a group starts, stops,
+changes track or changes source. Speakers close the connection after every
+request, so polling them cost about a thousand connections a minute; pushes
+cost none while the house is quiet. Every speaker is still polled once a
+minute as a safety net, and one whose pushes stop arriving is logged as
+`push_unavailable` and polled every two seconds until they return. Alloy
+ships the lines to Loki as
 `{job="sonos-events"}` with `room`, `event` and `source` labels, and Loki
 keeps that stream for a year. The **Speaker Activity** dashboard in Grafana
 reads it.
