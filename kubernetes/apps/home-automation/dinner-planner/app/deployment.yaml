@@ -3,8 +3,7 @@
 # laptop. Every five minutes it folds the household's Mealie feedback into the
 # planner's history, drains the Home Assistant swap queue, and refills the
 # recipe box for every thumbs-down that condemned no night - handing the one
-# judgement call (which recipe) to the dinner-refill squad agent on squad's
-# claude-code provider.
+# judgement call (which recipe) to a single bounded `claude -p` step.
 #
 # A Deployment with one replica and a sleep loop, not a CronJob: the planner
 # state on the volume is read and written through `kubectl exec` when a week is
@@ -42,7 +41,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: runner
-          image: ghcr.io/l50/dinner-runner:e5ba9905cf4dc5cc06be018d2aa41167896d0dad
+          image: ghcr.io/l50/dinner-runner:395b5f44be014de0e052d5150f9116183f747518
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
@@ -58,8 +57,6 @@ spec:
               value: http://home-assistant.home-automation.svc.cluster.local:8123
             - name: SWAP_RUNNER_INTERVAL
               value: "300"
-            - name: SWAP_RUNNER_SEARCH
-              value: squad
             - name: SWAP_RUNNER_MAX_COST
               value: "5"
           volumeMounts:
