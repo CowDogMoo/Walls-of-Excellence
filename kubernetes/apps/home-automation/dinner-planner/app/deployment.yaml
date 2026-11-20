@@ -3,8 +3,7 @@
 # laptop. Every five minutes it folds the household's Mealie feedback into the
 # planner's history, drains the Home Assistant swap queue, and refills the
 # recipe box for every thumbs-down that condemned no night - handing the one
-# judgement call (which recipe) to the dinner-refill squad agent on squad's
-# claude-code provider.
+# judgement call (which recipe) to a single bounded `claude -p` step.
 #
 # A Deployment with one replica and a sleep loop, not a CronJob: the planner
 # state on the volume is read and written through `kubectl exec` when a week is
