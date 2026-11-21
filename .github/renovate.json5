@@ -7,6 +7,7 @@
     'github>CowDogMoo/Walls-of-Excellence//.github/renovate/labels.json5',
     'github>CowDogMoo/Walls-of-Excellence//.github/renovate/semanticCommits.json5',
   ],
+  timezone: 'America/Denver',
   ignorePaths: [
     'kubernetes/deprecated/**',
   ],
@@ -66,6 +67,15 @@
       matchDatasources: ['docker'],
       matchPackageNames: ['ghcr.io/controlplaneio-fluxcd/flux-operator-manifests'],
       automerge: false,
+    },
+    {
+      description: 'Merge k3s and system-upgrade-controller updates only in daytime, far from the 02:00-05:00 kured reboot window, so a k3s upgrade never overlaps a kured reboot. Platform automerge is off because GitHub would merge whenever checks pass, outside this schedule',
+      matchPackageNames: [
+        'k3s-io/k3s',
+        'docker.io/rancher/system-upgrade-controller',
+      ],
+      automergeSchedule: ['* 9-13 * * *'],
+      platformAutomerge: false,
     },
   ],
 }

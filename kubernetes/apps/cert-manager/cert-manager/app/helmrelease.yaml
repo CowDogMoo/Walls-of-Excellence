@@ -32,6 +32,11 @@ spec:
       logLevel: 6
       leaderElection:
         namespace: cert-manager
+        # Ride out short API/VIP outages instead of exiting on a lost lease.
+        # Chart defaults are 60s/40s/15s.
+        leaseDuration: 120s
+        renewDeadline: 90s
+        retryPeriod: 20s
     replicaCount: 3
     resources:
       requests:
