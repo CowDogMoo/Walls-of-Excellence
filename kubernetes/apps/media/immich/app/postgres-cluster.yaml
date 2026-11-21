@@ -6,6 +6,10 @@ metadata:
   namespace: media
 spec:
   instances: 1
+  # With one instance the primary PDB allows zero disruptions, so it blocks
+  # every drain of k8s9 and kured could never reboot that node. The volume is
+  # local-path on k8s9, so an evicted pod just waits for k8s9 to come back.
+  enablePDB: false
 
   imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.9-0.4.3
 

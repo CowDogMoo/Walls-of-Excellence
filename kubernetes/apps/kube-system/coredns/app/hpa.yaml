@@ -1,0 +1,26 @@
+---
+# k3s owns the CoreDNS Deployment (/var/lib/rancher/k3s/server/manifests/coredns.yaml)
+# and re-applies it on every server start, so its pod spec can't be edited
+# durably. That manifest leaves spec.replicas unset, though, so an HPA can own
+# the replica count without k3s resetting it. The manifest's own
+# topologySpreadConstraints (maxSkew 1 on kubernetes.io/hostname,
+# DoNotSchedule) keep the replicas on separate nodes.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: coredns
+  namespace: kube-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: coredns
+  minReplicas: 2
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80

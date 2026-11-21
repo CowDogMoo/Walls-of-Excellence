@@ -1,0 +1,25 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kured-rules
+  namespace: system-upgrade
+spec:
+  groups:
+    - name: kured
+      rules:
+        - alert: NodeRebootPendingTooLong
+          # kured only reboots inside its night-time window and one node at a
+          # time, so a node waiting several days points at a stuck lock or a
+          # drain that keeps failing.
+          expr: |
+            max by (node) (kured_reboot_required) == 1
+          for: 3d
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} has needed a reboot for 3 days."
+            description: "Check the kured logs in system-upgrade and the
+              weave.works/kured-node-lock annotation on the kured DaemonSet.
+              A drain blocked by a PodDisruptionBudget or a lock held by a node
+              that never came back stops kured from rebooting anything."

@@ -1,0 +1,33 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: coredns-rules
+  namespace: kube-system
+spec:
+  groups:
+    - name: coredns-availability
+      rules:
+        - alert: CoreDNSNotSpreadAcrossNodes
+          # Ready CoreDNS pods counted per distinct node. Catches the HPA not
+          # scaling and a k3s upgrade dropping the hostname spread constraint.
+          expr: |
+            (
+              count(
+                count by (node) (
+                  kube_pod_info{namespace="kube-system", pod=~"coredns-.*"}
+                  and on (namespace, pod)
+                  (kube_pod_status_ready{namespace="kube-system", condition="true"} == 1)
+                )
+              )
+              or vector(0)
+            ) < 2
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Fewer than two nodes run a ready CoreDNS pod."
+            description:
+              "Cluster DNS depends on a single node. Check the coredns HPA in
+              kube-system and the topologySpreadConstraints of the k3s-managed
+              coredns Deployment."
