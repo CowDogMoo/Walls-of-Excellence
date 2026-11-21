@@ -74,6 +74,7 @@ k3s cluster.
 
 - [Developer Environment Setup](docs/dev.md)
 - [Rock5B NVMe Boot Setup](docs/rock5b-nvme-boot.md)
+- [Rollout: kured, CoreDNS HA and leader-election tuning](docs/rollout.md)
 - [Test Environment](docs/test-environment.md)
 
 <!-- END GENERATED: docs -->
@@ -219,7 +220,7 @@ woe/
 
 <!-- BEGIN GENERATED: apps -->
 
-Flux reconciles **51 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
+Flux reconciles **53 applications** across **18 namespaces** from [`kubernetes/apps/`](kubernetes/apps).
 
 | Namespace | Applications |
 | --------- | ------------ |
@@ -234,13 +235,13 @@ Flux reconciles **51 applications** across **18 namespaces** from [`kubernetes/a
 | `home-automation` | [dinner-planner](kubernetes/apps/home-automation/dinner-planner), [frigate](kubernetes/apps/home-automation/frigate), [grocy](kubernetes/apps/home-automation/grocy), [home-assistant](kubernetes/apps/home-automation/home-assistant), [mealie](kubernetes/apps/home-automation/mealie), [mosquitto](kubernetes/apps/home-automation/mosquitto), [music-assistant](kubernetes/apps/home-automation/music-assistant), [sonos-events](kubernetes/apps/home-automation/sonos-events), [troy-backup](kubernetes/apps/home-automation/troy-backup), [zigbee2mqtt](kubernetes/apps/home-automation/zigbee2mqtt) |
 | `identity` | [authentik](kubernetes/apps/identity/authentik) |
 | `inference` | [ollama](kubernetes/apps/inference/ollama) |
-| `kube-system` | [descheduler](kubernetes/apps/kube-system/descheduler), [k3s-addon-limits](kubernetes/apps/kube-system/k3s-addon-limits), [nfs-subdir-external-provisioner](kubernetes/apps/kube-system/nfs-subdir-external-provisioner), [reflector](kubernetes/apps/kube-system/reflector), [reloader](kubernetes/apps/kube-system/reloader) |
+| `kube-system` | [coredns](kubernetes/apps/kube-system/coredns), [descheduler](kubernetes/apps/kube-system/descheduler), [k3s-addon-limits](kubernetes/apps/kube-system/k3s-addon-limits), [nfs-subdir-external-provisioner](kubernetes/apps/kube-system/nfs-subdir-external-provisioner), [reflector](kubernetes/apps/kube-system/reflector), [reloader](kubernetes/apps/kube-system/reloader) |
 | `media` | [immich](kubernetes/apps/media/immich) |
 | `monitoring` | [runzero-explorer](kubernetes/apps/monitoring/runzero-explorer) |
 | `networking` | [adguard-home](kubernetes/apps/networking/adguard-home), [external-dns](kubernetes/apps/networking/external-dns), [ingress-traefik](kubernetes/apps/networking/ingress-traefik), [tailscale-operator](kubernetes/apps/networking/tailscale-operator) |
 | `observability` | [alloy](kubernetes/apps/observability/alloy), [blackbox-exporter](kubernetes/apps/observability/blackbox-exporter), [goldilocks](kubernetes/apps/observability/goldilocks), [grafana](kubernetes/apps/observability/grafana), [ingest-auth](kubernetes/apps/observability/ingest-auth), [kube-prometheus-stack](kubernetes/apps/observability/kube-prometheus-stack), [loki](kubernetes/apps/observability/loki), [robusta](kubernetes/apps/observability/robusta), [tempo](kubernetes/apps/observability/tempo), [unifi-events](kubernetes/apps/observability/unifi-events), [unpoller](kubernetes/apps/observability/unpoller), [vector](kubernetes/apps/observability/vector) |
 | `punch` | [punch](kubernetes/apps/punch/punch) |
-| `system-upgrade` | [system-upgrade-controller](kubernetes/apps/system-upgrade/system-upgrade-controller) |
+| `system-upgrade` | [kured](kubernetes/apps/system-upgrade/kured), [system-upgrade-controller](kubernetes/apps/system-upgrade/system-upgrade-controller) |
 
 <!-- END GENERATED: apps -->
 

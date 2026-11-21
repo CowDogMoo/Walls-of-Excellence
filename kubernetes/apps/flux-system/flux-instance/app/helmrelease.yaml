@@ -54,6 +54,21 @@ spec:
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
+          - # Ride out short API/VIP outages instead of exiting on a lost lease
+            # (Flux defaults are 35s/30s/5s)
+            patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --leader-election-lease-duration=60s
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --leader-election-renew-deadline=40s
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --leader-election-retry-period=10s
+            target:
+              kind: Deployment
+              name: (source-controller|kustomize-controller|helm-controller|notification-controller)
           - # Set resource limits
             patch: |-
               apiVersion: apps/v1

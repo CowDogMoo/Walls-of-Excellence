@@ -1,0 +1,12 @@
+---
+# Keep one CoreDNS pod serving while a node is drained (kured, k3s upgrades).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coredns
+  namespace: kube-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      k8s-app: kube-dns

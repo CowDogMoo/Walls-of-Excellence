@@ -1,0 +1,61 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kured
+  namespace: system-upgrade
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: kured
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # unattended-upgrades installs packages and writes /var/run/reboot-required;
+    # kured does the reboot. It takes a cluster-wide lock so only one node
+    # reboots at a time, drains it first, and uncordons it afterwards.
+    configuration:
+      period: 15m
+      concurrency: 1
+      # Night-time window only.
+      startTime: "02:00"
+      endTime: "05:00"
+      timeZone: America/Denver
+      # Hold the lock for 30 minutes after a node is back so etcd and the
+      # leader-elected controllers settle before the next node goes down.
+      lockReleaseDelay: 30m
+      # lockTtl stays 0: a node that never comes back keeps the lock and
+      # blocks further reboots instead of letting a second etcd member go down.
+      lockTtl: 0
+      # A drain blocked by a PodDisruptionBudget gives up, uncordons the node,
+      # releases the lock and is retried next period; never reboot undrained.
+      drainTimeout: 30m
+      forceReboot: false
+      # Pods evicted from one node avoid other nodes that are waiting to reboot.
+      preferNoScheduleTaint: weave.works/kured-node-reboot
+      annotateNodes: true
+      logFormat: json
+    # Control-plane nodes carry the master NoSchedule taint and must be
+    # covered too, or they would never reboot.
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
