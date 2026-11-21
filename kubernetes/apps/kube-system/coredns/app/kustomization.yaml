@@ -5,4 +5,3 @@ kind: Kustomization
 resources:
   - ./hpa.yaml
   - ./pdb.yaml
-  - ./prometheusrule.yaml

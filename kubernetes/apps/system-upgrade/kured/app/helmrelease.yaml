@@ -59,7 +59,3 @@ spec:
         memory: 32Mi
       limits:
         memory: 128Mi
-    service:
-      create: true
-    metrics:
-      create: true
