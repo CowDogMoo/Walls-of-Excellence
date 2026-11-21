@@ -74,7 +74,7 @@ k3s cluster.
 
 - [Developer Environment Setup](docs/dev.md)
 - [Rock5B NVMe Boot Setup](docs/rock5b-nvme-boot.md)
-- [Rollout: kured, CoreDNS HA and Leader-Election Tuning](docs/rollout.md)
+- [Rollout: kured, CoreDNS HA and leader-election tuning](docs/rollout.md)
 - [Test Environment](docs/test-environment.md)
 
 <!-- END GENERATED: docs -->
