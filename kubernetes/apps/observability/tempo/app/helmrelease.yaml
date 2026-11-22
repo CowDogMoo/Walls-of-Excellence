@@ -111,8 +111,6 @@ spec:
 
       queryFrontend:
         search:
-          # A day above the 336h retention so a 14-day search never trips the
-          # cap at a second boundary or across a daylight-saving change.
           max_duration: 360h
 
       overrides:
