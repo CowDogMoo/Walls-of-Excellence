@@ -69,9 +69,9 @@ spec:
           install-ts:
             image:
               repository: ghcr.io/cowdogmoo/throwingshade
-              # Full throwingshade commit SHA (v2.1.2-8-g249f314, monitor reloads
-              # refreshed config, foreign TRO.Y replies retried, Lutron raw bytes)
-              tag: 249f314262567d732e966993cbb2b8da576e5644
+              # Full throwingshade commit SHA (v2.1.2-10-g8299a3c, shade commands
+              # supersede per shade, monitor availability on troy/status)
+              tag: 8299a3c63ba0a941ff82394c761424a8bb855eb8
               pullPolicy: IfNotPresent
             env:
               HOME: /tmp
