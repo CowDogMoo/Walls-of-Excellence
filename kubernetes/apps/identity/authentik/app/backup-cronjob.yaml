@@ -24,7 +24,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: backup
-              image: postgres:17.11
+              image: postgres:17.12
               env:
                 - name: PGHOST
                   value: authentik-postgresql
