@@ -1,0 +1,78 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: authentik-backup
+  namespace: identity
+spec:
+  # Finish before the 02:00-05:00 node-reboot window and other backups.
+  schedule: "30 1 * * *"
+  timeZone: America/Denver
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 600
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: authentik-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: postgres:17.11
+              env:
+                - name: PGHOST
+                  value: authentik-postgresql
+                - name: PGDATABASE
+                  value: authentik
+                - name: PGUSER
+                  value: authentik
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: authentik-secrets
+                      key: AUTHENTIK_POSTGRESQL_PASSWORD
+                - name: PGCONNECT_TIMEOUT
+                  value: "30"
+              command:
+                - bash
+                - -c
+                - |
+                  set -euo pipefail
+                  export LC_ALL=C
+                  BACKUP_DIR=/nfs/authentik
+                  mkdir -p "$BACKUP_DIR"
+                  STAMP=$(date -u +%Y%m%d_%H%M%S)
+                  TEMP=$(mktemp "$BACKUP_DIR/.authentik_XXXXXX.partial")
+                  trap 'rm -f "$TEMP"' EXIT
+                  # Custom format compresses internally: no pipeline can mask
+                  # a pg_dump failure. Publish only a completed dump.
+                  pg_dump --format=custom --compress=6 --file="$TEMP"
+                  mv "$TEMP" "$BACKUP_DIR/authentik_${STAMP}.dump"
+                  # UTC timestamps sort chronologically; ignore partial files.
+                  shopt -s nullglob
+                  backups=("$BACKUP_DIR"/authentik_*.dump)
+                  for ((i=0; i<${#backups[@]}-14; i++)); do
+                    rm -- "${backups[i]}"
+                  done
+                  echo "backup complete"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              volumeMounts:
+                - name: nfs-backups
+                  mountPath: /nfs
+          volumes:
+            - name: nfs-backups
+              nfs:
+                server: 192.168.20.210
+                path: /volume1/photo/backups
