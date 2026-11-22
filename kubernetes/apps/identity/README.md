@@ -219,6 +219,19 @@ deploy time rather than expanded at container start.
 
 ## Operations
 
+### Database Backups
+
+`authentik-backup` runs nightly at 01:30 America/Denver, before the node-reboot
+window and the Immich and Mealie backups. It uses the existing
+`authentik-secrets` database credentials and a PostgreSQL 17 client to write
+compressed custom-format dumps to `/volume1/photo/backups/authentik` on the
+NAS, alongside the other application backups. The newest 14 successful dumps
+are retained; failed dumps are never published as completed backups.
+
+These dumps contain the Authentik database and can be restored with
+`pg_restore`. Keep the existing secrets and declarative configuration as well;
+the database dump does not back up Kubernetes Secrets or manifests.
+
 ### View Logs
 
 ```bash
