@@ -111,7 +111,7 @@ spec:
 
       queryFrontend:
         search:
-          max_duration: 336h
+          max_duration: 360h
 
       overrides:
         defaults:
