@@ -9,14 +9,14 @@ metadata:
     grafana_dashboard: "1"
   annotations:
     grafana_folder: "Bug Bounty"
-    dashboard-version: "1.1.0"
-    last-modified: "2026-11-18"
+    dashboard-version: "1.2.0"
+    last-modified: "2026-11-22"
 data:
   bug-bounty-harness.json: |
     {
       "uid": "bbh-harness-results",
       "title": "Bug Bounty Harness",
-      "description": "Scored runs and replays of the bbh-toolkit evaluation harness, and what their agents did, live while they run, from Loki (published by harness/eval/publish_results.py and harness/eval/publish_agent_events.py) and Tempo (each agent run's trace, sent by squad as run_eval.sh configures it).",
+      "description": "Scored runs and replays of the bbh-toolkit evaluation harness, and what their agents did, live while they run, from Loki (published by harness/eval/publish_results.py and harness/eval/publish_agent_events.py) and Tempo (each agent run's trace, sent by squad as run_eval.sh configures it). The Rubric row grades each run against the answer keys (publish_results.py's bbh-harness-rubric stream, from rubric.py).",
       "tags": ["bbh", "harness", "loki"],
       "editable": true,
       "graphTooltip": 1,
@@ -208,6 +208,22 @@ data:
               "value": "2026-11-12-(main|crapi)-run2"
             },
             "description": "A regular expression on run_id naming the baseline run. The default is the median rep of the 2026-11-12 Phase 2 baseline (main and crAPI). Copy a run_id from the run table to compare against another run."
+          },
+          {
+            "name": "rubric_run",
+            "label": "Rubric run",
+            "type": "query",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "query": "label_values({job=\"bbh-harness-rubric\"}, run_id)",
+            "definition": "label_values({job=\"bbh-harness-rubric\"}, run_id)",
+            "refresh": 2,
+            "sort": 2,
+            "multi": false,
+            "includeAll": false,
+            "description": "The graded run the Rubric by key entry table shows (newest first)."
           },
           {
             "name": "run",
@@ -651,7 +667,7 @@ data:
           "type": "logs",
           "id": 42,
           "title": "Live feed (last 30 minutes, newest first)",
-          "description": "Everything every agent published in the last 30 minutes, newest first: … a step (a tool call still running, or ⚖ a finding or verdict the agent has written so far; for a squad that predates its session events, also what a Claude Code agent is saying while its turn is still being written, and on the ollama path squad's log lines until the agent run ends), → a finished tool call (duration, ✗ for an error, the redacted arguments), 💬 what the agent said, ⚖ a decision (published when its agent run ends), ■ an agent run's end. Pick a run in Agent run below for its whole timeline.",
+          "description": "Everything every agent published in the last 30 minutes, newest first: … a step (a tool call still running, or ⚖ a finding or verdict the agent has written so far), → a finished tool call (duration, ✗ for an error, the redacted arguments), 💬 what the agent said, ⚖ a decision (published when its agent run ends), ■ an agent run's end. Pick a run in Agent run below for its whole timeline.",
           "datasource": {
             "type": "loki",
             "uid": "${datasource}"
@@ -2249,6 +2265,831 @@ data:
         },
         {
           "type": "row",
+          "id": 44,
+          "title": "Rubric: graded credit per known weakness ($cmp_lab · $cmp_arm · $cmp_kind)",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 32
+          },
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "id": 45,
+          "title": "Rubric score",
+          "description": "Rubric score (0-100) of the latest graded run, and its change from the run before it (same lab, configuration and kind; last 30 days). Each scored answer-key entry is graded on how far the run got with it: missed, reported (a map-stage finding matched it), confirmed (the skeptic kept one), demonstrated (the confirmed evidence shows the impact; for Juice Shop, the app reports the challenge solved). Credit is weight x level / the entry's top level, weight by severity (critical 10, high 6, medium 3, low 1), and the score is 100 x credit / total weight. Always computed with the current answer keys, so a backfilled run is graded by the key as it stands.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 33
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness-rubric\", row=\"summary\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^rubric_score$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no graded run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 46,
+          "title": "Rubric score against the baseline",
+          "description": "Rubric score of the latest graded run, and its change from the baseline run (the Baseline run id variable, a regular expression on run_id; last 30 days).",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 33
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness-rubric\", row=\"summary\", lab=\"$cmp_lab\", run_id=~\"${baseline:raw}\"} | json",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness-rubric\", row=\"summary\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^rubric_score$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no graded run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 47,
+          "title": "Key entries by level (latest run)",
+          "description": "How many scored key entries the latest graded run demonstrated, confirmed, only reported, and missed.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 10,
+            "x": 8,
+            "y": 33
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness-rubric\", row=\"summary\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json",
+              "queryType": "range",
+              "maxLines": 1,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^(demonstrated|confirmed|reported|missed)$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value_and_name",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": false,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no graded run"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "demonstrated"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "confirmed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "reported"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "yellow"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "missed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "red"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "stat",
+          "id": 48,
+          "title": "Findings precision (current key)",
+          "description": "True positives over scored findings of the latest graded run's final stage, scored again with the current answer key. Juice Shop has one since its findings are matched against the challenges' patterns; a finding about a puzzle (not reportable) or a real duplicate is unscored.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 18,
+            "y": 33
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness-rubric\", row=\"summary\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | findings_precision!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^findings_precision$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              },
+              "noValue": "no graded run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "stat",
+          "id": 49,
+          "title": "False positives (current key)",
+          "description": "Findings of the latest graded run's final stage that match no answer-key entry, under the current key.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 21,
+            "y": 33
+          },
+          "timeFrom": "30d",
+          "hideTimeOverride": true,
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"bbh-harness-rubric\", row=\"summary\", lab=\"$cmp_lab\", arm=\"$cmp_arm\", kind=\"$cmp_kind\"} | json | findings_fp!=\"\"",
+              "queryType": "range",
+              "maxLines": 2,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "Time",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "/^findings_fp$/",
+              "values": false
+            },
+            "orientation": "auto",
+            "textMode": "value",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "wideLayout": true,
+            "showPercentChange": true,
+            "percentChangeColorMode": "standard"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "noValue": "no graded run"
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 50,
+          "title": "Rubric score",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per graded run: its rubric score out of 100, plotted at the time it was published (a backfilled run at the time it was made). Each scored answer-key entry is graded on how far the run got with it: missed, reported (a map-stage finding matched it), confirmed (the skeptic kept one), demonstrated (the confirmed evidence shows the impact; for Juice Shop, the app reports the challenge solved). Credit is weight x level / the entry's top level, weight by severity (critical 10, high 6, medium 3, low 1), and the score is 100 x credit / total weight. Always computed with the current answer keys, so a backfilled run is graded by the key as it stands.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 37
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "queryType": "range",
+              "legendFormat": "{{lab}} · {{arm}} · {{kind}}",
+              "expr": "max_over_time({job=\"bbh-harness-rubric\", row=\"summary\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | rubric_score!=\"\" | unwrap rubric_score | __error__=\"\" [$__auto]) by (lab, arm, kind)"
+            }
+          ],
+          "maxDataPoints": 6000,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "max": 100,
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "timeseries",
+          "id": 51,
+          "title": "Findings precision under the current key",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "description": "One point per graded run: true positives over scored findings of its final stage, scored again with the current answer key.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 37
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "queryType": "range",
+              "legendFormat": "{{lab}} · {{arm}} · {{kind}}",
+              "expr": "max_over_time({job=\"bbh-harness-rubric\", row=\"summary\", lab=~\"$lab\", arm=~\"$arm\", kind=~\"$kind\"} | json | findings_precision!=\"\" | unwrap findings_precision | __error__=\"\" [$__auto]) by (lab, arm, kind)"
+            }
+          ],
+          "maxDataPoints": 6000,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "pointSize": 7,
+                "showPoints": "always",
+                "spanNulls": true,
+                "fillOpacity": 0,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "max": 1,
+              "min": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "id": 52,
+          "title": "Rubric by key entry ($rubric_run)",
+          "description": "Every scored answer-key entry of the run picked in Rubric run: the level it reached, its weight and the credit earned, and what earned it (which finding, or that the target reports it solved). Highest level first. The answer_keys/<target>.rubric.md files list each entry's proof and the claim a triager accepts.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "queryType": "range",
+              "maxLines": 2000,
+              "direction": "forward",
+              "expr": "{job=\"bbh-harness-rubric\", row=\"entry\", run_id=\"$rubric_run\", lab=~\"$lab\"} | json"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": true,
+                "keepTime": true
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "level",
+                    "desc": true
+                  }
+                ]
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "schema": true,
+                  "run_id": true,
+                  "arm": true,
+                  "kind": true,
+                  "source": true,
+                  "harness_lab": true,
+                  "provider": true,
+                  "model": true,
+                  "local_model": true,
+                  "commit": true,
+                  "started_at": true,
+                  "ts_approx": true,
+                  "probe_passes": true,
+                  "row": true,
+                  "record_id": true,
+                  "Time": true,
+                  "level": true,
+                  "top_level": true
+                },
+                "indexByName": {
+                  "lab": 0,
+                  "name": 1,
+                  "level_name": 2,
+                  "severity": 3,
+                  "weight": 4,
+                  "credit": 5,
+                  "class": 6,
+                  "how": 7,
+                  "entry": 8
+                },
+                "renameByName": {
+                  "level_name": "level",
+                  "name": "entry",
+                  "entry": "id"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": true
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "level"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "demonstrated": {
+                            "color": "green"
+                          },
+                          "confirmed": {
+                            "color": "blue"
+                          },
+                          "reported": {
+                            "color": "yellow"
+                          },
+                          "missed": {
+                            "color": "red"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "severity"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "critical": {
+                            "color": "red"
+                          },
+                          "high": {
+                            "color": "orange"
+                          },
+                          "medium": {
+                            "color": "yellow"
+                          },
+                          "low": {
+                            "color": "blue"
+                          },
+                          "info": {
+                            "color": "text"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "row",
           "title": "Trends by lab, configuration and kind",
           "collapsed": false,
           "id": 20,
@@ -2256,7 +3097,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 32
+            "y": 57
           },
           "panels": []
         },
@@ -2273,7 +3114,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 58
           },
           "targets": [
             {
@@ -2353,7 +3194,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 58
           },
           "targets": [
             {
@@ -2416,7 +3257,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 41
+            "y": 66
           },
           "targets": [
             {
@@ -2477,7 +3318,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 41
+            "y": 66
           },
           "targets": [
             {
@@ -2540,7 +3381,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 74
           },
           "targets": [
             {
@@ -2603,7 +3444,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 74
           },
           "targets": [
             {
@@ -2664,7 +3505,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 57
+            "y": 82
           },
           "targets": [
             {
@@ -2725,7 +3566,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 57
+            "y": 82
           },
           "targets": [
             {
@@ -2782,7 +3623,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 65
+            "y": 90
           },
           "panels": []
         },
@@ -2798,7 +3639,7 @@ data:
             "h": 14,
             "w": 24,
             "x": 0,
-            "y": 66
+            "y": 91
           },
           "targets": [
             {
@@ -3140,7 +3981,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 80
+            "y": 105
           },
           "panels": []
         },
@@ -3157,7 +3998,7 @@ data:
             "h": 14,
             "w": 24,
             "x": 0,
-            "y": 81
+            "y": 106
           },
           "targets": [
             {
@@ -3187,7 +4028,7 @@ data:
           "type": "table",
           "id": 33,
           "title": "Agent runs",
-          "description": "One row per agent run: its turns, tool calls, tool errors and refusals, decisions (findings reported, or verdicts confirmed and rejected; a metadata-only run publishes no decisions), wall time, tokens and squad's cost estimate. activity is missing when the publisher found no record of the agent run's turns (no squad events, and for a squad that predates them no transcript). trace_id opens the agent run's trace in Tempo: its turn spans and, under each, its tool calls, with their timing, sizes, tokens and errors (no text or tool output; Tempo keeps traces for 14 days).",
+          "description": "One row per agent run: its turns, tool calls, tool errors and refusals, decisions (findings reported, or verdicts confirmed and rejected; a metadata-only run publishes no decisions), wall time, tokens and squad's cost estimate. activity is missing when the publisher found no record of the agent run's turns (squad recorded no turn or tool call, or the agent run has no squad session events, as with a squad older than #484: then only its decisions and summary are published). trace_id opens the agent run's trace in Tempo: its turn spans and, under each, its tool calls, with their timing, sizes, tokens and errors (no text or tool output; Tempo keeps traces for 14 days).",
           "datasource": {
             "type": "loki",
             "uid": "${datasource}"
@@ -3196,7 +4037,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 95
+            "y": 120
           },
           "targets": [
             {
@@ -3429,7 +4270,7 @@ data:
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 102
+            "y": 127
           },
           "timeFrom": "14d",
           "targets": [
@@ -3477,7 +4318,7 @@ data:
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 110
+            "y": 135
           },
           "targets": [
             {
@@ -3530,7 +4371,7 @@ data:
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 110
+            "y": 135
           },
           "targets": [
             {
@@ -3628,7 +4469,7 @@ data:
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 110
+            "y": 135
           },
           "targets": [
             {
@@ -3727,7 +4568,7 @@ data:
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 118
+            "y": 143
           },
           "targets": [
             {
@@ -3879,7 +4720,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 128
+            "y": 153
           },
           "maxDataPoints": 6000,
           "targets": [
@@ -3940,7 +4781,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 128
+            "y": 153
           },
           "maxDataPoints": 6000,
           "targets": [
