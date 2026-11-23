@@ -558,6 +558,7 @@ spec:
     service:
       app:
         controller: home-assistant
+        primary: true
         type: LoadBalancer
         externalTrafficPolicy: Cluster
         ports:
@@ -565,6 +566,16 @@ spec:
             port: 8123
           homekit:
             port: 21063
+      # Frigate pulls HA's go2rtc restream by cluster DNS, so it adds no second
+      # upstream session or transcode. A separate ClusterIP service keeps this
+      # port off the LoadBalancer.
+      go2rtc:
+        controller: home-assistant
+        type: ClusterIP
+        ports:
+          go2rtc-rtsp:
+            port: 8557
+            protocol: TCP
     ingress:
       app:
         className: ingress-traefik
