@@ -565,6 +565,9 @@ spec:
             port: 8123
           homekit:
             port: 21063
+          go2rtc-rtsp:
+            port: 8557
+            protocol: TCP
     ingress:
       app:
         className: ingress-traefik
