@@ -565,6 +565,8 @@ spec:
             port: 8123
           homekit:
             port: 21063
+          # Frigate pulls cameras from HA's go2rtc restream by cluster DNS,
+          # so it adds no second camera session or transcode.
           go2rtc-rtsp:
             port: 8557
             protocol: TCP
