@@ -313,6 +313,9 @@ spec:
                   curl -s -X POST "${HA_URL}/api/services/input_boolean/reload" \
                     -H "Authorization: Bearer ${HA_TOKEN}" \
                     -H "Content-Type: application/json" 2>/dev/null
+                  curl -s -X POST "${HA_URL}/api/services/input_datetime/reload" \
+                    -H "Authorization: Bearer ${HA_TOKEN}" \
+                    -H "Content-Type: application/json" 2>/dev/null
                   curl -s -X POST "${HA_URL}/api/services/input_number/reload" \
                     -H "Authorization: Bearer ${HA_TOKEN}" \
                     -H "Content-Type: application/json" 2>/dev/null
