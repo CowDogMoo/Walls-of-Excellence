@@ -43,3 +43,29 @@ spec:
           for: 5m
           labels:
             severity: warning
+
+        - alert: LanGatewayUnreachable
+          annotations:
+            summary: LAN gateway not answering ping
+            description: |
+              ICMP probe to {{ $labels.instance }} (the cluster VLAN's
+              gateway) has been failing for 2m while this alert could still
+              be evaluated. The gateway is down, or the node running
+              blackbox-exporter has lost its LAN path.
+          expr: probe_success{target="lan-gateway"} == 0
+          for: 2m
+          labels:
+            severity: warning
+
+        # Both anchors must fail: one provider dropping ICMP is not an outage
+        - alert: InternetUnreachable
+          annotations:
+            summary: No internet anchor answering ping
+            description: |
+              ICMP probes to every internet anchor (1.1.1.1, 8.8.8.8) have
+              been failing for 5m. Both WAN uplinks are likely down, so this
+              notification can only leave once connectivity returns.
+          expr: max(probe_success{target="internet"}) == 0
+          for: 5m
+          labels:
+            severity: warning

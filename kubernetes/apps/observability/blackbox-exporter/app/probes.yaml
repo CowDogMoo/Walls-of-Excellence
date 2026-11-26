@@ -58,3 +58,44 @@ spec:
       labels:
         target: signal-bridge
         port_role: alert-delivery
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/probe_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: gateway-icmp
+  namespace: observability
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: icmp
+  prober:
+    url: blackbox-exporter:9115
+  targets:
+    staticConfig:
+      static:
+        - 192.168.20.1
+      labels:
+        target: lan-gateway
+        probe_role: reachability
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/probe_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: internet-icmp
+  namespace: observability
+spec:
+  interval: 30s
+  scrapeTimeout: 10s
+  module: icmp
+  prober:
+    url: blackbox-exporter:9115
+  targets:
+    staticConfig:
+      static:
+        - 1.1.1.1
+        - 8.8.8.8
+      labels:
+        target: internet
+        probe_role: reachability
