@@ -52,7 +52,3 @@ spec:
 
     serviceMonitor:
       enabled: false
-
-    pspEnabled: false
-
-    allowIcmp: true
